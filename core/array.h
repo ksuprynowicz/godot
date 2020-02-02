@@ -58,6 +58,7 @@ public:
 	void clear();
 
 	bool operator==(const Array &p_array) const;
+	bool operator!=(const Array &p_array) const;
 
 	uint32_t hash() const;
 	void operator=(const Array &p_array);

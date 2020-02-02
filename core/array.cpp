@@ -94,8 +94,29 @@ void Array::clear() {
 }
 
 bool Array::operator==(const Array &p_array) const {
+	// Cheap checks
+	if (_p == p_array._p) {
+		return true;
+	}
+	const ArrayPrivate *a1 = _p->array;
+	const ArrayPrivate *a2 = p_array._p->array;
+	const int size = a1->size();
+	if (size != a2->size()) {
+		return false;
+	}
 
-	return _p == p_array._p;
+	// Heavy O(n) check
+	for (int i = 0; i < size; i++) {
+		if (a1[i] != a2[i]) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool Array::operator!=(const Array &p_array) const {
+	return !this->operator==(p_array);
 }
 
 uint32_t Array::hash() const {
