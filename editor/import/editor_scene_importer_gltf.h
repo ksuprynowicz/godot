@@ -101,6 +101,7 @@ class EditorSceneImporterGLTF : public EditorSceneImporter {
 
 		Transform xform;
 		String name;
+		Dictionary extras;
 
 		GLTFMeshIndex mesh;
 		GLTFCameraIndex camera;
@@ -322,6 +323,7 @@ class EditorSceneImporterGLTF : public EditorSceneImporter {
 		Vector<uint8_t> glb_data;
 
 		bool use_named_skin_binds;
+		bool import_meta;
 
 		Vector<GLTFNode *> nodes;
 		Vector<Vector<uint8_t> > buffers;
@@ -426,6 +428,7 @@ class EditorSceneImporterGLTF : public EditorSceneImporter {
 	Camera *_generate_camera(GLTFState &state, Node *scene_parent, const GLTFNodeIndex node_index);
 	Light *_generate_light(GLTFState &state, Node *scene_parent, const GLTFNodeIndex node_index);
 	Spatial *_generate_spatial(GLTFState &state, Node *scene_parent, const GLTFNodeIndex node_index);
+	void _set_meta_from_gltf_extras(GLTFState &state, Node *node, const GLTFNode *gltf_node);
 
 	void _generate_scene_node(GLTFState &state, Node *scene_parent, Spatial *scene_root, const GLTFNodeIndex node_index);
 	Spatial *_generate_scene(GLTFState &state, const int p_bake_fps);
