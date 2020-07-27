@@ -67,7 +67,6 @@ void Tween::_add_pending_command(StringName p_key, const Variant &p_arg1, const 
 		count = 0;
 
 	// Add the specified arguments to the command
-	// TODO: Make this a switch statement?
 	if (count > 0)
 		cmd.arg[0] = p_arg1;
 	if (count > 1)
@@ -127,14 +126,17 @@ bool Tween::_set(const StringName &p_name, const Variant &p_value) {
 	String name = p_name;
 	if (name == "playback/speed" || name == "speed") { // Backwards compatibility
 		set_speed_scale(p_value);
+		return true;
 
 	} else if (name == "playback/active") {
 		set_active(p_value);
+		return true;
 
 	} else if (name == "playback/repeat") {
 		set_repeat(p_value);
+		return true;
 	}
-	return true;
+	return false;
 }
 
 bool Tween::_get(const StringName &p_name, Variant &r_ret) const {
@@ -143,14 +145,17 @@ bool Tween::_get(const StringName &p_name, Variant &r_ret) const {
 	String name = p_name;
 	if (name == "playback/speed") { // Backwards compatibility
 		r_ret = speed_scale;
+		return true;
 
 	} else if (name == "playback/active") {
 		r_ret = is_active();
+		return true;
 
 	} else if (name == "playback/repeat") {
 		r_ret = is_repeat();
+		return true;
 	}
-	return true;
+	return false;
 }
 
 void Tween::_get_property_list(List<PropertyInfo> *p_list) const {
@@ -459,6 +464,20 @@ Variant Tween::_run_equation(InterpolateData &p_data) {
 			result = r;
 		} break;
 
+		case Variant::RECT2: {
+			// Get the Rect2 for initial and delta value
+			Rect2 i = initial_val;
+			Rect2 d = delta_val;
+			Rect2 r;
+
+			// Execute the equation for the position and size of Rect2
+			APPLY_EQUATION(position.x);
+			APPLY_EQUATION(position.y);
+			APPLY_EQUATION(size.x);
+			APPLY_EQUATION(size.y);
+			result = r;
+		} break;
+
 		case Variant::VECTOR3: {
 			// Get vectors for initial and delta values
 			Vector3 i = initial_val;
@@ -470,6 +489,55 @@ Variant Tween::_run_equation(InterpolateData &p_data) {
 			APPLY_EQUATION(x);
 			APPLY_EQUATION(y);
 			APPLY_EQUATION(z);
+			result = r;
+		} break;
+
+		case Variant::TRANSFORM2D: {
+			// Get the transforms for initial and delta values
+			Transform2D i = initial_val;
+			Transform2D d = delta_val;
+			Transform2D r;
+
+			// Execute the equation on the transforms and mutate the r transform
+			// This uses the custom APPLY_EQUATION macro defined above
+			APPLY_EQUATION(elements[0][0]);
+			APPLY_EQUATION(elements[0][1]);
+			APPLY_EQUATION(elements[1][0]);
+			APPLY_EQUATION(elements[1][1]);
+			APPLY_EQUATION(elements[2][0]);
+			APPLY_EQUATION(elements[2][1]);
+			result = r;
+		} break;
+
+		case Variant::QUAT: {
+			// Get the quaternian for the initial and delta values
+			Quat i = initial_val;
+			Quat d = delta_val;
+			Quat r;
+
+			// Execute the equation on the quaternian values and mutate the r quaternian
+			// This uses the custom APPLY_EQUATION macro defined above
+			APPLY_EQUATION(x);
+			APPLY_EQUATION(y);
+			APPLY_EQUATION(z);
+			APPLY_EQUATION(w);
+			result = r;
+		} break;
+
+		case Variant::AABB: {
+			// Get the AABB's for the initial and delta values
+			AABB i = initial_val;
+			AABB d = delta_val;
+			AABB r;
+
+			// Execute the equation for the position and size of the AABB's and mutate the r AABB
+			// This uses the custom APPLY_EQUATION macro defined above
+			APPLY_EQUATION(position.x);
+			APPLY_EQUATION(position.y);
+			APPLY_EQUATION(position.z);
+			APPLY_EQUATION(size.x);
+			APPLY_EQUATION(size.y);
+			APPLY_EQUATION(size.z);
 			result = r;
 		} break;
 
@@ -493,52 +561,6 @@ Variant Tween::_run_equation(InterpolateData &p_data) {
 			result = r;
 		} break;
 
-		case Variant::TRANSFORM2D: {
-			// Get the transforms for initial and delta values
-			Transform2D i = initial_val;
-			Transform2D d = delta_val;
-			Transform2D r;
-
-			// Execute the equation on the transforms and mutate the r transform
-			// This uses the custom APPLY_EQUATION macro defined above
-			APPLY_EQUATION(elements[0][0]);
-			APPLY_EQUATION(elements[0][1]);
-			APPLY_EQUATION(elements[1][0]);
-			APPLY_EQUATION(elements[1][1]);
-			APPLY_EQUATION(elements[2][0]);
-			APPLY_EQUATION(elements[2][1]);
-			result = r;
-		} break;
-		case Variant::QUAT: {
-			// Get the quaternian for the initial and delta values
-			Quat i = initial_val;
-			Quat d = delta_val;
-			Quat r;
-
-			// Execute the equation on the quaternian values and mutate the r quaternian
-			// This uses the custom APPLY_EQUATION macro defined above
-			APPLY_EQUATION(x);
-			APPLY_EQUATION(y);
-			APPLY_EQUATION(z);
-			APPLY_EQUATION(w);
-			result = r;
-		} break;
-		case Variant::AABB: {
-			// Get the AABB's for the initial and delta values
-			AABB i = initial_val;
-			AABB d = delta_val;
-			AABB r;
-
-			// Execute the equation for the position and size of the AABB's and mutate the r AABB
-			// This uses the custom APPLY_EQUATION macro defined above
-			APPLY_EQUATION(position.x);
-			APPLY_EQUATION(position.y);
-			APPLY_EQUATION(position.z);
-			APPLY_EQUATION(size.x);
-			APPLY_EQUATION(size.y);
-			APPLY_EQUATION(size.z);
-			result = r;
-		} break;
 		case Variant::TRANSFORM: {
 			// Get the transforms for the initial and delta values
 			Transform i = initial_val;
@@ -561,6 +583,7 @@ Variant Tween::_run_equation(InterpolateData &p_data) {
 			APPLY_EQUATION(origin.z);
 			result = r;
 		} break;
+
 		case Variant::COLOR: {
 			// Get the Color for initial and delta value
 			Color i = initial_val;
@@ -575,6 +598,7 @@ Variant Tween::_run_equation(InterpolateData &p_data) {
 			APPLY_EQUATION(a);
 			result = r;
 		} break;
+
 		default: {
 			// If unknown, just return the initial value
 			result = initial_val;
@@ -665,7 +689,7 @@ void Tween::_tween_process(float p_delta) {
 	}
 
 	// Are all of the tweens complete?
-	bool all_finished = true;
+	int any_unfinished = 0;
 
 	// For each tween we wish to interpolate...
 	for (List<InterpolateData>::Element *E = interpolates.front(); E; E = E->next()) {
@@ -673,12 +697,12 @@ void Tween::_tween_process(float p_delta) {
 		// Get the data from it
 		InterpolateData &data = E->get();
 
-		// Track if we hit one that isn't finished yet
-		all_finished = all_finished && data.finish;
-
 		// Is the data not active or already finished? No need to go any further
 		if (!data.active || data.finish)
 			continue;
+
+		// Track if we hit one that isn't finished yet
+		any_unfinished++;
 
 		// Get the target object for this interpolation
 		Object *object = ObjectDB::get_instance(data.id);
@@ -763,18 +787,17 @@ void Tween::_tween_process(float p_delta) {
 			emit_signal("tween_completed", object, NodePath(Vector<StringName>(), data.key, false));
 
 			// If we are not repeating the tween, remove it
-			if (!repeat)
+			if (!repeat) {
 				call_deferred("_remove_by_uid", data.uid);
-		} else if (!repeat) {
-			// Check whether all tweens are finished
-			all_finished = all_finished && data.finish;
+				any_unfinished--;
+			}
 		}
 	}
 	// One less update left to go
 	pending_update--;
 
 	// If all tweens are completed, we no longer need to be active
-	if (all_finished) {
+	if (any_unfinished == 0) {
 		set_active(false);
 		emit_signal("tween_all_completed");
 	}
@@ -1129,25 +1152,17 @@ bool Tween::_calc_delta_val(const Variant &p_initial_val, const Variant &p_final
 			delta_val = final_val.operator Vector2() - initial_val.operator Vector2();
 			break;
 
+		case Variant::RECT2: {
+			// Build a new Rect2 and use the new position and sizes to make a delta
+			Rect2 i = initial_val;
+			Rect2 f = final_val;
+			delta_val = Rect2(f.position - i.position, f.size - i.size);
+		} break;
+
 		case Variant::VECTOR3:
 			// Convert to Vectors and find the delta
 			delta_val = final_val.operator Vector3() - initial_val.operator Vector3();
 			break;
-
-		case Variant::BASIS: {
-			// Build a new basis which is the delta between the initial and final values
-			Basis i = initial_val;
-			Basis f = final_val;
-			delta_val = Basis(f.elements[0][0] - i.elements[0][0],
-					f.elements[0][1] - i.elements[0][1],
-					f.elements[0][2] - i.elements[0][2],
-					f.elements[1][0] - i.elements[1][0],
-					f.elements[1][1] - i.elements[1][1],
-					f.elements[1][2] - i.elements[1][2],
-					f.elements[2][0] - i.elements[2][0],
-					f.elements[2][1] - i.elements[2][1],
-					f.elements[2][2] - i.elements[2][2]);
-		} break;
 
 		case Variant::TRANSFORM2D: {
 			// Build a new transform which is the difference between the initial and final values
@@ -1173,6 +1188,21 @@ bool Tween::_calc_delta_val(const Variant &p_initial_val, const Variant &p_final
 			AABB i = initial_val;
 			AABB f = final_val;
 			delta_val = AABB(f.position - i.position, f.size - i.size);
+		} break;
+
+		case Variant::BASIS: {
+			// Build a new basis which is the delta between the initial and final values
+			Basis i = initial_val;
+			Basis f = final_val;
+			delta_val = Basis(f.elements[0][0] - i.elements[0][0],
+					f.elements[0][1] - i.elements[0][1],
+					f.elements[0][2] - i.elements[0][2],
+					f.elements[1][0] - i.elements[1][0],
+					f.elements[1][1] - i.elements[1][1],
+					f.elements[1][2] - i.elements[1][2],
+					f.elements[2][0] - i.elements[2][0],
+					f.elements[2][1] - i.elements[2][1],
+					f.elements[2][2] - i.elements[2][2]);
 		} break;
 
 		case Variant::TRANSFORM: {
@@ -1203,10 +1233,34 @@ bool Tween::_calc_delta_val(const Variant &p_initial_val, const Variant &p_final
 			delta_val = Color(f.r - i.r, f.g - i.g, f.b - i.b, f.a - i.a);
 		} break;
 
-		default:
-			// TODO: Should move away from a 'magic string'?
-			ERR_PRINT("Invalid param type, except(int/real/vector2/vector/matrix/matrix32/quat/aabb/transform/color)");
+		default: {
+			static Variant::Type supported_types[] = {
+				Variant::BOOL,
+				Variant::INT,
+				Variant::REAL,
+				Variant::VECTOR2,
+				Variant::RECT2,
+				Variant::VECTOR3,
+				Variant::TRANSFORM2D,
+				Variant::QUAT,
+				Variant::AABB,
+				Variant::BASIS,
+				Variant::TRANSFORM,
+				Variant::COLOR,
+			};
+
+			int length = *(&supported_types + 1) - supported_types;
+			String error_msg = "Invalid parameter type. Supported types are: ";
+			for (int i = 0; i < length; i++) {
+				if (i != 0) {
+					error_msg += ", ";
+				}
+				error_msg += Variant::get_type_name(supported_types[i]);
+			}
+			error_msg += ".";
+			ERR_PRINT(error_msg);
 			return false;
+		}
 	};
 	return true;
 }

@@ -76,7 +76,7 @@ public:
 	bool intersects_ray(const Vector3 &p_from, const Vector3 &p_dir, Vector3 *r_clip = NULL, Vector3 *r_normal = NULL) const;
 	_FORCE_INLINE_ bool smits_intersect_ray(const Vector3 &p_from, const Vector3 &p_dir, real_t t0, real_t t1) const;
 
-	_FORCE_INLINE_ bool intersects_convex_shape(const Plane *p_planes, int p_plane_count) const;
+	_FORCE_INLINE_ bool intersects_convex_shape(const Plane *p_planes, int p_plane_count, const Vector3 *p_points, int p_point_count) const;
 	_FORCE_INLINE_ bool inside_convex_shape(const Plane *p_planes, int p_plane_count) const;
 	bool intersects_plane(const Plane &p_plane) const;
 
@@ -100,6 +100,10 @@ public:
 	AABB expand(const Vector3 &p_vector) const;
 	_FORCE_INLINE_ void project_range_in_plane(const Plane &p_plane, real_t &r_min, real_t &r_max) const;
 	_FORCE_INLINE_ void expand_to(const Vector3 &p_vector); /** expand to contain a point if necessary */
+
+	_FORCE_INLINE_ AABB abs() const {
+		return AABB(Vector3(position.x + MIN(size.x, 0), position.y + MIN(size.y, 0), position.z + MIN(size.z, 0)), size.abs());
+	}
 
 	operator String() const;
 
@@ -190,7 +194,7 @@ Vector3 AABB::get_endpoint(int p_point) const {
 	ERR_FAIL_V(Vector3());
 }
 
-bool AABB::intersects_convex_shape(const Plane *p_planes, int p_plane_count) const {
+bool AABB::intersects_convex_shape(const Plane *p_planes, int p_plane_count, const Vector3 *p_points, int p_point_count) const {
 
 	Vector3 half_extents = size * 0.5;
 	Vector3 ofs = position + half_extents;
@@ -204,6 +208,30 @@ bool AABB::intersects_convex_shape(const Plane *p_planes, int p_plane_count) con
 		point += ofs;
 		if (p.is_point_over(point))
 			return false;
+	}
+
+	// Make sure all points in the shape aren't fully separated from the AABB on
+	// each axis.
+	int bad_point_counts_positive[3] = { 0 };
+	int bad_point_counts_negative[3] = { 0 };
+
+	for (int k = 0; k < 3; k++) {
+
+		for (int i = 0; i < p_point_count; i++) {
+			if (p_points[i].coord[k] > ofs.coord[k] + half_extents.coord[k]) {
+				bad_point_counts_positive[k]++;
+			}
+			if (p_points[i].coord[k] < ofs.coord[k] - half_extents.coord[k]) {
+				bad_point_counts_negative[k]++;
+			}
+		}
+
+		if (bad_point_counts_negative[k] == p_point_count) {
+			return false;
+		}
+		if (bad_point_counts_positive[k] == p_point_count) {
+			return false;
+		}
 	}
 
 	return true;

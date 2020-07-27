@@ -37,7 +37,6 @@
 #include "scene/resources/shape.h"
 
 class Material;
-
 class EditorSceneImporter : public Reference {
 
 	GDCLASS(EditorSceneImporter, Reference);
@@ -59,7 +58,8 @@ public:
 		IMPORT_GENERATE_TANGENT_ARRAYS = 256,
 		IMPORT_FAIL_ON_MISSING_DEPENDENCIES = 512,
 		IMPORT_MATERIALS_IN_INSTANCES = 1024,
-		IMPORT_USE_COMPRESSION = 2048
+		IMPORT_USE_COMPRESSION = 2048,
+		IMPORT_USE_NAMED_SKIN_BINDS = 4096,
 
 	};
 

@@ -29,6 +29,7 @@
 /*************************************************************************/
 
 #include "audio_server.h"
+
 #include "core/io/resource_loader.h"
 #include "core/os/file_access.h"
 #include "core/os/os.h"
@@ -36,14 +37,11 @@
 #include "scene/resources/audio_stream_sample.h"
 #include "servers/audio/audio_driver_dummy.h"
 #include "servers/audio/effects/audio_effect_compressor.h"
+
 #ifdef TOOLS_ENABLED
-
 #define MARK_EDITED set_edited(true);
-
 #else
-
 #define MARK_EDITED
-
 #endif
 
 AudioDriver *AudioDriver::singleton = NULL;
@@ -184,6 +182,10 @@ int AudioDriverManager::get_driver_count() {
 
 void AudioDriverManager::initialize(int p_driver) {
 	GLOBAL_DEF_RST("audio/enable_audio_input", false);
+	GLOBAL_DEF_RST("audio/mix_rate", DEFAULT_MIX_RATE);
+	GLOBAL_DEF_RST("audio/output_latency", DEFAULT_OUTPUT_LATENCY);
+	GLOBAL_DEF_RST("audio/output_latency.web", 50); // Safer default output_latency for web.
+
 	int failed_driver = -1;
 
 	// Check if there is a selected driver
@@ -1405,8 +1407,6 @@ AudioServer::AudioServer() {
 	mix_frames = 0;
 	channel_count = 0;
 	to_mix = 0;
-	output_latency = 0;
-	output_latency_ticks = 0;
 #ifdef DEBUG_ENABLED
 	prof_time = 0;
 #endif

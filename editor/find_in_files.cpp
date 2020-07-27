@@ -235,8 +235,10 @@ void FindInFiles::_scan_dir(String path, PoolStringArray &out_folders) {
 		if (file == "")
 			break;
 
-		// Ignore special dirs and hidden dirs (such as .git and .import)
+		// Ignore special dirs (such as .git and .import)
 		if (file == "." || file == ".." || file.begins_with("."))
+			continue;
+		if (dir->current_is_hidden())
 			continue;
 
 		if (dir->current_is_dir())
@@ -531,6 +533,12 @@ FindInFilesPanel::FindInFilesPanel() {
 		_status_label = memnew(Label);
 		hbc->add_child(_status_label);
 
+		_refresh_button = memnew(Button);
+		_refresh_button->set_text(TTR("Refresh"));
+		_refresh_button->connect("pressed", this, "_on_refresh_button_clicked");
+		_refresh_button->hide();
+		hbc->add_child(_refresh_button);
+
 		_cancel_button = memnew(Button);
 		_cancel_button->set_text(TTR("Cancel"));
 		_cancel_button->connect("pressed", this, "_on_cancel_button_clicked");
@@ -614,6 +622,7 @@ void FindInFilesPanel::start_search() {
 	_finder->start();
 
 	update_replace_buttons();
+	_refresh_button->hide();
 	_cancel_button->show();
 }
 
@@ -624,6 +633,7 @@ void FindInFilesPanel::stop_search() {
 	_status_label->set_text("");
 	update_replace_buttons();
 	set_progress_visible(false);
+	_refresh_button->show();
 	_cancel_button->hide();
 }
 
@@ -660,22 +670,20 @@ void FindInFilesPanel::_on_result_found(String fpath, int line_number, int begin
 	// Do this first because it resets properties of the cell...
 	item->set_cell_mode(text_index, TreeItem::CELL_MODE_CUSTOM);
 
-	String item_text = vformat("%3s:    %s", line_number, text.replace("\t", "    "));
+	// Trim result item line
+	int old_text_size = text.size();
+	text = text.strip_edges(true, false);
+	int chars_removed = old_text_size - text.size();
+	String start = vformat("%3s: ", line_number);
 
-	item->set_text(text_index, item_text);
+	item->set_text(text_index, start + text);
 	item->set_custom_draw(text_index, this, "_draw_result_text");
-
-	Ref<Font> font = _results_display->get_font("font");
-
-	float raw_text_width = font->get_string_size(text).x;
-	float item_text_width = font->get_string_size(item_text).x;
 
 	Result r;
 	r.line_number = line_number;
 	r.begin = begin;
 	r.end = end;
-	r.draw_begin = (item_text_width - raw_text_width) + font->get_string_size(text.left(r.begin)).x;
-	r.draw_width = font->get_string_size(text.substr(r.begin, r.end - r.begin)).x;
+	r.begin_trimmed = begin - chars_removed + start.size() - 1;
 	_result_items[item] = r;
 
 	if (_with_replace) {
@@ -695,10 +703,12 @@ void FindInFilesPanel::draw_result_text(Object *item_obj, Rect2 rect) {
 	if (!E)
 		return;
 	Result r = E->value();
+	String item_text = item->get_text(_with_replace ? 1 : 0);
+	Ref<Font> font = _results_display->get_font("font");
 
 	Rect2 match_rect = rect;
-	match_rect.position.x += r.draw_begin;
-	match_rect.size.x = r.draw_width;
+	match_rect.position.x += font->get_string_size(item_text.left(r.begin_trimmed)).x;
+	match_rect.size.x = font->get_string_size(_search_text_label->get_text()).x;
 	match_rect.position.y += 1 * EDSCALE;
 	match_rect.size.y -= 2 * EDSCALE;
 
@@ -726,7 +736,12 @@ void FindInFilesPanel::_on_finished() {
 	_status_label->set_text(TTR("Search complete"));
 	update_replace_buttons();
 	set_progress_visible(false);
+	_refresh_button->show();
 	_cancel_button->hide();
+}
+
+void FindInFilesPanel::_on_refresh_button_clicked() {
+	start_search();
 }
 
 void FindInFilesPanel::_on_cancel_button_clicked() {
@@ -903,6 +918,7 @@ void FindInFilesPanel::_bind_methods() {
 	ClassDB::bind_method("_on_result_found", &FindInFilesPanel::_on_result_found);
 	ClassDB::bind_method("_on_item_edited", &FindInFilesPanel::_on_item_edited);
 	ClassDB::bind_method("_on_finished", &FindInFilesPanel::_on_finished);
+	ClassDB::bind_method("_on_refresh_button_clicked", &FindInFilesPanel::_on_refresh_button_clicked);
 	ClassDB::bind_method("_on_cancel_button_clicked", &FindInFilesPanel::_on_cancel_button_clicked);
 	ClassDB::bind_method("_on_result_selected", &FindInFilesPanel::_on_result_selected);
 	ClassDB::bind_method("_on_replace_text_changed", &FindInFilesPanel::_on_replace_text_changed);

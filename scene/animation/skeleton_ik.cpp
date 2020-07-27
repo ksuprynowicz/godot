@@ -144,8 +144,9 @@ void FabrikInverseKinematic::update_chain(const Skeleton *p_sk, ChainItem *p_cha
 	p_chain_item->initial_transform = p_sk->get_bone_global_pose(p_chain_item->bone);
 	p_chain_item->current_pos = p_chain_item->initial_transform.origin;
 
-	for (int i = p_chain_item->children.size() - 1; 0 <= i; --i) {
-		update_chain(p_sk, &p_chain_item->children.write[i]);
+	ChainItem *items = p_chain_item->children.ptrw();
+	for (int i = 0; i < p_chain_item->children.size(); i += 1) {
+		update_chain(p_sk, items + i);
 	}
 }
 
@@ -273,7 +274,7 @@ void FabrikInverseKinematic::make_goal(Task *p_task, const Transform &p_inverse_
 	} else {
 
 		// End effector in local transform
-		const Transform end_effector_pose(p_task->skeleton->get_bone_global_pose(p_task->end_effectors.write[0].tip_bone));
+		const Transform end_effector_pose(p_task->skeleton->get_bone_global_pose(p_task->end_effectors[0].tip_bone));
 
 		// Update the end_effector (local transform) by blending with current pose
 		p_task->end_effectors.write[0].goal_transform = end_effector_pose.interpolate_with(p_inverse_transf * p_task->goal_global_transform, blending_delta);
@@ -284,6 +285,16 @@ void FabrikInverseKinematic::solve(Task *p_task, real_t blending_delta, bool ove
 
 	if (blending_delta <= 0.01f) {
 		return; // Skip solving
+	}
+
+	p_task->skeleton->set_bone_global_pose_override(p_task->chain.chain_root.bone, Transform(), 0.0, true);
+
+	if (p_task->chain.middle_chain_item) {
+		p_task->skeleton->set_bone_global_pose_override(p_task->chain.middle_chain_item->bone, Transform(), 0.0, true);
+	}
+
+	for (int i = 0; i < p_task->chain.tips.size(); i += 1) {
+		p_task->skeleton->set_bone_global_pose_override(p_task->chain.tips[i].chain_item->bone, Transform(), 0.0, true);
 	}
 
 	make_goal(p_task, p_task->skeleton->get_global_transform().affine_inverse().scaled(p_task->skeleton->get_global_transform().get_basis().get_scale()), blending_delta);
@@ -320,19 +331,12 @@ void FabrikInverseKinematic::solve(Task *p_task, real_t blending_delta, bool ove
 				new_bone_pose.basis = new_bone_pose.basis * p_task->chain.tips[0].end_effector->goal_transform.basis;
 		}
 
+		// IK should not affect scale, so undo any scaling
+		new_bone_pose.basis.orthonormalize();
+		new_bone_pose.basis.scale(p_task->skeleton->get_bone_global_pose(ci->bone).basis.get_scale());
+
 		p_task->skeleton->set_bone_global_pose_override(ci->bone, new_bone_pose, 1.0, true);
 
-		if (!ci->children.empty())
-			ci = &ci->children.write[0];
-		else
-			ci = NULL;
-	}
-}
-
-void FabrikInverseKinematic::reset(Task *p_task) {
-	ChainItem *ci(&p_task->chain.chain_root);
-	while (ci) {
-		p_task->skeleton->set_bone_global_pose_override(ci->bone, Transform(), 0);
 		if (!ci->children.empty())
 			ci = &ci->children.write[0];
 		else
@@ -542,8 +546,6 @@ void SkeletonIK::start(bool p_one_time) {
 
 void SkeletonIK::stop() {
 	set_process_internal(false);
-	if (task)
-		FabrikInverseKinematic::reset(task);
 }
 
 Transform SkeletonIK::_get_target_transform() {

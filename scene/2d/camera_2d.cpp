@@ -128,9 +128,9 @@ Transform2D Camera2D::get_camera_transform() {
 			} else {
 
 				if (v_ofs < 0) {
-					camera_pos.y = new_camera_pos.y + screen_size.y * 0.5 * drag_margin[MARGIN_TOP] * v_ofs;
-				} else {
 					camera_pos.y = new_camera_pos.y + screen_size.y * 0.5 * drag_margin[MARGIN_BOTTOM] * v_ofs;
+				} else {
+					camera_pos.y = new_camera_pos.y + screen_size.y * 0.5 * drag_margin[MARGIN_TOP] * v_ofs;
 				}
 
 				v_offset_changed = false;
@@ -351,7 +351,9 @@ void Camera2D::_notification(int p_what) {
 void Camera2D::set_offset(const Vector2 &p_offset) {
 
 	offset = p_offset;
+	Point2 old_smoothed_camera_pos = smoothed_camera_pos;
 	_update_scroll();
+	smoothed_camera_pos = old_smoothed_camera_pos;
 }
 
 Vector2 Camera2D::get_offset() const {
@@ -373,7 +375,9 @@ Camera2D::AnchorMode Camera2D::get_anchor_mode() const {
 void Camera2D::set_rotating(bool p_rotating) {
 
 	rotating = p_rotating;
+	Point2 old_smoothed_camera_pos = smoothed_camera_pos;
 	_update_scroll();
+	smoothed_camera_pos = old_smoothed_camera_pos;
 }
 
 bool Camera2D::is_rotating() const {
@@ -559,7 +563,9 @@ void Camera2D::set_v_offset(float p_offset) {
 
 	v_ofs = p_offset;
 	v_offset_changed = true;
+	Point2 old_smoothed_camera_pos = smoothed_camera_pos;
 	_update_scroll();
+	smoothed_camera_pos = old_smoothed_camera_pos;
 }
 
 float Camera2D::get_v_offset() const {
@@ -571,7 +577,9 @@ void Camera2D::set_h_offset(float p_offset) {
 
 	h_ofs = p_offset;
 	h_offset_changed = true;
+	Point2 old_smoothed_camera_pos = smoothed_camera_pos;
 	_update_scroll();
+	smoothed_camera_pos = old_smoothed_camera_pos;
 }
 float Camera2D::get_h_offset() const {
 

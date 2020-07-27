@@ -348,7 +348,7 @@ void InputEventKey::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "pressed"), "set_pressed", "is_pressed");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "scancode"), "set_scancode", "get_scancode");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "unicode"), "set_unicode", "get_unicode");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "echo"), "set_echo", "is_echo");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "echo"), "set_echo", "is_echo");
 }
 
 InputEventKey::InputEventKey() {
@@ -416,7 +416,7 @@ void InputEventMouseButton::set_factor(float p_factor) {
 	factor = p_factor;
 }
 
-float InputEventMouseButton::get_factor() {
+float InputEventMouseButton::get_factor() const {
 
 	return factor;
 }
@@ -646,7 +646,7 @@ String InputEventMouseMotion::as_text() const {
 			button_mask_string = itos(get_button_mask());
 			break;
 	}
-	return "InputEventMouseMotion : button_mask=" + button_mask_string + ", position=(" + String(get_position()) + "), relative=(" + String(get_relative()) + "), speed=(" + String(get_speed()) + ")";
+	return "InputEventMouseMotion : button_mask=" + button_mask_string + ", position=(" + String(get_position()) + "), relative=(" + String(get_relative()) + "), speed=(" + String(get_speed()) + "), pressure=(" + rtos(get_pressure()) + "), tilt=(" + String(get_tilt()) + ")";
 }
 
 bool InputEventMouseMotion::accumulate(const Ref<InputEvent> &p_event) {

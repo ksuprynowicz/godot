@@ -33,6 +33,7 @@
 #include "core/io/resource_loader.h"
 #include "core/os/dir_access.h"
 #include "core/os/file_access.h"
+#include "core/os/input.h"
 #include "core/os/keyboard.h"
 #include "core/os/os.h"
 #include "core/project_settings.h"
@@ -1287,12 +1288,12 @@ void FileSystemDock::_make_scene_confirm() {
 	editor->get_editor_data().set_scene_path(idx, scene_name);
 }
 
-void FileSystemDock::_file_deleted(String p_file) {
-	emit_signal("file_deleted", p_file);
+void FileSystemDock::_file_removed(String p_file) {
+	emit_signal("file_removed", p_file);
 }
 
-void FileSystemDock::_folder_deleted(String p_folder) {
-	emit_signal("folder_deleted", p_folder);
+void FileSystemDock::_folder_removed(String p_folder) {
+	emit_signal("folder_removed", p_folder);
 }
 
 void FileSystemDock::_rename_operation_confirm() {
@@ -1413,17 +1414,13 @@ void FileSystemDock::_move_operation_confirm(const String &p_to_path, bool overw
 		if (!can_move) {
 			// Ask to do something.
 			overwrite_dialog->popup_centered_minsize();
-			overwrite_dialog->grab_focus();
 			return;
 		}
 	}
 
 	// Check groups.
 	for (int i = 0; i < to_move.size(); i++) {
-
-		print_line("is group: " + to_move[i].path + ": " + itos(EditorFileSystem::get_singleton()->is_group_file(to_move[i].path)));
 		if (to_move[i].is_file && EditorFileSystem::get_singleton()->is_group_file(to_move[i].path)) {
-			print_line("move to: " + p_to_path.plus_file(to_move[i].path.get_file()));
 			EditorFileSystem::get_singleton()->move_group_file(to_move[i].path, p_to_path.plus_file(to_move[i].path.get_file()));
 		}
 	}
@@ -1442,7 +1439,7 @@ void FileSystemDock::_move_operation_confirm(const String &p_to_path, bool overw
 
 	if (is_moved) {
 		int current_tab = editor->get_current_tab();
-		_save_scenes_after_move(file_renames); //save scenes before updating
+		_save_scenes_after_move(file_renames); // Save scenes before updating.
 		_update_dependencies_after_move(file_renames);
 		_update_resource_paths_after_move(file_renames);
 		_update_project_settings_after_move(file_renames);
@@ -1786,6 +1783,14 @@ void FileSystemDock::_resource_created() const {
 	Resource *r = Object::cast_to<Resource>(c);
 	ERR_FAIL_COND(!r);
 
+	PackedScene *scene = Object::cast_to<PackedScene>(r);
+	if (scene) {
+		Node *node = memnew(Node);
+		node->set_name("Node");
+		scene->pack(node);
+		memdelete(node);
+	}
+
 	REF res(r);
 	editor->push_item(c);
 
@@ -1948,7 +1953,7 @@ bool FileSystemDock::can_drop_data_fw(const Point2 &p_point, const Variant &p_da
 			return false;
 
 		// Attempting to move a folder into itself will fail later,
-		// rather than bring up a message don't try to do it in the first place
+		// rather than bring up a message don't try to do it in the first place.
 		to_dir = to_dir.ends_with("/") ? to_dir : (to_dir + "/");
 		Vector<String> fnames = drag_data["files"];
 		for (int i = 0; i < fnames.size(); ++i) {
@@ -2050,11 +2055,40 @@ void FileSystemDock::drop_data_fw(const Point2 &p_point, const Variant &p_data, 
 			Vector<String> fnames = drag_data["files"];
 			to_move.clear();
 			for (int i = 0; i < fnames.size(); i++) {
-				to_move.push_back(FileOrFolder(fnames[i], !fnames[i].ends_with("/")));
+				if (fnames[i].get_base_dir() != to_dir) {
+					to_move.push_back(FileOrFolder(fnames[i], !fnames[i].ends_with("/")));
+				}
 			}
-			_move_operation_confirm(to_dir);
+			if (!to_move.empty()) {
+				if (Input::get_singleton()->is_key_pressed(KEY_CONTROL)) {
+					for (int i = 0; i < to_move.size(); i++) {
+						String new_path;
+						String new_path_base;
+
+						if (to_move[i].is_file) {
+							new_path = to_dir.plus_file(to_move[i].path.get_file());
+							new_path_base = new_path.get_basename() + " (%d)." + new_path.get_extension();
+						} else {
+							Vector<String> path_split = to_move[i].path.split("/");
+							new_path = to_dir.plus_file(path_split[path_split.size() - 2]);
+							new_path_base = new_path + " (%d)";
+						}
+
+						int exist_counter = 1;
+						DirAccessRef da = DirAccess::create(DirAccess::ACCESS_RESOURCES);
+						while (da->file_exists(new_path) || da->dir_exists(new_path)) {
+							exist_counter++;
+							new_path = vformat(new_path_base, exist_counter);
+						}
+						_try_duplicate_item(to_move[i], new_path);
+					}
+					_rescan();
+				} else {
+					_move_operation_confirm(to_dir);
+				}
+			}
 		} else if (favorite) {
-			// Add the files from favorites
+			// Add the files from favorites.
 			Vector<String> fnames = drag_data["files"];
 			Vector<String> favorites = EditorSettings::get_singleton()->get_favorites();
 			for (int i = 0; i < fnames.size(); i++) {
@@ -2102,6 +2136,10 @@ void FileSystemDock::_get_drag_target_folder(String &target, bool &target_favori
 					if (fpath.ends_with("/")) {
 						// We drop on a folder.
 						target = fpath;
+						return;
+					} else {
+						// We drop on the folder that the target file is in.
+						target = fpath.get_base_dir();
 						return;
 					}
 				} else {
@@ -2458,8 +2496,8 @@ void FileSystemDock::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_file_list_rmb_pressed"), &FileSystemDock::_file_list_rmb_pressed);
 	ClassDB::bind_method(D_METHOD("_tree_rmb_empty"), &FileSystemDock::_tree_rmb_empty);
 
-	ClassDB::bind_method(D_METHOD("_file_deleted"), &FileSystemDock::_file_deleted);
-	ClassDB::bind_method(D_METHOD("_folder_deleted"), &FileSystemDock::_folder_deleted);
+	ClassDB::bind_method(D_METHOD("_file_removed"), &FileSystemDock::_file_removed);
+	ClassDB::bind_method(D_METHOD("_folder_removed"), &FileSystemDock::_folder_removed);
 
 	ClassDB::bind_method(D_METHOD("_file_list_thumbnail_done"), &FileSystemDock::_file_list_thumbnail_done);
 	ClassDB::bind_method(D_METHOD("_tree_thumbnail_done"), &FileSystemDock::_tree_thumbnail_done);
@@ -2639,8 +2677,8 @@ FileSystemDock::FileSystemDock(EditorNode *p_editor) {
 	add_child(owners_editor);
 
 	remove_dialog = memnew(DependencyRemoveDialog);
-	remove_dialog->connect("file_removed", this, "_file_deleted");
-	remove_dialog->connect("folder_removed", this, "_folder_deleted");
+	remove_dialog->connect("file_removed", this, "_file_removed");
+	remove_dialog->connect("folder_removed", this, "_folder_removed");
 	add_child(remove_dialog);
 
 	move_dialog = memnew(EditorDirDialog);

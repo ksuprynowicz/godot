@@ -81,6 +81,8 @@ public:
 private:
 	bool emitting;
 
+	// warning - beware of adding non-trivial types
+	// to this structure as it is zeroed to initialize in set_amount()
 	struct Particle {
 		Transform2D transform;
 		Color color;
@@ -185,6 +187,8 @@ private:
 	void _update_mesh_texture();
 
 	void _set_redraw(bool p_redraw);
+
+	void _texture_changed();
 
 protected:
 	static void _bind_methods();

@@ -163,7 +163,7 @@ private:
 		}
 
 		if (valid_path == "") {
-			set_message(TTR("The path does not exist."), MESSAGE_ERROR);
+			set_message(TTR("The path specified doesn't exist."), MESSAGE_ERROR);
 			memdelete(d);
 			get_ok()->set_disabled(true);
 			return "";
@@ -177,7 +177,7 @@ private:
 			}
 
 			if (valid_install_path == "") {
-				set_message(TTR("The path does not exist."), MESSAGE_ERROR, INSTALL_PATH);
+				set_message(TTR("The path specified doesn't exist."), MESSAGE_ERROR, INSTALL_PATH);
 				memdelete(d);
 				get_ok()->set_disabled(true);
 				return "";
@@ -195,7 +195,7 @@ private:
 					unzFile pkg = unzOpen2(valid_path.utf8().get_data(), &io);
 					if (!pkg) {
 
-						set_message(TTR("Error opening package file, not in ZIP format."), MESSAGE_ERROR);
+						set_message(TTR("Error opening package file (it's not in ZIP format)."), MESSAGE_ERROR);
 						memdelete(d);
 						get_ok()->set_disabled(true);
 						unzClose(pkg);
@@ -216,7 +216,7 @@ private:
 					}
 
 					if (ret == UNZ_END_OF_LIST_OF_FILE) {
-						set_message(TTR("Invalid '.zip' project file, does not contain a 'project.godot' file."), MESSAGE_ERROR);
+						set_message(TTR("Invalid \".zip\" project file; it doesn't contain a \"project.godot\" file."), MESSAGE_ERROR);
 						memdelete(d);
 						get_ok()->set_disabled(true);
 						unzClose(pkg);
@@ -230,7 +230,11 @@ private:
 					bool is_empty = true;
 					String n = d->get_next();
 					while (n != String()) {
-						if (n != "." && n != "..") {
+						if (!n.begins_with(".")) {
+							// Allow `.`, `..` (reserved current/parent folder names)
+							// and hidden files/folders to be present.
+							// For instance, this lets users initialize a Git repository
+							// and still be able to create a project in the directory afterwards.
 							is_empty = false;
 							break;
 						}
@@ -247,7 +251,7 @@ private:
 					}
 
 				} else {
-					set_message(TTR("Please choose a 'project.godot' or '.zip' file."), MESSAGE_ERROR);
+					set_message(TTR("Please choose a \"project.godot\" or \".zip\" file."), MESSAGE_ERROR);
 					memdelete(d);
 					install_path_container->hide();
 					get_ok()->set_disabled(true);
@@ -256,7 +260,7 @@ private:
 
 			} else if (valid_path.ends_with("zip")) {
 
-				set_message(TTR("Directory already contains a Godot project."), MESSAGE_ERROR, INSTALL_PATH);
+				set_message(TTR("This directory already contains a Godot project."), MESSAGE_ERROR, INSTALL_PATH);
 				memdelete(d);
 				get_ok()->set_disabled(true);
 				return "";
@@ -269,7 +273,11 @@ private:
 			bool is_empty = true;
 			String n = d->get_next();
 			while (n != String()) {
-				if (n != "." && n != "..") { // i don't know if this is enough to guarantee an empty dir
+				if (!n.begins_with(".")) {
+					// Allow `.`, `..` (reserved current/parent folder names)
+					// and hidden files/folders to be present.
+					// For instance, this lets users initialize a Git repository
+					// and still be able to create a project in the directory afterwards.
 					is_empty = false;
 					break;
 				}
@@ -332,7 +340,7 @@ private:
 				install_path_container->show();
 				get_ok()->set_disabled(false);
 			} else {
-				set_message(TTR("Please choose a 'project.godot' or '.zip' file."), MESSAGE_ERROR);
+				set_message(TTR("Please choose a \"project.godot\" or \".zip\" file."), MESSAGE_ERROR);
 				get_ok()->set_disabled(true);
 				return;
 			}
@@ -778,6 +786,9 @@ public:
 			_test_path();
 		}
 
+		// Reset the dialog to its initial size. Otherwise, the dialog window would be too large
+		// when opening a small dialog after closing a large dialog.
+		set_size(get_minimum_size());
 		popup_centered_minsize(Size2(500, 0) * EDSCALE);
 	}
 
@@ -934,6 +945,8 @@ public:
 		icon = NULL;
 		icon_needs_reload = true;
 		hover = false;
+
+		set_focus_mode(FocusMode::FOCUS_ALL);
 	}
 
 	void set_is_favorite(bool fav) {
@@ -2027,6 +2040,14 @@ void ProjectManager::_open_selected_projects() {
 
 		args.push_back("--editor");
 
+		if (OS::get_singleton()->is_stdout_debug_enabled()) {
+			args.push_back("--debug");
+		}
+
+		if (OS::get_singleton()->is_stdout_verbose()) {
+			args.push_back("--verbose");
+		}
+
 		if (OS::get_singleton()->is_disable_crash_handler()) {
 			args.push_back("--disable-crash-handler");
 		}
@@ -2393,8 +2414,12 @@ ProjectManager::ProjectManager() {
 		switch (display_scale) {
 			case 0: {
 				// Try applying a suitable display scale automatically
+#ifdef OSX_ENABLED
+				editor_set_scale(OS::get_singleton()->get_screen_max_scale());
+#else
 				const int screen = OS::get_singleton()->get_current_screen();
 				editor_set_scale(OS::get_singleton()->get_screen_dpi(screen) >= 192 && OS::get_singleton()->get_screen_size(screen).x > 2000 ? 2.0 : 1.0);
+#endif
 			} break;
 
 			case 1: editor_set_scale(0.75); break;
@@ -2412,11 +2437,8 @@ ProjectManager::ProjectManager() {
 		// Define a minimum window size to prevent UI elements from overlapping or being cut off
 		OS::get_singleton()->set_min_window_size(Size2(750, 420) * EDSCALE);
 
-#ifndef OSX_ENABLED
-		// The macOS platform implementation uses its own hiDPI window resizing code
 		// TODO: Resize windows on hiDPI displays on Windows and Linux and remove the line below
 		OS::get_singleton()->set_window_size(OS::get_singleton()->get_window_size() * MAX(1, EDSCALE));
-#endif
 	}
 
 	FileDialog::set_default_show_hidden_files(EditorSettings::get_singleton()->get("filesystem/file_dialog/show_hidden_files"));
@@ -2750,6 +2772,8 @@ void ProjectListFilter::add_filter_option() {
 void ProjectListFilter::add_search_box() {
 	search_box = memnew(LineEdit);
 	search_box->set_placeholder(TTR("Search"));
+	search_box->set_tooltip(
+			TTR("The search box filters projects by name and last path component.\nTo filter projects by name and full path, the query must contain at least one `/` character."));
 	search_box->connect("text_changed", this, "_search_text_changed");
 	search_box->set_h_size_flags(SIZE_EXPAND_FILL);
 	add_child(search_box);

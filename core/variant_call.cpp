@@ -35,6 +35,7 @@
 #include "core/crypto/crypto_core.h"
 #include "core/io/compression.h"
 #include "core/object.h"
+#include "core/object_rc.h"
 #include "core/os/os.h"
 #include "core/script_language.h"
 
@@ -389,7 +390,7 @@ struct _VariantCall {
 	VCALL_LOCALMEM0R(Rect2, has_no_area);
 	VCALL_LOCALMEM1R(Rect2, has_point);
 	VCALL_LOCALMEM1R(Rect2, is_equal_approx);
-	VCALL_LOCALMEM1R(Rect2, intersects);
+	VCALL_LOCALMEM2R(Rect2, intersects);
 	VCALL_LOCALMEM1R(Rect2, encloses);
 	VCALL_LOCALMEM1R(Rect2, clip);
 	VCALL_LOCALMEM1R(Rect2, merge);
@@ -742,6 +743,7 @@ struct _VariantCall {
 #define VCALL_PTR5R(m_type, m_method) \
 	static void _call_##m_type##_##m_method(Variant &r_ret, Variant &p_self, const Variant **p_args) { r_ret = reinterpret_cast<m_type *>(p_self._data._ptr)->m_method(*p_args[0], *p_args[1], *p_args[2], *p_args[3], *p_args[4]); }
 
+	VCALL_PTR0R(AABB, abs);
 	VCALL_PTR0R(AABB, get_area);
 	VCALL_PTR0R(AABB, has_no_area);
 	VCALL_PTR0R(AABB, has_no_surface);
@@ -823,6 +825,18 @@ struct _VariantCall {
 	VCALL_PTR1R(Basis, scaled);
 	VCALL_PTR0R(Basis, get_scale);
 	VCALL_PTR0R(Basis, get_euler);
+	VCALL_PTR0R(Basis, get_euler_xyz);
+	VCALL_PTR1(Basis, set_euler_xyz);
+	VCALL_PTR0R(Basis, get_euler_xzy);
+	VCALL_PTR1(Basis, set_euler_xzy);
+	VCALL_PTR0R(Basis, get_euler_yzx);
+	VCALL_PTR1(Basis, set_euler_yzx);
+	VCALL_PTR0R(Basis, get_euler_yxz);
+	VCALL_PTR1(Basis, set_euler_yxz);
+	VCALL_PTR0R(Basis, get_euler_zxy);
+	VCALL_PTR1(Basis, set_euler_zxy);
+	VCALL_PTR0R(Basis, get_euler_zyx);
+	VCALL_PTR1(Basis, set_euler_zyx);
 	VCALL_PTR1R(Basis, tdotx);
 	VCALL_PTR1R(Basis, tdoty);
 	VCALL_PTR1R(Basis, tdotz);
@@ -1060,6 +1074,9 @@ struct _VariantCall {
 		List<StringName> value_ordered;
 #endif
 		Map<StringName, Variant> variant_value;
+#ifdef DEBUG_ENABLED
+		List<StringName> variant_value_ordered;
+#endif
 	};
 
 	static ConstantData *constant_data;
@@ -1075,6 +1092,9 @@ struct _VariantCall {
 	static void add_variant_constant(int p_type, StringName p_constant_name, const Variant &p_constant_value) {
 
 		constant_data[p_type].variant_value[p_constant_name] = p_constant_value;
+#ifdef DEBUG_ENABLED
+		constant_data[p_type].variant_value_ordered.push_back(p_constant_name);
+#endif
 	}
 };
 
@@ -1094,22 +1114,18 @@ void Variant::call_ptr(const StringName &p_method, const Variant **p_args, int p
 
 	if (type == Variant::OBJECT) {
 		//call object
-		Object *obj = _get_obj().obj;
+		Object *obj = _OBJ_PTR(*this);
 		if (!obj) {
+#ifdef DEBUG_ENABLED
+			if (ScriptDebugger::get_singleton() && _get_obj().rc && !ObjectDB::get_instance(_get_obj().rc->instance_id)) {
+				WARN_PRINT("Attempted call on a deleted object.");
+			}
+#endif
 			r_error.error = CallError::CALL_ERROR_INSTANCE_IS_NULL;
 			return;
 		}
-#ifdef DEBUG_ENABLED
-		if (ScriptDebugger::get_singleton() && _get_obj().ref.is_null()) {
-			//only if debugging!
-			if (!ObjectDB::instance_validate(obj)) {
-				r_error.error = CallError::CALL_ERROR_INSTANCE_IS_NULL;
-				return;
-			}
-		}
 
-#endif
-		ret = _get_obj().obj->call(p_method, p_args, p_argcount, r_error);
+		ret = obj->call(p_method, p_args, p_argcount, r_error);
 
 		//else if (type==Variant::METHOD) {
 
@@ -1214,6 +1230,8 @@ Variant Variant::construct(const Variant::Type p_type, const Variant **p_args, i
 			}
 			case RECT2: return (Rect2(*p_args[0]));
 			case VECTOR3: return (Vector3(*p_args[0]));
+			case TRANSFORM2D:
+				return (Transform2D(p_args[0]->operator Transform2D()));
 			case PLANE: return (Plane(*p_args[0]));
 			case QUAT: return (p_args[0]->operator Quat());
 			case AABB:
@@ -1275,18 +1293,16 @@ Variant Variant::construct(const Variant::Type p_type, const Variant **p_args, i
 bool Variant::has_method(const StringName &p_method) const {
 
 	if (type == OBJECT) {
-		Object *obj = operator Object *();
-		if (!obj)
-			return false;
+		Object *obj = _OBJ_PTR(*this);
+		if (!obj) {
 #ifdef DEBUG_ENABLED
-		if (ScriptDebugger::get_singleton()) {
-			if (ObjectDB::instance_validate(obj)) {
-#endif
-				return obj->has_method(p_method);
-#ifdef DEBUG_ENABLED
+			if (ScriptDebugger::get_singleton() && _get_obj().rc && !ObjectDB::get_instance(_get_obj().rc->instance_id)) {
+				WARN_PRINT("Attempted method check on a deleted object.");
 			}
-		}
 #endif
+			return false;
+		}
+		return obj->has_method(p_method);
 	}
 
 	const _VariantCall::TypeFunc &tf = _VariantCall::type_funcs[type];
@@ -1444,9 +1460,14 @@ void Variant::get_constants_for_type(Variant::Type p_type, List<StringName> *p_c
 #endif
 	}
 
+#ifdef DEBUG_ENABLED
+	for (List<StringName>::Element *E = cd.variant_value_ordered.front(); E; E = E->next()) {
+		p_constants->push_back(E->get());
+#else
 	for (Map<StringName, Variant>::Element *E = cd.variant_value.front(); E; E = E->next()) {
 
 		p_constants->push_back(E->key());
+#endif
 	}
 }
 
@@ -1660,7 +1681,7 @@ void register_variant_methods() {
 	ADDFUNC0R(RECT2, BOOL, Rect2, has_no_area, varray());
 	ADDFUNC1R(RECT2, BOOL, Rect2, has_point, VECTOR2, "point", varray());
 	ADDFUNC1R(RECT2, BOOL, Rect2, is_equal_approx, RECT2, "rect", varray());
-	ADDFUNC1R(RECT2, BOOL, Rect2, intersects, RECT2, "b", varray());
+	ADDFUNC2R(RECT2, BOOL, Rect2, intersects, RECT2, "b", BOOL, "include_borders", varray(false));
 	ADDFUNC1R(RECT2, BOOL, Rect2, encloses, RECT2, "b", varray());
 	ADDFUNC1R(RECT2, RECT2, Rect2, clip, RECT2, "b", varray());
 	ADDFUNC1R(RECT2, RECT2, Rect2, merge, RECT2, "b", varray());
@@ -1764,7 +1785,7 @@ void register_variant_methods() {
 	ADDFUNC0NC(DICTIONARY, NIL, Dictionary, clear, varray());
 	ADDFUNC1R(DICTIONARY, BOOL, Dictionary, has, NIL, "key", varray());
 	ADDFUNC1R(DICTIONARY, BOOL, Dictionary, has_all, ARRAY, "keys", varray());
-	ADDFUNC1R(DICTIONARY, BOOL, Dictionary, erase, NIL, "key", varray());
+	ADDFUNC1RNC(DICTIONARY, BOOL, Dictionary, erase, NIL, "key", varray());
 	ADDFUNC0R(DICTIONARY, INT, Dictionary, hash, varray());
 	ADDFUNC0R(DICTIONARY, ARRAY, Dictionary, keys, varray());
 	ADDFUNC0R(DICTIONARY, ARRAY, Dictionary, values, varray());
@@ -1889,6 +1910,7 @@ void register_variant_methods() {
 
 	//pointerbased
 
+	ADDFUNC0R(AABB, AABB, AABB, abs, varray());
 	ADDFUNC0R(AABB, REAL, AABB, get_area, varray());
 	ADDFUNC0R(AABB, BOOL, AABB, has_no_area, varray());
 	ADDFUNC0R(AABB, BOOL, AABB, has_no_surface, varray());

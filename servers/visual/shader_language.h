@@ -79,6 +79,7 @@ public:
 		TK_TYPE_ISAMPLER3D,
 		TK_TYPE_USAMPLER3D,
 		TK_TYPE_SAMPLERCUBE,
+		TK_TYPE_SAMPLEREXT,
 		TK_INTERPOLATION_FLAT,
 		TK_INTERPOLATION_SMOOTH,
 		TK_CONST,
@@ -200,6 +201,7 @@ public:
 		TYPE_ISAMPLER3D,
 		TYPE_USAMPLER3D,
 		TYPE_SAMPLERCUBE,
+		TYPE_SAMPLEREXT,
 	};
 
 	enum DataPrecision {
@@ -277,6 +279,11 @@ public:
 		ARGUMENT_QUALIFIER_IN,
 		ARGUMENT_QUALIFIER_OUT,
 		ARGUMENT_QUALIFIER_INOUT,
+	};
+
+	enum SubClassTag {
+		TAG_GLOBAL,
+		TAG_ARRAY,
 	};
 
 	struct Node {
@@ -431,6 +438,7 @@ public:
 		};
 
 		int block_type;
+		SubClassTag block_tag;
 
 		struct Variable {
 			DataType type;
@@ -449,6 +457,7 @@ public:
 				parent_function(NULL),
 				parent_block(NULL),
 				block_type(BLOCK_TYPE_STANDART),
+				block_tag(SubClassTag::TAG_GLOBAL),
 				single_statement(false) {}
 	};
 
@@ -503,6 +512,7 @@ public:
 	struct ShaderNode : public Node {
 
 		struct Constant {
+			StringName name;
 			DataType type;
 			DataPrecision precision;
 			ConstantNode *initializer;
@@ -568,6 +578,7 @@ public:
 		Vector<StringName> render_modes;
 
 		Vector<Function> functions;
+		Vector<Constant> vconstants;
 
 		ShaderNode() :
 				Node(TYPE_SHADER) {}
@@ -713,11 +724,6 @@ private:
 	bool _validate_assign(Node *p_node, const Map<StringName, BuiltInInfo> &p_builtin_types, String *r_message = NULL);
 	bool _validate_operator(OperatorNode *p_op, DataType *r_ret_type = NULL);
 
-	enum SubClassTag {
-		TAG_GLOBAL,
-		TAG_ARRAY,
-	};
-
 	struct BuiltinFuncDef {
 		enum { MAX_ARGS = 5 };
 		const char *name;
@@ -755,6 +761,7 @@ private:
 	Node *_parse_and_reduce_expression(BlockNode *p_block, const Map<StringName, BuiltInInfo> &p_builtin_types);
 	Error _parse_block(BlockNode *p_block, const Map<StringName, BuiltInInfo> &p_builtin_types, bool p_just_one = false, bool p_can_break = false, bool p_can_continue = false);
 	String _get_shader_type_list(const Set<String> &p_shader_types) const;
+	String _get_qualifier_str(ArgumentQualifier p_qualifier) const;
 
 	Error _parse_shader(const Map<StringName, FunctionInfo> &p_functions, const Vector<StringName> &p_render_modes, const Set<String> &p_shader_types);
 

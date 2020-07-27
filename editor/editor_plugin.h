@@ -53,6 +53,7 @@ class EditorSpatialGizmoPlugin;
 class EditorResourcePreview;
 class EditorFileSystem;
 class EditorToolAddons;
+class FileSystemDock;
 class ScriptEditor;
 
 class EditorInterface : public Node {
@@ -72,6 +73,13 @@ public:
 	void open_scene_from_path(const String &scene_path);
 	void reload_scene_from_path(const String &scene_path);
 
+	void play_main_scene();
+	void play_current_scene();
+	void play_custom_scene(const String &scene_path);
+	void stop_playing_scene();
+	bool is_playing_scene() const;
+	String get_playing_scene() const;
+
 	Node *get_edited_scene_root();
 	Array get_open_scenes() const;
 	ScriptEditor *get_script_editor();
@@ -88,6 +96,8 @@ public:
 	EditorResourcePreview *get_resource_previewer();
 	EditorFileSystem *get_resource_file_system();
 
+	FileSystemDock *get_file_system_dock();
+
 	Control *get_base_control();
 
 	void set_plugin_enabled(const String &p_plugin, bool p_enabled);
@@ -102,6 +112,7 @@ public:
 
 	void set_main_screen_editor(const String &p_name);
 	void set_distraction_free_mode(bool p_enter);
+	bool is_distraction_free_mode_enabled() const;
 
 	EditorInterface();
 };

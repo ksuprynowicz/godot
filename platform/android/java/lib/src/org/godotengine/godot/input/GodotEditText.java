@@ -29,17 +29,22 @@
 /*************************************************************************/
 
 package org.godotengine.godot.input;
+
+import org.godotengine.godot.*;
+
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.text.InputFilter;
+import android.text.InputType;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+
 import java.lang.ref.WeakReference;
-import org.godotengine.godot.*;
 
 public class GodotEditText extends EditText {
 	// ===========================================================
@@ -52,9 +57,12 @@ public class GodotEditText extends EditText {
 	// Fields
 	// ===========================================================
 	private GodotView mView;
+	private View mKeyboardView;
 	private GodotTextInputWrapper mInputWrapper;
 	private EditHandler sHandler = new EditHandler(this);
 	private String mOriginText;
+	private int mMaxInputLength = Integer.MAX_VALUE;
+	private boolean mMultiline = false;
 
 	private static class EditHandler extends Handler {
 		private final WeakReference<GodotEditText> mEdit;
@@ -91,7 +99,11 @@ public class GodotEditText extends EditText {
 
 	protected void initView() {
 		this.setPadding(0, 0, 0, 0);
-		this.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+		this.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_DONE);
+	}
+
+	public boolean isMultiline() {
+		return mMultiline;
 	}
 
 	private void handleMessage(final Message msg) {
@@ -101,12 +113,25 @@ public class GodotEditText extends EditText {
 				String text = edit.mOriginText;
 				if (edit.requestFocus()) {
 					edit.removeTextChangedListener(edit.mInputWrapper);
+					setMaxInputLength(edit);
 					edit.setText("");
 					edit.append(text);
+					if (msg.arg2 != -1) {
+						edit.setSelection(msg.arg1, msg.arg2);
+						edit.mInputWrapper.setSelection(true);
+					} else {
+						edit.mInputWrapper.setSelection(false);
+					}
+
+					int inputType = InputType.TYPE_CLASS_TEXT;
+					if (edit.isMultiline()) {
+						inputType |= InputType.TYPE_TEXT_FLAG_MULTI_LINE;
+					}
+					edit.setInputType(inputType);
+
 					edit.mInputWrapper.setOriginText(text);
 					edit.addTextChangedListener(edit.mInputWrapper);
-					setMaxInputLength(edit, msg.arg1);
-					final InputMethodManager imm = (InputMethodManager)mView.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+					final InputMethodManager imm = (InputMethodManager)mKeyboardView.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 					imm.showSoftInput(edit, 0);
 				}
 			} break;
@@ -115,21 +140,17 @@ public class GodotEditText extends EditText {
 				GodotEditText edit = (GodotEditText)msg.obj;
 
 				edit.removeTextChangedListener(mInputWrapper);
-				final InputMethodManager imm = (InputMethodManager)mView.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+				final InputMethodManager imm = (InputMethodManager)mKeyboardView.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 				imm.hideSoftInputFromWindow(edit.getWindowToken(), 0);
 				edit.mView.requestFocus();
 			} break;
 		}
 	}
 
-	private void setMaxInputLength(EditText p_edit_text, int p_max_input_length) {
-		if (p_max_input_length > 0) {
-			InputFilter[] filters = new InputFilter[1];
-			filters[0] = new InputFilter.LengthFilter(p_max_input_length);
-			p_edit_text.setFilters(filters);
-		} else {
-			p_edit_text.setFilters(new InputFilter[] {});
-		}
+	private void setMaxInputLength(EditText p_edit_text) {
+		InputFilter[] filters = new InputFilter[1];
+		filters[0] = new InputFilter.LengthFilter(this.mMaxInputLength);
+		p_edit_text.setFilters(filters);
 	}
 
 	// ===========================================================
@@ -141,6 +162,10 @@ public class GodotEditText extends EditText {
 			mInputWrapper = new GodotTextInputWrapper(mView, this);
 		this.setOnEditorActionListener(mInputWrapper);
 		view.requestFocus();
+	}
+
+	public void setKeyboardView(final View keyboardView) {
+		this.mKeyboardView = keyboardView;
 	}
 
 	// ===========================================================
@@ -161,13 +186,26 @@ public class GodotEditText extends EditText {
 	// ===========================================================
 	// Methods
 	// ===========================================================
-	public void showKeyboard(String p_existing_text, int p_max_input_length) {
-		this.mOriginText = p_existing_text;
+	public void showKeyboard(String p_existing_text, boolean p_multiline, int p_max_input_length, int p_cursor_start, int p_cursor_end) {
+		int maxInputLength = (p_max_input_length <= 0) ? Integer.MAX_VALUE : p_max_input_length;
+		if (p_cursor_start == -1) { // cursor position not given
+			this.mOriginText = p_existing_text;
+			this.mMaxInputLength = maxInputLength;
+		} else if (p_cursor_end == -1) { // not text selection
+			this.mOriginText = p_existing_text.substring(0, p_cursor_start);
+			this.mMaxInputLength = maxInputLength - (p_existing_text.length() - p_cursor_start);
+		} else {
+			this.mOriginText = p_existing_text.substring(0, p_cursor_end);
+			this.mMaxInputLength = maxInputLength - (p_existing_text.length() - p_cursor_end);
+		}
+
+		this.mMultiline = p_multiline;
 
 		final Message msg = new Message();
 		msg.what = HANDLER_OPEN_IME_KEYBOARD;
 		msg.obj = this;
-		msg.arg1 = p_max_input_length;
+		msg.arg1 = p_cursor_start;
+		msg.arg2 = p_cursor_end;
 		sHandler.sendMessage(msg);
 	}
 

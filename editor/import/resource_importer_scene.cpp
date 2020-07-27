@@ -973,8 +973,7 @@ void ResourceImporterScene::_make_external_resources(Node *p_node, const String 
 				ERR_CONTINUE(anim.is_null());
 
 				if (!p_animations.has(anim)) {
-
-					//mark what comes from the file first, this helps eventually keep user data
+					// Tracks from source file should be set as imported, anything else is a custom track.
 					for (int i = 0; i < anim->get_track_count(); i++) {
 						anim->track_set_imported(i, true);
 					}
@@ -988,10 +987,9 @@ void ResourceImporterScene::_make_external_resources(Node *p_node, const String 
 					}
 
 					if (FileAccess::exists(ext_name) && p_keep_animations) {
-						//try to keep custom animation tracks
+						// Copy custom animation tracks from previously imported files.
 						Ref<Animation> old_anim = ResourceLoader::load(ext_name, "Animation", true);
 						if (old_anim.is_valid()) {
-							//meergeee
 							for (int i = 0; i < old_anim->get_track_count(); i++) {
 								if (!old_anim->track_is_imported(i)) {
 									old_anim->copy_track(i, anim);
@@ -1001,7 +999,7 @@ void ResourceImporterScene::_make_external_resources(Node *p_node, const String 
 						}
 					}
 
-					anim->set_path(ext_name, true); //if not set, then its never saved externally
+					anim->set_path(ext_name, true); // Set path to save externally.
 					ResourceSaver::save(ext_name, anim, ResourceSaver::FLAG_CHANGE_PATH);
 					p_animations[anim] = anim;
 				}
@@ -1171,6 +1169,7 @@ void ResourceImporterScene::get_import_options(List<ImportOption> *r_options, in
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "meshes/storage", PROPERTY_HINT_ENUM, "Built-In,Files (.mesh),Files (.tres)"), meshes_out ? 1 : 0));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "meshes/light_baking", PROPERTY_HINT_ENUM, "Disabled,Enable,Gen Lightmaps", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_UPDATE_ALL_IF_MODIFIED), 0));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::REAL, "meshes/lightmap_texel_size", PROPERTY_HINT_RANGE, "0.001,100,0.001"), 0.1));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "skins/use_named_skins"), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "external_files/store_in_subdir"), false));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "animation/import", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_UPDATE_ALL_IF_MODIFIED), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::REAL, "animation/fps", PROPERTY_HINT_RANGE, "1,120,1"), 15));
@@ -1312,6 +1311,9 @@ Error ResourceImporterScene::import(const String &p_source_file, const String &p
 
 	if (int(p_options["materials/location"]) == 0)
 		import_flags |= EditorSceneImporter::IMPORT_MATERIALS_IN_INSTANCES;
+
+	if (bool(p_options["skins/use_named_skins"]))
+		import_flags |= EditorSceneImporter::IMPORT_USE_NAMED_SKIN_BINDS;
 
 	Error err = OK;
 	List<String> missing_deps; // for now, not much will be done with this
@@ -1486,7 +1488,9 @@ Error ResourceImporterScene::import(const String &p_source_file, const String &p
 		post_import_script->init(base_path, p_source_file);
 		scene = post_import_script->post_import(scene);
 		if (!scene) {
-			EditorNode::add_io_error(TTR("Error running post-import script:") + " " + post_import_script_path);
+			EditorNode::add_io_error(
+					TTR("Error running post-import script:") + " " + post_import_script_path + "\n" +
+					TTR("Did you return a Node-derived object in the `post_import()` method?"));
 			return err;
 		}
 	}

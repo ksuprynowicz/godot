@@ -496,6 +496,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 
 	theme->set_stylebox("slider", "HSlider", make_stylebox(hslider_bg_png, 4, 4, 4, 4));
 	theme->set_stylebox("grabber_area", "HSlider", make_stylebox(hslider_bg_png, 4, 4, 4, 4));
+	theme->set_stylebox("grabber_area_highlight", "HSlider", make_stylebox(hslider_bg_png, 4, 4, 4, 4));
 
 	theme->set_icon("grabber", "HSlider", make_icon(hslider_grabber_png));
 	theme->set_icon("grabber_highlight", "HSlider", make_icon(hslider_grabber_hl_png));
@@ -506,6 +507,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 
 	theme->set_stylebox("slider", "VSlider", make_stylebox(vslider_bg_png, 4, 4, 4, 4));
 	theme->set_stylebox("grabber_area", "VSlider", make_stylebox(vslider_bg_png, 4, 4, 4, 4));
+	theme->set_stylebox("grabber_area_highlight", "VSlider", make_stylebox(vslider_bg_png, 4, 4, 4, 4));
 
 	theme->set_icon("grabber", "VSlider", make_icon(vslider_grabber_png));
 	theme->set_icon("grabber_highlight", "VSlider", make_icon(vslider_grabber_hl_png));
@@ -647,8 +649,6 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 	theme->set_color("title_button_color", "Tree", control_font_color);
 	theme->set_color("font_color", "Tree", control_font_color_low);
 	theme->set_color("font_color_selected", "Tree", control_font_color_pressed);
-	theme->set_color("selection_color", "Tree", Color(0.1, 0.1, 1, 0.8));
-	theme->set_color("cursor_color", "Tree", Color(0, 0, 0));
 	theme->set_color("guide_color", "Tree", Color(0, 0, 0, 0.1));
 	theme->set_color("drop_position_color", "Tree", Color(1, 0.3, 0.2));
 	theme->set_color("relationship_line_color", "Tree", Color(0.27, 0.27, 0.27));
@@ -759,7 +759,9 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const 
 	// FileDialog
 
 	theme->set_icon("folder", "FileDialog", make_icon(icon_folder_png));
+	theme->set_icon("file", "FileDialog", make_icon(icon_file_png));
 	theme->set_color("folder_icon_modulate", "FileDialog", Color(1, 1, 1));
+	theme->set_color("file_icon_modulate", "FileDialog", Color(1, 1, 1));
 	theme->set_color("files_disabled", "FileDialog", Color(0, 0, 0, 0.7));
 
 	// ColorPicker

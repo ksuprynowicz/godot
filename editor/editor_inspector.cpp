@@ -464,18 +464,20 @@ bool EditorPropertyRevert::can_property_revert(Object *p_object, const StringNam
 		}
 	}
 
-	if (p_object->call("property_can_revert", p_property).operator bool()) {
-
-		has_revert = true;
-	}
-
-	if (!has_revert && !p_object->get_script().is_null()) {
-		Ref<Script> scr = p_object->get_script();
-		if (scr.is_valid()) {
-			Variant orig_value;
-			if (scr->get_property_default_value(p_property, orig_value)) {
-				if (orig_value != p_object->get(p_property)) {
-					has_revert = true;
+	// If the object implements property_can_revert, rely on that completely
+	// (i.e. don't then try to revert to default value - the property_get_revert implementation
+	// can do that if so desired)
+	if (p_object->has_method("property_can_revert")) {
+		has_revert = p_object->call("property_can_revert", p_property).operator bool();
+	} else {
+		if (!has_revert && !p_object->get_script().is_null()) {
+			Ref<Script> scr = p_object->get_script();
+			if (scr.is_valid()) {
+				Variant orig_value;
+				if (scr->get_property_default_value(p_property, orig_value)) {
+					if (orig_value != p_object->get(p_property)) {
+						has_revert = true;
+					}
 				}
 			}
 		}
@@ -778,10 +780,20 @@ Control *EditorProperty::make_custom_tooltip(const String &p_text) const {
 	help_bit->add_style_override("panel", get_stylebox("panel", "TooltipPanel"));
 	help_bit->get_rich_text()->set_fixed_size_to_width(360 * EDSCALE);
 
-	String text = TTR("Property:") + " [u][b]" + p_text.get_slice("::", 0) + "[/b][/u]\n";
-	text += p_text.get_slice("::", 1).strip_edges();
-	help_bit->set_text(text);
-	help_bit->call_deferred("set_text", text); //hack so it uses proper theme once inside scene
+	Vector<String> slices = p_text.split("::", false);
+	if (!slices.empty()) {
+		String property_name = slices[0].strip_edges();
+		String text = TTR("Property:") + " [u][b]" + property_name + "[/b][/u]";
+
+		if (slices.size() > 1) {
+			String property_doc = slices[1].strip_edges();
+			if (property_name != property_doc) {
+				text += "\n" + property_doc;
+			}
+		}
+		help_bit->call_deferred("set_text", text); //hack so it uses proper theme once inside scene
+	}
+
 	return help_bit;
 }
 
@@ -1005,10 +1017,20 @@ Control *EditorInspectorCategory::make_custom_tooltip(const String &p_text) cons
 	help_bit->add_style_override("panel", get_stylebox("panel", "TooltipPanel"));
 	help_bit->get_rich_text()->set_fixed_size_to_width(360 * EDSCALE);
 
-	String text = "[u][b]" + p_text.get_slice("::", 0) + "[/b][/u]\n";
-	text += p_text.get_slice("::", 1).strip_edges();
-	help_bit->set_text(text);
-	help_bit->call_deferred("set_text", text); //hack so it uses proper theme once inside scene
+	Vector<String> slices = p_text.split("::", false);
+	if (!slices.empty()) {
+		String property_name = slices[0].strip_edges();
+		String text = "[u][b]" + property_name + "[/b][/u]";
+
+		if (slices.size() > 1) {
+			String property_doc = slices[1].strip_edges();
+			if (property_name != property_doc) {
+				text += "\n" + property_doc;
+			}
+		}
+		help_bit->call_deferred("set_text", text); //hack so it uses proper theme once inside scene
+	}
+
 	return help_bit;
 }
 
@@ -1596,7 +1618,7 @@ void EditorInspector::update_tree() {
 			if (capitalize_paths)
 				cat = cat.capitalize();
 
-			if (!filter.is_subsequence_ofi(cat) && !filter.is_subsequence_ofi(name))
+			if (!filter.is_subsequence_ofi(cat) && !filter.is_subsequence_ofi(name) && property_prefix.to_lower().find(filter.to_lower()) == -1)
 				continue;
 		}
 
@@ -1687,6 +1709,18 @@ void EditorInspector::update_tree() {
 							break;
 						}
 					}
+
+					Vector<String> slices = propname.operator String().split("/");
+					if (slices.size() == 2 && slices[0].begins_with("custom_")) {
+						// Likely a theme property.
+						for (int i = 0; i < F->get().theme_properties.size(); i++) {
+							if (F->get().theme_properties[i].name == slices[1]) {
+								descr = F->get().theme_properties[i].description.strip_edges();
+								break;
+							}
+						}
+					}
+
 					if (!F->get().inherits.empty()) {
 						F = dd->class_list.find(F->get().inherits);
 					} else {
