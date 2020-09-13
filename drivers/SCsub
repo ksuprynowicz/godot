@@ -26,6 +26,10 @@ SConscript("winmidi/SCsub")
 if env["vulkan"]:
     SConscript("vulkan/SCsub")
 
+# Crash reporter
+if env["platform"] == "windows":
+    SConscript("crashpad/SCsub")
+
 # Core dependencies
 SConscript("png/SCsub")
 SConscript("spirv-reflect/SCsub")

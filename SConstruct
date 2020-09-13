@@ -124,6 +124,12 @@ opts.Add(EnumVariable("float", "Floating-point precision", "default", ("default"
 opts.Add(EnumVariable("optimize", "Optimization type", "speed", ("speed", "size", "none")))
 opts.Add(BoolVariable("production", "Set defaults to build Godot for use in production", False))
 opts.Add(BoolVariable("use_lto", "Use link-time optimization", False))
+opts.Add("crashpad_url", "Set crashpad crash reporter url", "")
+opts.Add(
+    "crashpad_handler_path",
+    "Set crashpad crash reporter handler path",
+    "res://crashpad_handler.com",
+)
 
 # Components
 opts.Add(BoolVariable("deprecated", "Enable deprecated features", True))

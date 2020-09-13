@@ -171,8 +171,10 @@ void ResourceSaver::_bind_methods() {
 
 ////// OS //////
 
-PackedStringArray OS::get_connected_midi_inputs() {
-	return ::OS::get_singleton()->get_connected_midi_inputs();
+void OS::debug_crash() const {
+	// From breakpad https://stackoverflow.com/a/39920519/381724
+	volatile int *a = reinterpret_cast<volatile int *>(NULL);
+	*a = 1;
 }
 
 void OS::open_midi_inputs() {
@@ -520,6 +522,8 @@ String OS::get_unique_id() const {
 OS *OS::singleton = nullptr;
 
 void OS::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("debug_crash"), &OS::debug_crash);
+	
 	ClassDB::bind_method(D_METHOD("get_connected_midi_inputs"), &OS::get_connected_midi_inputs);
 	ClassDB::bind_method(D_METHOD("open_midi_inputs"), &OS::open_midi_inputs);
 	ClassDB::bind_method(D_METHOD("close_midi_inputs"), &OS::close_midi_inputs);
