@@ -32,6 +32,7 @@
 #define AUDIO_STREAM_PLAYER_3D_H
 
 #include "core/safe_refcount.h"
+#include "modules/resonanceaudio/resonance_audio_wrapper.h"
 #include "scene/3d/spatial.h"
 #include "scene/3d/spatial_velocity_tracker.h"
 #include "servers/audio/audio_filter_sw.h"
@@ -142,6 +143,9 @@ private:
 	OutOfRangeMode out_of_range_mode;
 
 	float _get_attenuation_db(float p_distance) const;
+
+	// TODO #ifdef guard this
+	AudioSourceId audio_source_id;
 
 protected:
 	void _validate_property(PropertyInfo &property) const;
