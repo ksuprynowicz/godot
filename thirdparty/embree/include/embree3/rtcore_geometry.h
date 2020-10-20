@@ -1,22 +1,10 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include "rtcore_buffer.h"
+#include "rtcore_quaternion.h"
 
 RTC_NAMESPACE_BEGIN
 
@@ -35,6 +23,8 @@ enum RTCGeometryType
 
   RTC_GEOMETRY_TYPE_SUBDIVISION = 8, // Catmull-Clark subdivision surface
 
+  RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE   = 15, // Cone linear curves - discontinuous at edge boundaries 
+  RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE  = 16, // Round (rounded cone like) linear curves 
   RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE   = 17, // flat (ribbon-like) linear curves
 
   RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE  = 24, // round (tube-like) Bezier curves
@@ -53,6 +43,10 @@ enum RTCGeometryType
   RTC_GEOMETRY_TYPE_DISC_POINT = 51,
   RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT = 52,
 
+  RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE = 58, // round (tube-like) Catmull-Rom curves
+  RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE  = 59, // flat (ribbon-like) Catmull-Rom curves
+  RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE  = 60, // flat normal-oriented Catmull-Rom curves
+
   RTC_GEOMETRY_TYPE_USER     = 120, // user-defined geometry
   RTC_GEOMETRY_TYPE_INSTANCE = 121  // scene instance
 };
@@ -70,8 +64,8 @@ enum RTCSubdivisionMode
 /* Curve segment flags */
 enum RTCCurveFlags
 {
-  RTC_CURVE_FLAG_NEIGHBOR_LEFT  = (1 << 0), 
-  RTC_CURVE_FLAG_NEIGHBOR_RIGHT = (1 << 1) 
+  RTC_CURVE_FLAG_NEIGHBOR_LEFT  = (1 << 0), // left segments exists
+  RTC_CURVE_FLAG_NEIGHBOR_RIGHT = (1 << 1)  // right segment exists
 };
 
 /* Arguments for RTCBoundsFunction */
@@ -95,6 +89,7 @@ struct RTCIntersectFunctionNArguments
   struct RTCIntersectContext* context;
   struct RTCRayHitN* rayhit;
   unsigned int N;
+  unsigned int geomID;
 };
 
 /* Intersection callback function */
@@ -109,6 +104,7 @@ struct RTCOccludedFunctionNArguments
   struct RTCIntersectContext* context;
   struct RTCRayN* ray;
   unsigned int N;
+  unsigned int geomID;
 };
 
 /* Occlusion callback function */
@@ -170,6 +166,9 @@ RTC_API void rtcSetGeometryMask(RTCGeometry geometry, unsigned int mask);
 /* Sets the build quality of the geometry. */
 RTC_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, enum RTCBuildQuality quality);
 
+/* Sets the maximal curve or point radius scale allowed by min-width feature. */
+RTC_API void rtcSetGeometryMaxRadiusScale(RTCGeometry geometry, float maxRadiusScale);
+
 
 /* Sets a geometry buffer. */
 RTC_API void rtcSetGeometryBuffer(RTCGeometry geometry, enum RTCBufferType type, unsigned int slot, enum RTCFormat format, RTCBuffer buffer, size_t byteOffset, size_t byteStride, size_t itemCount);
@@ -199,6 +198,8 @@ RTC_API void rtcSetGeometryUserData(RTCGeometry geometry, void* ptr);
 /* Gets the user-defined data pointer of the geometry. */
 RTC_API void* rtcGetGeometryUserData(RTCGeometry geometry);
 
+/* Set the point query callback function of a geometry. */
+RTC_API void rtcSetGeometryPointQueryFunction(RTCGeometry geometry, RTCPointQueryFunction pointQuery);
 
 /* Sets the number of primitives of a user geometry. */
 RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, unsigned int userPrimitiveCount);
@@ -224,6 +225,9 @@ RTC_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
 
 /* Sets the transformation of an instance for the specified time step. */
 RTC_API void rtcSetGeometryTransform(RTCGeometry geometry, unsigned int timeStep, enum RTCFormat format, const void* xfm);
+
+/* Sets the transformation quaternion of an instance for the specified time step. */
+RTC_API void rtcSetGeometryTransformQuaternion(RTCGeometry geometry, unsigned int timeStep, const struct RTCQuaternionDecomposition* qd);
 
 /* Returns the interpolated transformation of an instance for the specified time. */
 RTC_API void rtcGetGeometryTransform(RTCGeometry geometry, float time, enum RTCFormat format, void* xfm);

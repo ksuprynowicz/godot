@@ -1,34 +1,23 @@
-// ======================================================================== //
-// Copyright 2009-2016 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 /* #undef EMBREE_RAY_MASK */
 /* #undef EMBREE_STAT_COUNTERS */
 /* #undef EMBREE_BACKFACE_CULLING */
+/* #undef EMBREE_BACKFACE_CULLING_CURVES */
 #define EMBREE_FILTER_FUNCTION
-/* #undef EMBREE_RETURN_SUBDIV_NORMAL */
 /* #undef EMBREE_IGNORE_INVALID_RAYS */
 #define EMBREE_GEOMETRY_TRIANGLE
-#define EMBREE_GEOMETRY_QUAD
-#define EMBREE_GEOMETRY_CURVE
-#define EMBREE_GEOMETRY_SUBDIVISION
-#define EMBREE_GEOMETRY_USER
-#define EMBREE_GEOMETRY_INSTANCE
-#define EMBREE_GEOMETRY_GRID
-#define EMBREE_GEOMETRY_POINT
-#define EMBREE_RAY_PACKETS
+/* #undef EMBREE_GEOMETRY_QUAD */
+/* #undef EMBREE_GEOMETRY_CURVE */
+/* #undef EMBREE_GEOMETRY_SUBDIVISION */
+/* #undef EMBREE_GEOMETRY_USER */
+/* #undef EMBREE_GEOMETRY_INSTANCE */
+/* #undef EMBREE_GEOMETRY_GRID */
+/* #undef EMBREE_GEOMETRY_POINT */
+/* #undef EMBREE_RAY_PACKETS */
+/* #undef EMBREE_COMPACT_POLYS */
 
 #define EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR 2.0
 
@@ -45,9 +34,21 @@
 #endif
 
 #if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
+  #define IF_ENABLED_CURVES_OR_POINTS(x) x
+#else
+  #define IF_ENABLED_CURVES_OR_POINTS(x)
+#endif
+
+#if defined(EMBREE_GEOMETRY_CURVE)
   #define IF_ENABLED_CURVES(x) x
 #else
   #define IF_ENABLED_CURVES(x)
+#endif
+
+#if defined(EMBREE_GEOMETRY_POINT)
+  #define IF_ENABLED_POINTS(x) x
+#else
+  #define IF_ENABLED_POINTS(x)
 #endif
 
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)

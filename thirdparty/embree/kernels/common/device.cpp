@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "device.h"
 #include "../hash.h"
@@ -51,11 +38,38 @@ namespace embree
 
   Device::Device (const char* cfg)
   {
-    /* check CPU */
-    if (!hasISA(ISA)) 
+    /* check that CPU supports lowest ISA */
+    if (!hasISA(ISA)) {
       throw_RTCError(RTC_ERROR_UNSUPPORTED_CPU,"CPU does not support " ISA_STR);
+    }
+
+    /* set default frequency level for detected CPU */
+    switch (getCPUModel()) {
+    case CPU::UNKNOWN:         frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::XEON_ICE_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_ICE_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_TIGER_LAKE: frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_COMET_LAKE: frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_CANNON_LAKE:frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_KABY_LAKE:  frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::XEON_SKY_LAKE:   frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_SKY_LAKE:   frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::XEON_BROADWELL:  frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_BROADWELL:  frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::XEON_HASWELL:    frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_HASWELL:    frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::XEON_IVY_BRIDGE: frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_IVY_BRIDGE: frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::SANDY_BRIDGE:    frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::NEHALEM:         frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE2:           frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE1:           frequency_level = FREQUENCY_SIMD128; break;
+    }
 
     /* initialize global state */
+#if defined(EMBREE_CONFIG)
+    State::parseString(EMBREE_CONFIG);
+#endif
     State::parseString(cfg);
     if (!ignore_config_files && FileName::executableFolder() != FileName(""))
       State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(RTC_VERSION_MAJOR)));
@@ -63,6 +77,11 @@ namespace embree
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(RTC_VERSION_MAJOR)));
     State::verify();
 
+    /* check whether selected ISA is supported by the HW, as the user could have forced an unsupported ISA */    
+    if (!checkISASupport()) {
+      throw_RTCError(RTC_ERROR_UNSUPPORTED_CPU,"CPU does not support selected ISA");
+    }    
+    
     /*! do some internal tests */
     assert(isa::Cylinder::verify());
 
@@ -88,7 +107,7 @@ namespace embree
       //exceptions &= ~_MM_MASK_INEXACT;
       _MM_SET_EXCEPTION_MASK(exceptions);
     }
-
+    
     /* print info header */
     if (State::verbosity(1))
       print();
@@ -152,8 +171,14 @@ namespace embree
 #if defined (EMBREE_BACKFACE_CULLING)
     v += "backfaceculling ";
 #endif
+#if defined (EMBREE_BACKFACE_CULLING_CURVES)
+    v += "backfacecullingcurves ";
+#endif
 #if defined(EMBREE_FILTER_FUNCTION)
     v += "intersection_filter ";
+#endif
+#if defined (EMBREE_COMPACT_POLYS)
+    v += "compact_polys ";
 #endif
     return v;
   }
@@ -187,7 +212,11 @@ namespace embree
     std::cout << "    Tasking : ";
 #if defined(TASKING_TBB)
     std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
+  #if TBB_INTERFACE_VERSION >= 12002
+    std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << TBB_runtime_interface_version() << " ";
+  #else
     std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << tbb::TBB_runtime_interface_version() << " ";
+  #endif
 #endif
 #if defined(TASKING_INTERNAL)
     std::cout << "internal_tasking_system ";
@@ -336,7 +365,9 @@ namespace embree
     size_t maxNumThreads = getMaxNumThreads();
     TaskScheduler::create(maxNumThreads,State::set_affinity,State::start_threads);
 #if USE_TASK_ARENA
-    arena = make_unique(new tbb::task_arena((int)min(maxNumThreads,TaskScheduler::threadCount())));
+    const size_t nThreads = min(maxNumThreads,TaskScheduler::threadCount());
+    const size_t uThreads = min(max(numUserThreads,(size_t)1),nThreads);
+    arena = make_unique(new tbb::task_arena((int)nThreads,(unsigned int)uThreads));
 #endif
   }
 
@@ -437,6 +468,18 @@ namespace embree
     case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED: return 0;
 #endif
 
+#if defined(EMBREE_BACKFACE_CULLING_CURVES)
+    case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_CURVES_ENABLED: return 1;
+#else
+    case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_CURVES_ENABLED: return 0;
+#endif
+
+#if defined(EMBREE_COMPACT_POLYS)
+    case RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED: return 1;
+#else
+    case RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED: return 0;
+#endif
+
 #if defined(EMBREE_FILTER_FUNCTION)
     case RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED: return 1;
 #else
@@ -503,6 +546,12 @@ namespace embree
     case RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED: return 0;
 #else
     case RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED: return 1;
+#endif
+
+#if defined(TASKING_TBB) && TASKING_TBB_USE_TASK_ISOLATION
+    case RTC_DEVICE_PROPERTY_PARALLEL_COMMIT_SUPPORTED: return 1;
+#else
+    case RTC_DEVICE_PROPERTY_PARALLEL_COMMIT_SUPPORTED: return 0;
 #endif
 
     default: throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown readable property"); break;

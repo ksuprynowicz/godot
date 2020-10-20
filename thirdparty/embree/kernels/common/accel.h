@@ -1,23 +1,11 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include "default.h"
 #include "ray.h"
+#include "point_query.h"
 #include "context.h"
 
 namespace embree
@@ -73,6 +61,14 @@ namespace embree
   public:
 
     struct Intersectors;
+
+    /*! Type of collide function */
+    typedef void (*CollideFunc)(void* bvh0, void* bvh1, RTCCollideFunc callback, void* userPtr);
+
+    /*! Type of point query function */
+    typedef bool(*PointQueryFunc)(Intersectors* This,          /*!< this pointer to accel */
+                                  PointQuery* query,        /*!< point query for lookup */
+                                  PointQueryContext* context); /*!< point query context */
 
     /*! Type of intersect function pointer for single rays. */
     typedef void (*IntersectFunc)(Intersectors* This,  /*!< this pointer to accel */
@@ -134,20 +130,39 @@ namespace embree
                                   IntersectContext* context /*!< layout flags */);
     typedef void (*ErrorFunc) ();
 
+    struct Collider
+    {
+      Collider (ErrorFunc error = nullptr) 
+      : collide((CollideFunc)error), name(nullptr) {}
+
+      Collider (CollideFunc collide, const char* name)
+      : collide(collide), name(name) {}
+
+      operator bool() const { return name; }
+
+    public:
+      CollideFunc collide;  
+      const char* name;
+    };
+    
     struct Intersector1
     {
       Intersector1 (ErrorFunc error = nullptr)
       : intersect((IntersectFunc)error), occluded((OccludedFunc)error), name(nullptr) {}
       
       Intersector1 (IntersectFunc intersect, OccludedFunc occluded, const char* name)
-      : intersect(intersect), occluded(occluded), name(name) {}
+      : intersect(intersect), occluded(occluded), pointQuery(nullptr), name(name) {}
+      
+      Intersector1 (IntersectFunc intersect, OccludedFunc occluded, PointQueryFunc pointQuery, const char* name)
+      : intersect(intersect), occluded(occluded), pointQuery(pointQuery), name(name) {}
 
       operator bool() const { return name; }
 
     public:
       static const char* type;
       IntersectFunc intersect;
-      OccludedFunc occluded;  
+      OccludedFunc occluded;
+      PointQueryFunc pointQuery;
       const char* name;
     };
     
@@ -222,13 +237,17 @@ namespace embree
     struct Intersectors 
     {
       Intersectors() 
-        : ptr(nullptr), leafIntersector(nullptr), intersector1(nullptr), intersector4(nullptr), intersector8(nullptr), intersector16(nullptr), intersectorN(nullptr) {}
+      : ptr(nullptr), leafIntersector(nullptr), collider(nullptr), intersector1(nullptr), intersector4(nullptr), intersector8(nullptr), intersector16(nullptr), intersectorN(nullptr) {}
 
       Intersectors (ErrorFunc error) 
-      : ptr(nullptr), leafIntersector(nullptr), intersector1(error), intersector4(error), intersector8(error), intersector16(error), intersectorN(error) {}
+      : ptr(nullptr), leafIntersector(nullptr), collider(error), intersector1(error), intersector4(error), intersector8(error), intersector16(error), intersectorN(error) {}
 
       void print(size_t ident) 
       {
+        if (collider.name) {
+          for (size_t i=0; i<ident; i++) std::cout << " ";
+          std::cout << "collider  = " << collider.name << std::endl;
+        }
         if (intersector1.name) {
           for (size_t i=0; i<ident; i++) std::cout << " ";
           std::cout << "intersector1  = " << intersector1.name << std::endl;
@@ -253,22 +272,33 @@ namespace embree
 
       void select(bool filter)
       {
-	if (intersector4_filter) {
-	  if (filter) intersector4 = intersector4_filter;
-	  else        intersector4 = intersector4_nofilter;
-	}
-	if (intersector8_filter) {
-	  if (filter) intersector8 = intersector8_filter;
-	  else        intersector8 = intersector8_nofilter;
-	}
-	if (intersector16_filter) {
-	  if (filter) intersector16 = intersector16_filter;
-	  else         intersector16 = intersector16_nofilter;
-	}
-	if (intersectorN_filter) {
-	  if (filter) intersectorN = intersectorN_filter;
-	  else        intersectorN = intersectorN_nofilter;
-	}        
+        if (intersector4_filter) {
+          if (filter) intersector4 = intersector4_filter;
+          else        intersector4 = intersector4_nofilter;
+        }
+        if (intersector8_filter) {
+          if (filter) intersector8 = intersector8_filter;
+          else        intersector8 = intersector8_nofilter;
+        }
+        if (intersector16_filter) {
+          if (filter) intersector16 = intersector16_filter;
+          else         intersector16 = intersector16_nofilter;
+        }
+        if (intersectorN_filter) {
+          if (filter) intersectorN = intersectorN_filter;
+          else        intersectorN = intersectorN_nofilter;
+        }        
+      }
+
+      __forceinline bool pointQuery (PointQuery* query, PointQueryContext* context) {
+        assert(intersector1.pointQuery);
+        return intersector1.pointQuery(this,query,context);
+      }
+
+      /*! collides two scenes */
+      __forceinline void collide (Accel* scene0, Accel* scene1, RTCCollideFunc callback, void* userPtr) {
+        assert(collider.collide);
+        collider.collide(scene0->intersectors.ptr,scene1->intersectors.ptr,callback,userPtr);
       }
 
       /*! Intersects a single ray with the scene. */
@@ -276,7 +306,7 @@ namespace embree
         assert(intersector1.intersect);
         intersector1.intersect(this,ray,context);
       }
-      
+
       /*! Intersects a packet of 4 rays with the scene. */
       __forceinline void intersect4 (const void* valid, RTCRayHit4& ray, IntersectContext* context) {
         assert(intersector4.intersect);
@@ -403,6 +433,7 @@ namespace embree
     public:
       AccelData* ptr;
       void* leafIntersector;
+      Collider collider;
       Intersector1 intersector1;
       Intersector4 intersector4;
       Intersector4 intersector4_filter;
@@ -441,11 +472,18 @@ namespace embree
     Intersectors intersectors;
   };
 
-#define DEFINE_INTERSECTOR1(symbol,intersector)                              \
-  Accel::Intersector1 symbol() {                                             \
-    return Accel::Intersector1((Accel::IntersectFunc)intersector::intersect, \
-                               (Accel::OccludedFunc )intersector::occluded,  \
-                               TOSTRING(isa) "::" TOSTRING(symbol));         \
+#define DEFINE_COLLIDER(symbol,collider)                                \
+  Accel::Collider symbol() {                                            \
+    return Accel::Collider((Accel::CollideFunc)collider::collide,       \
+                           TOSTRING(isa) "::" TOSTRING(symbol));        \
+  }
+
+#define DEFINE_INTERSECTOR1(symbol,intersector)                               \
+  Accel::Intersector1 symbol() {                                              \
+    return Accel::Intersector1((Accel::IntersectFunc )intersector::intersect, \
+                               (Accel::OccludedFunc  )intersector::occluded,  \
+                               (Accel::PointQueryFunc)intersector::pointQuery,\
+                               TOSTRING(isa) "::" TOSTRING(symbol));          \
   }
   
 #define DEFINE_INTERSECTOR4(symbol,intersector)                               \

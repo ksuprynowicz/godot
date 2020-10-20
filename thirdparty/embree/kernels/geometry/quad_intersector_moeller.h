@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -41,8 +28,8 @@ namespace embree
       {
         const vfloat<M> rcpAbsDen = rcp(absDen);
         vt = T * rcpAbsDen;
-        const vfloat<M> u = U * rcpAbsDen;
-        const vfloat<M> v = V * rcpAbsDen;
+        const vfloat<M> u = min(U * rcpAbsDen,1.0f);
+        const vfloat<M> v = min(V * rcpAbsDen,1.0f);
         const vfloat<M> u1 = vfloat<M>(1.0f) - u;
         const vfloat<M> v1 = vfloat<M>(1.0f) - v;
 #if !defined(__AVX__) || defined(EMBREE_BACKFACE_CULLING)
@@ -100,8 +87,8 @@ namespace embree
       {
         const vfloat<K> rcpAbsDen = rcp(absDen);
         const vfloat<K> t = T * rcpAbsDen;
-        const vfloat<K> u0 = U * rcpAbsDen;
-        const vfloat<K> v0 = V * rcpAbsDen;
+        const vfloat<K> u0 = min(U * rcpAbsDen,1.0f);
+        const vfloat<K> v0 = min(V * rcpAbsDen,1.0f);
         const vfloat<K> u1 = vfloat<K>(1.0f) - u0;
         const vfloat<K> v1 = vfloat<K>(1.0f) - v0;
         const vfloat<K> u = select(flags,u1,u0);

@@ -1,32 +1,13 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include "../../include/embree3/rtcore.h"
-RTC_NAMESPACE_OPEN
+RTC_NAMESPACE_USE
 
 namespace embree
-{
-/*! maximum number of user vertex buffers */
-#define RTC_MAX_USER_VERTEX_BUFFERS 65536
-
-/*! maximum number of index buffers for subdivision surfaces */
-#define RTC_MAX_INDEX_BUFFERS 65536
-
+{  
   /*! decoding of intersection flags */
   __forceinline bool isCoherent  (RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_COHERENT) == RTC_INTERSECT_CONTEXT_FLAG_COHERENT; }
   __forceinline bool isIncoherent(RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_COHERENT) == RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT; }
@@ -35,6 +16,12 @@ namespace embree
 #  define USE_TASK_ARENA 1
 #else
 #  define USE_TASK_ARENA 0
+#endif
+
+#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION >= 11009) // TBB 2019 Update 9
+#  define TASKING_TBB_USE_TASK_ISOLATION 1
+#else
+#  define TASKING_TBB_USE_TASK_ISOLATION 0
 #endif
 
 /*! Macros used in the rtcore API implementation */
@@ -64,6 +51,25 @@ namespace embree
   } catch (...) {                                                               \
     Device* device = scene ? scene->device : nullptr;                           \
     Device::process_error(device,RTC_ERROR_UNKNOWN,"unknown exception caught"); \
+  }
+
+#define RTC_CATCH_END2_FALSE(scene)                                             \
+  } catch (std::bad_alloc&) {                                                   \
+    Device* device = scene ? scene->device : nullptr;                           \
+    Device::process_error(device,RTC_ERROR_OUT_OF_MEMORY,"out of memory");      \
+    return false;                                                               \
+  } catch (rtcore_error& e) {                                                   \
+    Device* device = scene ? scene->device : nullptr;                           \
+    Device::process_error(device,e.error,e.what());                             \
+    return false;                                                               \
+  } catch (std::exception& e) {                                                 \
+    Device* device = scene ? scene->device : nullptr;                           \
+    Device::process_error(device,RTC_ERROR_UNKNOWN,e.what());                   \
+    return false;                                                               \
+  } catch (...) {                                                               \
+    Device* device = scene ? scene->device : nullptr;                           \
+    Device::process_error(device,RTC_ERROR_UNKNOWN,"unknown exception caught"); \
+    return false;                                                               \
   }
 
 #define RTC_VERIFY_HANDLE(handle)                               \

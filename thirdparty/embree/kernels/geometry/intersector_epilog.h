@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -28,6 +15,7 @@ namespace embree
     struct UVIdentity {
       __forceinline void operator() (vfloat<M>& u, vfloat<M>& v) const {}
     };
+
 
     template<bool filter>
     struct Intersect1Epilog1
@@ -47,7 +35,7 @@ namespace embree
       __forceinline bool operator() (Hit& hit) const
       {
         /* ray mask test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
@@ -58,7 +46,7 @@ namespace embree
 #if defined(EMBREE_FILTER_FUNCTION)
         if (filter) {
           if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
-            HitK<1> h(context->instID,geomID,primID,hit.u,hit.v,hit.Ng);
+            HitK<1> h(context->user,geomID,primID,hit.u,hit.v,hit.Ng);
             const float old_t = ray.tfar;
             ray.tfar = hit.t;
             bool found = runIntersectionFilter1(geometry,ray,context,h);
@@ -75,7 +63,7 @@ namespace embree
         ray.v = hit.v;
         ray.primID = primID;
         ray.geomID = geomID;
-        ray.instID = context->instID;
+        instance_id_stack::copy(context->user->instID, ray.instID);
         return true;
       }
     };
@@ -98,7 +86,7 @@ namespace embree
       __forceinline bool operator() (Hit& hit) const
       {
         /* ray mask test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
 
@@ -111,7 +99,7 @@ namespace embree
 #if defined(EMBREE_FILTER_FUNCTION)
         if (filter) {
           if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) {
-            HitK<1> h(context->instID,geomID,primID,hit.u,hit.v,hit.Ng);
+            HitK<1> h(context->user,geomID,primID,hit.u,hit.v,hit.Ng);
             const float old_t = ray.tfar;
             ray.tfar = hit.t;
             const bool found = runOcclusionFilter1(geometry,ray,context,h);
@@ -143,7 +131,7 @@ namespace embree
       __forceinline bool operator() (Hit& hit) const
       {
         /* ray mask test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask[k]) == 0)
@@ -155,7 +143,7 @@ namespace embree
 #if defined(EMBREE_FILTER_FUNCTION)
         if (filter) {
           if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
-            HitK<K> h(context->instID,geomID,primID,hit.u,hit.v,hit.Ng);
+            HitK<K> h(context->user,geomID,primID,hit.u,hit.v,hit.Ng);
             const float old_t = ray.tfar[k];
             ray.tfar[k] = hit.t;
             const bool found = any(runIntersectionFilter(vbool<K>(1<<k),geometry,ray,context,h));
@@ -174,7 +162,7 @@ namespace embree
         ray.v[k] = hit.v;
         ray.primID[k] = primID;
         ray.geomID[k] = geomID;
-        ray.instID[k] = context->instID;
+        instance_id_stack::copy<const unsigned*, vuint<K>*, const size_t&>(context->user->instID, ray.instID, k);
         return true;
       }
     };
@@ -198,7 +186,7 @@ namespace embree
       __forceinline bool operator() (Hit& hit) const
       {
         /* ray mask test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask[k]) == 0)
@@ -210,7 +198,7 @@ namespace embree
         if (filter) {
           if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())) {
             hit.finalize();
-            HitK<K> h(context->instID,geomID,primID,hit.u,hit.v,hit.Ng);
+            HitK<K> h(context->user,geomID,primID,hit.u,hit.v,hit.Ng);
             const float old_t = ray.tfar[k];
             ray.tfar[k] = hit.t;
             const bool found = any(runOcclusionFilter(vbool<K>(1<<k),geometry,ray,context,h));
@@ -240,7 +228,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         vbool<Mx> valid = valid_i;
         if (Mx > M) valid &= (1<<M)-1;
         hit.finalize();
@@ -273,7 +261,7 @@ namespace embree
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
               const Vec2f uv = hit.uv(i);
-              HitK<1> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
+              HitK<1> h(context->user,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
               const float old_t = ray.tfar;
               ray.tfar = hit.t(i);
               const bool found = runIntersectionFilter1(geometry,ray,context,h);
@@ -299,7 +287,7 @@ namespace embree
         ray.v = uv.y;
         ray.primID = primIDs[i];
         ray.geomID = geomID;
-        ray.instID = context->instID;
+        instance_id_stack::copy(context->user->instID, ray.instID);
         return true;
 
       }
@@ -324,7 +312,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* MAYBE_UNUSED scene = context->scene;
         vbool<Mx> valid = valid_i;
         if (Mx > M) valid &= (1<<M)-1;
         hit.finalize();
@@ -357,7 +345,7 @@ namespace embree
           if (filter) {
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
               const Vec2f uv = hit.uv(i);
-              HitK<1> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
+              HitK<1> h(context->user,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
               const float old_t = ray.tfar;
               ray.tfar = hit.t(i);
               const bool found = runIntersectionFilter1(geometry,ray,context,h);
@@ -375,7 +363,11 @@ namespace embree
 
         vbool<Mx> finalMask(((unsigned int)1 << i));
         ray.update(finalMask,hit.vt,hit.vu,hit.vv,hit.vNg.x,hit.vNg.y,hit.vNg.z,geomID,primIDs);
-        ray.instID = context->instID;
+        instance_id_stack::foreach([&](unsigned level)
+        {
+          ray.instID[level] = context->user->instID[level];
+          return (context->user->instID[level] != RTC_INVALID_GEOMETRY_ID);
+        });
         return true;
 
       }
@@ -399,7 +391,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         /* intersection filter test */
 #if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
         if (unlikely(filter))
@@ -432,7 +424,7 @@ namespace embree
             if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter()))
             {
               const Vec2f uv = hit.uv(i);
-              HitK<1> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
+              HitK<1> h(context->user,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
               const float old_t = ray.tfar;
               ray.tfar = hit.t(i);
               if (runOcclusionFilter1(geometry,ray,context,h)) return true;
@@ -450,7 +442,6 @@ namespace embree
       }
     };
 
-    
     template<int M, bool filter>
     struct Intersect1EpilogMU
     {
@@ -469,7 +460,7 @@ namespace embree
       __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
       {
         /* ray mask test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
@@ -491,7 +482,7 @@ namespace embree
             Vec2f uv = hit.uv(i);
             const float old_t = ray.tfar;
             ray.tfar = hit.t(i);
-            HitK<1> h(context->instID,geomID,primID,uv.x,uv.y,hit.Ng(i));
+            HitK<1> h(context->user,geomID,primID,uv.x,uv.y,hit.Ng(i));
             const bool found = runIntersectionFilter1(geometry,ray,context,h);
             if (!found) ray.tfar = old_t;
             foundhit |= found;
@@ -515,7 +506,7 @@ namespace embree
         ray.v = uv.y;
         ray.primID = primID;
         ray.geomID = geomID;
-        ray.instID = context->instID;
+        instance_id_stack::copy(context->user->instID, ray.instID);
         return true;
       }
     };
@@ -538,7 +529,7 @@ namespace embree
       __forceinline bool operator() (const vbool<M>& valid, Hit& hit) const
       {
         /* ray mask test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
@@ -554,7 +545,7 @@ namespace embree
             const Vec2f uv = hit.uv(i);
             const float old_t = ray.tfar;
             ray.tfar = hit.t(i);
-            HitK<1> h(context->instID,geomID,primID,uv.x,uv.y,hit.Ng(i));
+            HitK<1> h(context->user,geomID,primID,uv.x,uv.y,hit.Ng(i));
             if (runOcclusionFilter1(geometry,ray,context,h)) return true;
             ray.tfar = old_t;
           }
@@ -584,7 +575,7 @@ namespace embree
       template<typename Hit>
       __forceinline vbool<K> operator() (const vbool<K>& valid_i, const Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
 
         vfloat<K> u, v, t;
         Vec3vf<K> Ng;
@@ -606,7 +597,7 @@ namespace embree
 #if defined(EMBREE_FILTER_FUNCTION)
         if (filter) {
           if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
-            HitK<K> h(context->instID,geomID,primID,u,v,Ng);
+            HitK<K> h(context->user,geomID,primID,u,v,Ng);
             const vfloat<K> old_t = ray.tfar;
             ray.tfar = select(valid,t,ray.tfar);
             const vbool<K> m_accept = runIntersectionFilter(valid,geometry,ray,context,h);
@@ -625,7 +616,7 @@ namespace embree
         vfloat<K>::store(valid,&ray.v,v);
         vuint<K>::store(valid,&ray.primID,primID);
         vuint<K>::store(valid,&ray.geomID,geomID);
-        vuint<K>::store(valid,&ray.instID,context->instID);
+        instance_id_stack::copy<const unsigned*, vuint<K>*, const vbool<K>&>(context->user->instID, ray.instID, valid);
         return valid;
       }
     };
@@ -654,7 +645,7 @@ namespace embree
         vbool<K> valid = valid_i;
 
         /* ray masking test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         const unsigned int geomID = geomIDs[i];
         const unsigned int primID = primIDs[i];
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
@@ -671,7 +662,7 @@ namespace embree
             vfloat<K> u, v, t;
             Vec3vf<K> Ng;
             std::tie(u,v,t,Ng) = hit();
-            HitK<K> h(context->instID,geomID,primID,u,v,Ng);
+            HitK<K> h(context->user,geomID,primID,u,v,Ng);
             const vfloat<K> old_t = ray.tfar;
             ray.tfar = select(valid,t,ray.tfar);
             valid = runOcclusionFilter(valid,geometry,ray,context,h);
@@ -708,7 +699,7 @@ namespace embree
         Vec3vf<K> Ng;
         std::tie(u,v,t,Ng) = hit();
 
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
         /* ray masking test */
@@ -721,7 +712,7 @@ namespace embree
 #if defined(EMBREE_FILTER_FUNCTION)
         if (filter) {
           if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
-            HitK<K> h(context->instID,geomID,primID,u,v,Ng);
+            HitK<K> h(context->user,geomID,primID,u,v,Ng);
             const vfloat<K> old_t = ray.tfar;
             ray.tfar = select(valid,t,ray.tfar);
             const vbool<K> m_accept = runIntersectionFilter(valid,geometry,ray,context,h);
@@ -740,7 +731,8 @@ namespace embree
         vfloat<K>::store(valid,&ray.v,v);
         vuint<K>::store(valid,&ray.primID,primID);
         vuint<K>::store(valid,&ray.geomID,geomID);
-        vuint<K>::store(valid,&ray.instID,context->instID);
+        instance_id_stack::copy<const unsigned*, vuint<K>*, const vbool<K>&>(context->user->instID, ray.instID, valid);
+
         return valid;
       }
     };
@@ -765,7 +757,7 @@ namespace embree
       __forceinline vbool<K> operator() (const vbool<K>& valid_i, const Hit& hit) const
       {
         vbool<K> valid = valid_i;
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
 #if defined(EMBREE_RAY_MASK)
@@ -781,7 +773,7 @@ namespace embree
             vfloat<K> u, v, t;
             Vec3vf<K> Ng;
             std::tie(u,v,t,Ng) = hit();
-            HitK<K> h(context->instID,geomID,primID,u,v,Ng);
+            HitK<K> h(context->user,geomID,primID,u,v,Ng);
             const vfloat<K> old_t = ray.tfar;
             ray.tfar = select(valid,t,ray.tfar);
             valid = runOcclusionFilter(valid,geometry,ray,context,h);
@@ -814,7 +806,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         vbool<Mx> valid = valid_i;
         hit.finalize();
         if (Mx > M) valid &= (1<<M)-1;
@@ -849,7 +841,7 @@ namespace embree
             if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())) {
               assert(i<M);
               const Vec2f uv = hit.uv(i);
-              HitK<K> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
+              HitK<K> h(context->user,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
               const float old_t = ray.tfar[k];
               ray.tfar[k] = hit.t(i);
               const bool found = any(runIntersectionFilter(vbool<K>(1<<k),geometry,ray,context,h));
@@ -868,7 +860,6 @@ namespace embree
         /* update hit information */
 #if 0 && defined(__AVX512F__) // do not enable, this reduced frequency for BVH4
         ray.updateK(i,k,hit.vt,hit.vu,hit.vv,vfloat<Mx>(hit.vNg.x),vfloat<Mx>(hit.vNg.y),vfloat<Mx>(hit.vNg.z),geomID,vuint<Mx>(primIDs));
-        ray.instID[k] = context->instID;
 #else
         const Vec2f uv = hit.uv(i);
         ray.tfar[k] = hit.t(i);
@@ -879,7 +870,7 @@ namespace embree
         ray.v[k] = uv.y;
         ray.primID[k] = primIDs[i];
         ray.geomID[k] = geomID;
-        ray.instID[k] = context->instID;
+        instance_id_stack::copy<const unsigned*, vuint<K>*, const size_t&>(context->user->instID, ray.instID, k);
 #endif
         return true;
       }
@@ -903,7 +894,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
 
         /* intersection filter test */
 #if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
@@ -939,7 +930,7 @@ namespace embree
               const Vec2f uv = hit.uv(i);
               const float old_t = ray.tfar[k];
               ray.tfar[k] = hit.t(i);
-              HitK<K> h(context->instID,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
+              HitK<K> h(context->user,geomID,primIDs[i],uv.x,uv.y,hit.Ng(i));
               if (any(runOcclusionFilter(vbool<K>(1<<k),geometry,ray,context,h))) return true;
               ray.tfar[k] = old_t;
               m=btc(m,i);
@@ -972,7 +963,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         /* ray mask test */
@@ -996,7 +987,7 @@ namespace embree
               const Vec2f uv = hit.uv(i);
               const float old_t = ray.tfar[k];
               ray.tfar[k] = hit.t(i);
-              HitK<K> h(context->instID,geomID,primID,uv.x,uv.y,hit.Ng(i));
+              HitK<K> h(context->user,geomID,primID,uv.x,uv.y,hit.Ng(i));
               const bool found = any(runIntersectionFilter(vbool<K>(1<<k),geometry,ray,context,h));
               if (!found) ray.tfar[k] = old_t;
               foundhit = foundhit | found;
@@ -1014,7 +1005,6 @@ namespace embree
 #if 0 && defined(__AVX512F__) // do not enable, this reduced frequency for BVH4
         const Vec3fa Ng = hit.Ng(i);
         ray.updateK(i,k,hit.vt,hit.vu,hit.vv,vfloat<M>(Ng.x),vfloat<M>(Ng.y),vfloat<M>(Ng.z),geomID,vuint<M>(primID));
-        ray.instID[k] = context->instID;
 #else
         const Vec2f uv = hit.uv(i);
         const Vec3fa Ng = hit.Ng(i);
@@ -1026,7 +1016,7 @@ namespace embree
         ray.v[k] = uv.y;
         ray.primID[k] = primID;
         ray.geomID[k] = geomID;
-        ray.instID[k] = context->instID;
+        instance_id_stack::copy<const unsigned*, vuint<K>*, const size_t&>(context->user->instID, ray.instID, k);
 #endif
         return true;
       }
@@ -1050,7 +1040,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         /* ray mask test */
@@ -1069,7 +1059,7 @@ namespace embree
               const Vec2f uv = hit.uv(i);
               const float old_t = ray.tfar[k];
               ray.tfar[k] = hit.t(i);
-              HitK<K> h(context->instID,geomID,primID,uv.x,uv.y,hit.Ng(i));
+              HitK<K> h(context->user,geomID,primID,uv.x,uv.y,hit.Ng(i));
               if (any(runOcclusionFilter(vbool<K>(1<<k),geometry,ray,context,h))) return true;
               ray.tfar[k] = old_t;
             }

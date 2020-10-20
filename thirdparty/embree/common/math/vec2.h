@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -28,10 +15,15 @@ namespace embree
 
   template<typename T> struct Vec2
   {
-    T x, y;
+    enum { N = 2 };
+    union {
+      struct { T x, y; };
+#if !(defined(__WIN32__) && _MSC_VER == 1800) // workaround for older VS 2013 compiler
+      T components[N];
+#endif
+    };
 
     typedef T Scalar;
-    enum { N = 2 };
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Construction
@@ -47,6 +39,8 @@ namespace embree
     template<typename T1> __forceinline Vec2( const Vec2<T1>& a ) : x(T(a.x)), y(T(a.y)) {}
     template<typename T1> __forceinline Vec2& operator =( const Vec2<T1>& other ) { x = other.x; y = other.y; return *this; }
 
+    __forceinline Vec2& operator =( const Vec2& other ) { x = other.x; y = other.y; return *this; }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
@@ -56,8 +50,13 @@ namespace embree
     __forceinline Vec2( PosInfTy ) : x(pos_inf), y(pos_inf) {}
     __forceinline Vec2( NegInfTy ) : x(neg_inf), y(neg_inf) {}
 
-    __forceinline const T& operator []( const size_t axis ) const { assert(axis < 2); return (&x)[axis]; }
-    __forceinline       T& operator []( const size_t axis )       { assert(axis < 2); return (&x)[axis]; }
+#if defined(__WIN32__) && _MSC_VER == 1800 // workaround for older VS 2013 compiler
+	__forceinline const T& operator [](const size_t axis) const { assert(axis < 2); return (&x)[axis]; }
+	__forceinline       T& operator [](const size_t axis)       { assert(axis < 2); return (&x)[axis]; }
+#else
+	__forceinline const T& operator [](const size_t axis) const { assert(axis < 2); return components[axis]; }
+	__forceinline       T& operator [](const size_t axis )      { assert(axis < 2); return components[axis]; }
+#endif
   };
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -191,7 +190,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<typename T> inline std::ostream& operator<<(std::ostream& cout, const Vec2<T>& a) {
+  template<typename T> __forceinline embree_ostream operator<<(embree_ostream cout, const Vec2<T>& a) {
     return cout << "(" << a.x << ", " << a.y << ")";
   }
 

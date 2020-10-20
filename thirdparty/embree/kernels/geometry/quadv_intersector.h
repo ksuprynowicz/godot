@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -43,6 +30,11 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID());
+      }
+      
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
+      {
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
       }
     };
 
@@ -86,7 +78,7 @@ namespace embree
         }
         return !valid0;
       }
-
+      
       /*! Intersect a ray with M triangles and updates the hit. */
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const QuadMv<M>& quad)
       {
@@ -121,6 +113,11 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID());
+      }
+      
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
+      {
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
       }
     };
 
@@ -164,7 +161,7 @@ namespace embree
         }
         return !valid0;
       }
-
+      
       /*! Intersect a ray with M triangles and updates the hit. */
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const QuadMv<M>& quad)
       {

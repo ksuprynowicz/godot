@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "state.h"
 #include "../../common/lexers/streamfilters.h"
@@ -94,7 +81,7 @@ namespace embree
     object_accel_mb_min_leaf_size = 1;
     object_accel_mb_max_leaf_size = 1;
 
-    max_spatial_split_replications = 2.0f;
+    max_spatial_split_replications = 1.2f;
     useSpatialPreSplits = false;
 
     tessellation_cache_size = 128*1024*1024;
@@ -121,6 +108,8 @@ namespace embree
     benchmark = 0;
 
     numThreads = 0;
+    numUserThreads = 0;
+
 #if TASKING_INTERNAL
     set_affinity = true;
 #else
@@ -157,6 +146,10 @@ namespace embree
     return (enabled_cpu_features & isa) == isa;
   }
 
+  bool State::checkISASupport() {
+    return (getCPUFeatures() & enabled_cpu_features) == enabled_cpu_features;
+  }
+  
   void State::verify()
   {
     /* verify that calculations stay in range */
@@ -189,7 +182,7 @@ namespace embree
 
   const char* symbols[3] = { "=", ",", "|" };
 
-   bool State::parseFile(const FileName& fileName)
+  bool State::parseFile(const FileName& fileName)
   {
     FILE* f = fopen(fileName.c_str(),"r");
     if (!f) return false;
@@ -247,6 +240,9 @@ namespace embree
 
       if (tok == Token::Id("threads") && cin->trySymbol("=")) 
         numThreads = cin->get().Int();
+
+      else if (tok == Token::Id("user_threads")&& cin->trySymbol("=")) 
+        numUserThreads = cin->get().Int();
 
       else if (tok == Token::Id("set_affinity")&& cin->trySymbol("=")) 
         set_affinity = cin->get().Int();
@@ -449,10 +445,11 @@ namespace embree
   void State::print()
   {
     std::cout << "general:" << std::endl;
-    std::cout << "  build threads = " << numThreads   << std::endl;
-    std::cout << "  start_threads = " << start_threads << std::endl;
-    std::cout << "  affinity      = " << set_affinity << std::endl;
-    std::cout << "  frequency_level = ";
+    std::cout << "  build threads      = " << numThreads   << std::endl;
+    std::cout << "  build user threads = " << numUserThreads   << std::endl;
+    std::cout << "  start_threads      = " << start_threads << std::endl;
+    std::cout << "  affinity           = " << set_affinity << std::endl;
+    std::cout << "  frequency_level    = ";
     switch (frequency_level) {
     case FREQUENCY_SIMD128: std::cout << "simd128" << std::endl; break;
     case FREQUENCY_SIMD256: std::cout << "simd256" << std::endl; break;
@@ -460,72 +457,72 @@ namespace embree
     default: std::cout << "error" << std::endl; break;
     }
     
-    std::cout << "  hugepages     = ";
+    std::cout << "  hugepages          = ";
     if (!hugepages) std::cout << "disabled" << std::endl;
     else if (hugepages_success) std::cout << "enabled" << std::endl;
     else std::cout << "failed" << std::endl;
 
-    std::cout << "  verbosity     = " << verbose << std::endl;
-    std::cout << "  cache_size    = " << float(tessellation_cache_size)*1E-6 << " MB" << std::endl;
+    std::cout << "  verbosity          = " << verbose << std::endl;
+    std::cout << "  cache_size         = " << float(tessellation_cache_size)*1E-6 << " MB" << std::endl;
     std::cout << "  max_spatial_split_replications = " << max_spatial_split_replications << std::endl;
     
     std::cout << "triangles:" << std::endl;
-    std::cout << "  accel         = " << tri_accel << std::endl;
-    std::cout << "  builder       = " << tri_builder << std::endl;
-    std::cout << "  traverser     = " << tri_traverser << std::endl;
+    std::cout << "  accel              = " << tri_accel << std::endl;
+    std::cout << "  builder            = " << tri_builder << std::endl;
+    std::cout << "  traverser          = " << tri_traverser << std::endl;
         
     std::cout << "motion blur triangles:" << std::endl;
-    std::cout << "  accel         = " << tri_accel_mb << std::endl;
-    std::cout << "  builder       = " << tri_builder_mb << std::endl;
-    std::cout << "  traverser     = " << tri_traverser_mb << std::endl;
+    std::cout << "  accel              = " << tri_accel_mb << std::endl;
+    std::cout << "  builder            = " << tri_builder_mb << std::endl;
+    std::cout << "  traverser          = " << tri_traverser_mb << std::endl;
 
     std::cout << "quads:" << std::endl;
-    std::cout << "  accel         = " << quad_accel << std::endl;
-    std::cout << "  builder       = " << quad_builder << std::endl;
-    std::cout << "  traverser     = " << quad_traverser << std::endl;
+    std::cout << "  accel              = " << quad_accel << std::endl;
+    std::cout << "  builder            = " << quad_builder << std::endl;
+    std::cout << "  traverser          = " << quad_traverser << std::endl;
 
     std::cout << "motion blur quads:" << std::endl;
-    std::cout << "  accel         = " << quad_accel_mb << std::endl;
-    std::cout << "  builder       = " << quad_builder_mb << std::endl;
-    std::cout << "  traverser     = " << quad_traverser_mb << std::endl;
+    std::cout << "  accel              = " << quad_accel_mb << std::endl;
+    std::cout << "  builder            = " << quad_builder_mb << std::endl;
+    std::cout << "  traverser          = " << quad_traverser_mb << std::endl;
 
     std::cout << "line segments:" << std::endl;
-    std::cout << "  accel         = " << line_accel << std::endl;
-    std::cout << "  builder       = " << line_builder << std::endl;
-    std::cout << "  traverser     = " << line_traverser << std::endl;
+    std::cout << "  accel              = " << line_accel << std::endl;
+    std::cout << "  builder            = " << line_builder << std::endl;
+    std::cout << "  traverser          = " << line_traverser << std::endl;
 
     std::cout << "motion blur line segments:" << std::endl;
-    std::cout << "  accel         = " << line_accel_mb << std::endl;
-    std::cout << "  builder       = " << line_builder_mb << std::endl;
-    std::cout << "  traverser     = " << line_traverser_mb << std::endl;
+    std::cout << "  accel              = " << line_accel_mb << std::endl;
+    std::cout << "  builder            = " << line_builder_mb << std::endl;
+    std::cout << "  traverser          = " << line_traverser_mb << std::endl;
     
     std::cout << "hair:" << std::endl;
-    std::cout << "  accel         = " << hair_accel << std::endl;
-    std::cout << "  builder       = " << hair_builder << std::endl;
-    std::cout << "  traverser     = " << hair_traverser << std::endl;
+    std::cout << "  accel              = " << hair_accel << std::endl;
+    std::cout << "  builder            = " << hair_builder << std::endl;
+    std::cout << "  traverser          = " << hair_traverser << std::endl;
 
     std::cout << "motion blur hair:" << std::endl;
-    std::cout << "  accel         = " << hair_accel_mb << std::endl;
-    std::cout << "  builder       = " << hair_builder_mb << std::endl;
-    std::cout << "  traverser     = " << hair_traverser_mb << std::endl;
+    std::cout << "  accel              = " << hair_accel_mb << std::endl;
+    std::cout << "  builder            = " << hair_builder_mb << std::endl;
+    std::cout << "  traverser          = " << hair_traverser_mb << std::endl;
     
     std::cout << "subdivision surfaces:" << std::endl;
-    std::cout << "  accel         = " << subdiv_accel << std::endl;
+    std::cout << "  accel              = " << subdiv_accel << std::endl;
 
     std::cout << "grids:" << std::endl;
-    std::cout << "  accel         = " << grid_accel << std::endl;
-    std::cout << "  builder       = " << grid_builder << std::endl;
+    std::cout << "  accel              = " << grid_accel << std::endl;
+    std::cout << "  builder            = " << grid_builder << std::endl;
 
     std::cout << "motion blur grids:" << std::endl;
-    std::cout << "  accel         = " << grid_accel_mb << std::endl;
-    std::cout << "  builder       = " << grid_builder_mb << std::endl;
+    std::cout << "  accel              = " << grid_accel_mb << std::endl;
+    std::cout << "  builder            = " << grid_builder_mb << std::endl;
 
     std::cout << "object_accel:" << std::endl;
-    std::cout << "  min_leaf_size = " << object_accel_min_leaf_size << std::endl;
-    std::cout << "  max_leaf_size = " << object_accel_max_leaf_size << std::endl;
+    std::cout << "  min_leaf_size      = " << object_accel_min_leaf_size << std::endl;
+    std::cout << "  max_leaf_size      = " << object_accel_max_leaf_size << std::endl;
 
     std::cout << "object_accel_mb:" << std::endl;
-    std::cout << "  min_leaf_size = " << object_accel_mb_min_leaf_size << std::endl;
-    std::cout << "  max_leaf_size = " << object_accel_mb_max_leaf_size << std::endl;
+    std::cout << "  min_leaf_size      = " << object_accel_mb_min_leaf_size << std::endl;
+    std::cout << "  max_leaf_size      = " << object_accel_mb_max_leaf_size << std::endl;
   }
 }

@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -52,10 +39,10 @@
 #  define isa sse42
 #  define ISA SSE42
 #  define ISA_STR "SSE4.2"
-#elif defined (__SSE4_1__)
-#  define isa sse41
-#  define ISA SSE41
-#  define ISA_STR "SSE4.1"
+//#elif defined (__SSE4_1__) //  we demote this to SSE2, MacOSX code compiles with SSE41 by default with XCode 11
+//#  define isa sse41
+//#  define ISA SSE41
+//#  define ISA_STR "SSE4.1"
 //#elif defined(__SSSE3__) // we demote this to SSE2, MacOSX code compiles with SSSE3 by default with ICC
 //#  define isa ssse3
 //#  define ISA SSSE3
@@ -78,17 +65,31 @@
 
 namespace embree
 {
-  enum CPUModel {
-    CPU_UNKNOWN,
-    CPU_CORE1,
-    CPU_CORE2,
-    CPU_CORE_NEHALEM,
-    CPU_CORE_SANDYBRIDGE,
-    CPU_HASWELL,
-    CPU_KNIGHTS_LANDING,
-    CPU_SKYLAKE_SERVER
+  enum class CPU
+  {
+    XEON_ICE_LAKE,
+    CORE_ICE_LAKE,
+    CORE_TIGER_LAKE,
+    CORE_COMET_LAKE,
+    CORE_CANNON_LAKE,
+    CORE_KABY_LAKE,
+    XEON_SKY_LAKE,
+    CORE_SKY_LAKE,
+    XEON_PHI_KNIGHTS_MILL,
+    XEON_PHI_KNIGHTS_LANDING,
+    XEON_BROADWELL,
+    CORE_BROADWELL,
+    XEON_HASWELL,
+    CORE_HASWELL,
+    XEON_IVY_BRIDGE,
+    CORE_IVY_BRIDGE,
+    SANDY_BRIDGE,
+    NEHALEM,
+    CORE2,
+    CORE1,
+    UNKNOWN,
   };
-
+  
   /*! get the full path to the running executable */
   std::string getExecutableFileName();
 
@@ -102,10 +103,10 @@ namespace embree
   std::string getCPUVendor();
 
   /*! get microprocessor model */
-  CPUModel getCPUModel(); 
+  CPU getCPUModel(); 
 
   /*! converts CPU model into string */
-  std::string stringOfCPUModel(CPUModel model);
+  std::string stringOfCPUModel(CPU model);
 
   /*! CPU features */
   static const int CPU_FEATURE_SSE    = 1 << 0;
@@ -136,8 +137,6 @@ namespace embree
   static const int CPU_FEATURE_YMM_ENABLED = 1 << 26;
   static const int CPU_FEATURE_ZMM_ENABLED = 1 << 27;
  
-  static const int CPU_FEATURE_PSEUDO_HIFREQ256BIT = 1 << 30;
- 
   /*! get CPU features */
   int getCPUFeatures();
 
@@ -160,15 +159,12 @@ namespace embree
   static const int AVX512KNL = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD | CPU_FEATURE_ZMM_ENABLED;
   static const int AVX512SKX = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512DQ | CPU_FEATURE_AVX512CD | CPU_FEATURE_AVX512BW | CPU_FEATURE_AVX512VL | CPU_FEATURE_ZMM_ENABLED;
 
-  static const int AVX_FAST = AVX | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
-  static const int AVX2_FAST = AVX2 | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
-
   /*! converts ISA bitvector into a string */
   std::string stringOfISA(int features);
 
   /*! return the number of logical threads of the system */
   unsigned int getNumberOfLogicalThreads();
-  
+
   /*! returns the size of the terminal window in characters */
   int getTerminalWidth();
 

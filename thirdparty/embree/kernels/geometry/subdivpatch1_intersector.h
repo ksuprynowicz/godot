@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -80,6 +67,19 @@ namespace embree
       static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, const TravRay<N,Nx,robust> &tray, size_t& lazy_node) {
         return occluded(This,pre,ray,context,prim,ty,tray,lazy_node);
       }
+      
+      template<int N>
+        static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) 
+      {
+          // TODO: PointQuery implement
+          assert(false && "not implemented");
+          return false;
+      }
+
+      template<int N>
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, size_t ty0, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) {
+        return pointQuery(This,query,context,prim,ty,tquery,lazy_node);
+      }
     };
 
     class SubdivPatch1MBIntersector1
@@ -123,6 +123,19 @@ namespace embree
       template<int N, int Nx, bool robust>
       static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, size_t ty0, const Primitive* prim, size_t ty, const TravRay<N,Nx,robust> &tray, size_t& lazy_node) {
         return occluded(This,pre,ray,context,prim,ty,tray,lazy_node);
+      }
+      
+      template<int N>
+        static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) 
+      {
+          // TODO: PointQuery implement
+          assert(false && "not implemented");
+          return false;
+      }
+
+      template<int N, int Nx, bool robust>
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, size_t ty0, const Primitive* prim, size_t ty, const TravPointQuery<N> &tquery, size_t& lazy_node) {
+        return pointQuery(This,query,context,prim,ty,tquery,lazy_node);
       }
     };
 
@@ -201,7 +214,7 @@ namespace embree
         if (likely(ty == 0)) return GridSOAMBIntersectorK<K>::occluded(valid,pre,ray,context,prim,lazy_node);
         else                 return processLazyNode(pre,context,prim,lazy_node);
       }
-
+      
       template<int N, int Nx, bool robust>      
       static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t ty, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
       {

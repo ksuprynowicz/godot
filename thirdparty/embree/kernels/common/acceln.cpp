@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "acceln.h"
 #include "ray.h"
@@ -43,7 +30,17 @@ namespace embree
     
     accels.clear();
   }
-  
+
+  bool AccelN::pointQuery (Accel::Intersectors* This_in, PointQuery* query, PointQueryContext* context)
+  {
+    bool changed = false;
+    AccelN* This = (AccelN*)This_in->ptr;
+    for (size_t i=0; i<This->accels.size(); i++)
+      if (!This->accels[i]->isEmpty())
+        changed |= This->accels[i]->intersectors.pointQuery(query,context);
+    return changed;
+  }
+
   void AccelN::intersect (Accel::Intersectors* This_in, RTCRayHit& ray, IntersectContext* context) 
   {
     AccelN* This = (AccelN*)This_in->ptr;
@@ -200,7 +197,7 @@ namespace embree
     {
       type = AccelData::TY_ACCELN;
       intersectors.ptr = this;
-      intersectors.intersector1  = Intersector1(&intersect,&occluded,valid1 ? "AccelN::intersector1": nullptr);
+      intersectors.intersector1  = Intersector1(&intersect,&occluded,&pointQuery,valid1 ? "AccelN::intersector1": nullptr);
       intersectors.intersector4  = Intersector4(&intersect4,&occluded4,valid4 ? "AccelN::intersector4" : nullptr);
       intersectors.intersector8  = Intersector8(&intersect8,&occluded8,valid8 ? "AccelN::intersector8" : nullptr);
       intersectors.intersector16 = Intersector16(&intersect16,&occluded16,valid16 ? "AccelN::intersector16": nullptr);
