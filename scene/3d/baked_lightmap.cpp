@@ -288,6 +288,93 @@ bool RaytraceLightBaker::_bake_time(float p_secs, float p_progress) {
 	return false;
 }
 
+void RaytraceLightBaker::_get_material_images(RaytraceLightBaker::PlotMesh &r_plot_mesh) {
+
+	for (int i = 0; i < r_plot_mesh.surface_materials.size(); ++i) {
+		Ref<SpatialMaterial> mat = r_plot_mesh.surface_materials[i];
+
+		r_plot_mesh.albedo_images.push_back(Ref<Image>());
+		r_plot_mesh.emission_images.push_back(Ref<Image>());
+
+		if (mat.is_valid()) {
+			Ref<Texture> albedo_tex = mat->get_texture(SpatialMaterial::TEXTURE_ALBEDO);
+
+			if (albedo_tex.is_valid()) {
+				r_plot_mesh.albedo_images.write[i] = albedo_tex->get_data();
+			}
+
+			Ref<Texture> emission_tex = mat->get_texture(SpatialMaterial::TEXTURE_EMISSION);
+			if (emission_tex.is_valid()) {
+				r_plot_mesh.emission_images.write[i] = emission_tex->get_data();
+			}
+		}
+	}
+}
+
+void RaytraceLightBaker::_get_material_textures(RaytraceLightBaker::PlotMesh &r_plot_mesh) {
+
+	for (int i = 0; i < r_plot_mesh.surface_materials.size(); ++i) {
+		Ref<SpatialMaterial> mat = r_plot_mesh.surface_materials[i];
+
+		Size2i albedo_texture_size;
+		Size2i emission_texture_size;
+		r_plot_mesh.albedo_textures.push_back(Vector<Color>());
+		r_plot_mesh.emission_textures.push_back(Vector<Color>());
+
+		if (mat.is_valid()) {
+
+			Ref<Image> albedo_image = r_plot_mesh.albedo_images[i];
+
+			if (albedo_image.is_valid()) {
+				albedo_texture_size = albedo_image->get_size();
+				r_plot_mesh.albedo_textures.write[i] = _get_bake_texture(albedo_image, mat->get_albedo(), Color(0, 0, 0)); // albedo texture, color is multiplicative
+			} else {
+				albedo_texture_size = Size2i(8, 8);
+				_get_solid_texture(mat->get_albedo(), albedo_texture_size, r_plot_mesh.albedo_textures.write[i]);
+			}
+
+			Ref<Image> emission_image = r_plot_mesh.emission_images[i];
+
+			Color emission_col = mat->get_emission();
+			float emission_energy = mat->get_emission_energy();
+
+			if (emission_image.is_valid()) {
+				emission_texture_size = emission_image->get_size();
+				if (mat->get_emission_operator() == SpatialMaterial::EMISSION_OP_ADD) {
+					r_plot_mesh.emission_textures.write[i] = _get_bake_texture(emission_image, Color(1, 1, 1) * emission_energy, emission_col * emission_energy);
+				} else {
+					r_plot_mesh.emission_textures.write[i] = _get_bake_texture(emission_image, emission_col * emission_energy, Color(0, 0, 0));
+				}
+			} else {
+				emission_texture_size = Size2i(8, 8);
+				if (mat->get_emission_operator() == SpatialMaterial::EMISSION_OP_ADD) {
+					_get_solid_texture(emission_col * emission_energy, albedo_texture_size, r_plot_mesh.emission_textures.write[i]);
+				} else {
+					_get_solid_texture(Color(0, 0, 0), albedo_texture_size, r_plot_mesh.emission_textures.write[i]);
+				}
+			}
+		} else {
+			albedo_texture_size = Size2i(8, 8);
+			_get_solid_texture(Color(1, 1, 1), albedo_texture_size, r_plot_mesh.albedo_textures.write[i]);
+
+			emission_texture_size = Size2i(8, 8);
+			_get_solid_texture(Color(0, 0, 0), emission_texture_size, r_plot_mesh.emission_textures.write[i]);
+		}
+
+		r_plot_mesh.albedo_texture_sizes.push_back(albedo_texture_size);
+		r_plot_mesh.emission_texture_sizes.push_back(emission_texture_size);
+	}
+}
+
+void RaytraceLightBaker::_clear_material_textures(PlotMesh &r_plot_mesh) {
+	r_plot_mesh.albedo_textures.clear();
+	r_plot_mesh.albedo_texture_sizes.clear();
+	r_plot_mesh.albedo_images.clear();
+	r_plot_mesh.emission_textures.clear();
+	r_plot_mesh.emission_texture_sizes.clear();
+	r_plot_mesh.emission_images.clear();
+}
+
 void RaytraceLightBaker::_find_meshes_and_lights(Node *p_from_node) {
 
 	MeshInstance *mi = Object::cast_to<MeshInstance>(p_from_node);
@@ -312,14 +399,26 @@ void RaytraceLightBaker::_find_meshes_and_lights(Node *p_from_node) {
 				if (global_bounds.intersects(xf.xform(aabb))) {
 					PlotMesh pm;
 					pm.local_xform = xf;
-					pm.mesh = mesh;
 					pm.size_hint = mi->get_lightmap_size_hint();
 					pm.node = mi;
 					pm.instance_idx = -1;
+					pm.mesh = mesh;
 					for (int i = 0; i < mesh->get_surface_count(); i++) {
-						pm.instance_materials.push_back(mi->get_surface_material(i));
+						pm.surface_primitive_types.push_back(mesh->surface_get_primitive_type(i));
+						pm.surface_arrays.push_back(mesh->surface_get_arrays(i));
+
+						Ref<Material> mat;
+						if (mi->get_material_override().is_valid()) {
+							mat = mi->get_material_override();
+						} else if (mi->get_surface_material(i).is_valid()) {
+							mat = mi->get_surface_material(i);
+						} else if (mesh->surface_get_material(i).is_valid()) {
+							mat = mesh->surface_get_material(i);
+						}
+
+						pm.surface_materials.push_back(mat);
 					}
-					pm.override_material = mi->get_material_override();
+
 					pm.cast_shadows = mi->get_bake_cast_shadows();
 					pm.save_lightmap = mi->get_generate_lightmap();
 					mesh_list.push_back(pm);
@@ -338,9 +437,22 @@ void RaytraceLightBaker::_find_meshes_and_lights(Node *p_from_node) {
 				PlotMesh pm;
 				Transform mesh_xf = meshes[i + 1];
 				pm.local_xform = xf * mesh_xf;
-				pm.size_hint = Vector2();
+				pm.size_hint = Size2i();
 				pm.node = s;
 				pm.mesh = meshes[i];
+				if (!pm.mesh.is_valid())
+					continue;
+
+				for (int j = 0; j < pm.mesh->get_surface_count(); j++) {
+					pm.surface_primitive_types.push_back(pm.mesh->surface_get_primitive_type(j));
+					pm.surface_arrays.push_back(pm.mesh->surface_get_arrays(j));
+
+					Ref<Material> mat;
+					if (pm.mesh->surface_get_material(i).is_valid()) {
+						mat = pm.mesh->surface_get_material(i);
+					}
+					pm.surface_materials.push_back(mat);
+				}
 				pm.instance_idx = i / 2;
 				GeometryInstance *gi = Object::cast_to<GeometryInstance>(s);
 
@@ -349,8 +461,6 @@ void RaytraceLightBaker::_find_meshes_and_lights(Node *p_from_node) {
 					pm.save_lightmap = gi->get_generate_lightmap();
 				}
 
-				if (!pm.mesh.is_valid())
-					continue;
 				mesh_list.push_back(pm);
 			}
 		}
@@ -377,22 +487,24 @@ void RaytraceLightBaker::_find_meshes_and_lights(Node *p_from_node) {
 	}
 }
 
-Vector<Color> RaytraceLightBaker::_get_bake_texture(Ref<Image> p_image, const Vector2 &p_bake_size, const Color &p_color_mul, const Color &p_color_add) {
+void RaytraceLightBaker::_get_solid_texture(const Color &p_color, const Size2i &p_size, Vector<Color> &r_texture) {
+	int size = p_size.x * p_size.y;
+	r_texture.resize(size);
+	Color *ptr = r_texture.ptrw();
+
+	for (int i = 0; i < size; i++) {
+		ptr[i] = p_color;
+	}
+}
+
+Vector<Color> RaytraceLightBaker::_get_bake_texture(Ref<Image> p_image, const Color &p_color_mul, const Color &p_color_add) {
 
 	Vector<Color> ret;
 
-	int width = int(p_bake_size.x);
-	int height = int(p_bake_size.y);
+	int width = p_image->get_width();
+	int height = p_image->get_height();
 	int size = width * height;
 	ret.resize(size);
-	Color *ret_ptr = ret.ptrw();
-
-	if (p_image.is_null() || p_image->empty()) {
-		for (int i = 0; i < size; i++) {
-			ret_ptr[i] = p_color_add;
-		}
-		return ret;
-	}
 
 	p_image = p_image->duplicate();
 
@@ -401,9 +513,9 @@ Vector<Color> RaytraceLightBaker::_get_bake_texture(Ref<Image> p_image, const Ve
 	}
 
 	p_image->convert(Image::FORMAT_RGBA8);
-	p_image->resize(width, height, Image::INTERPOLATE_CUBIC);
 
 	PoolVector<uint8_t>::Read r = p_image->get_data().read();
+	Color *ret_ptr = ret.ptrw();
 
 	for (int i = 0; i < size; i++) {
 		Color c;
@@ -419,11 +531,11 @@ Vector<Color> RaytraceLightBaker::_get_bake_texture(Ref<Image> p_image, const Ve
 	return ret;
 }
 
-Vector2 RaytraceLightBaker::_compute_lightmap_size(const PlotMesh &p_plot_mesh) {
+Size2i RaytraceLightBaker::_compute_lightmap_size(const PlotMesh &p_plot_mesh) {
 	double area = 0;
 	double uv_area = 0;
-	for (int i = 0; i < p_plot_mesh.mesh->get_surface_count(); i++) {
-		Array arrays = p_plot_mesh.mesh->surface_get_arrays(i);
+	for (int i = 0; i < p_plot_mesh.surface_arrays.size(); i++) {
+		Array arrays = p_plot_mesh.surface_arrays[i];
 		PoolVector<Vector3> vertices = arrays[Mesh::ARRAY_VERTEX];
 		PoolVector<Vector2> uv2 = arrays[Mesh::ARRAY_TEX_UV2];
 		PoolVector<int> indices = arrays[Mesh::ARRAY_INDEX];
@@ -480,86 +592,39 @@ Vector2 RaytraceLightBaker::_compute_lightmap_size(const PlotMesh &p_plot_mesh) 
 
 	int pixels = Math::round(ceil((1.0 / sqrt(uv_area)) * sqrt(area * default_texels_per_unit)));
 	int size = CLAMP(pixels, 2, 4096);
-	return Vector2(size, size);
+	return Size2i(size, size);
 }
 
-void RaytraceLightBaker::_make_lightmap(const RaytraceLightBaker::PlotMesh &p_plot_mesh, int p_idx) {
-	Ref<Mesh> mesh = p_plot_mesh.mesh;
+void RaytraceLightBaker::_make_lightmap(uint32_t p_idx, int p_base_idx) {
+	int idx = p_base_idx + p_idx;
+	PlotMesh &plot_mesh = mesh_list[idx];
 
-	Vector2 size = scene_lightmap_sizes[p_idx];
+	plot_mesh.invalid_uv2s = false;
+
+	_get_material_textures(plot_mesh);
+
+	const Size2i &size = scene_lightmap_sizes[idx];
 
 	int buffer_size = size.x * size.y;
 
-	Vector<LightMapElement> &lightmap = scene_lightmaps.write[p_idx];
-	Vector<int> &lightmap_indices = scene_lightmap_indices.write[p_idx];
+	LocalVector<LightMapElement> &lightmap = scene_lightmaps[idx];
+	LocalVector<int> &lightmap_indices = scene_lightmap_indices[idx];
 
 	lightmap_indices.resize(buffer_size);
 	lightmap.resize(buffer_size);
 
 	int lightmap_index = 0;
 
-	int *lightmap_indices_ptr = lightmap_indices.ptrw();
-	LightMapElement *lightmap_ptr = lightmap.ptrw();
-
-	for (int i = 0; i < lightmap_indices.size(); ++i) {
-		lightmap_indices_ptr[i] = -1;
+	for (unsigned int i = 0; i < lightmap_indices.size(); i++) {
+		lightmap_indices[i] = -1;
 	}
 
-	for (int i = 0; i < mesh->get_surface_count(); i++) {
+	for (int i = 0; i < plot_mesh.surface_arrays.size(); i++) {
 
-		if (mesh->surface_get_primitive_type(i) != Mesh::PRIMITIVE_TRIANGLES)
+		if (plot_mesh.surface_primitive_types[i] != Mesh::PRIMITIVE_TRIANGLES)
 			continue; //only triangles
 
-		Ref<Material> src_material;
-
-		if (p_plot_mesh.override_material.is_valid()) {
-			src_material = p_plot_mesh.override_material;
-		} else if (i < p_plot_mesh.instance_materials.size() && p_plot_mesh.instance_materials[i].is_valid()) {
-			src_material = p_plot_mesh.instance_materials[i];
-		} else {
-			src_material = mesh->surface_get_material(i);
-		}
-
-		Ref<SpatialMaterial> mat = src_material;
-		Vector<Color> albedo_texture;
-		Vector<Color> emission_texture;
-
-		if (mat.is_valid()) {
-
-			Ref<Texture> albedo_tex = mat->get_texture(SpatialMaterial::TEXTURE_ALBEDO);
-
-			Ref<Image> img_albedo;
-			if (albedo_tex.is_valid()) {
-				img_albedo = albedo_tex->get_data();
-				albedo_texture = _get_bake_texture(img_albedo, size, mat->get_albedo(), Color(0, 0, 0)); // albedo texture, color is multiplicative
-			} else {
-				albedo_texture = _get_bake_texture(img_albedo, size, Color(1, 1, 1), mat->get_albedo()); // no albedo texture, color is additive
-			}
-
-			Ref<Texture> emission_tex = mat->get_texture(SpatialMaterial::TEXTURE_EMISSION);
-
-			Color emission_col = mat->get_emission();
-			float emission_energy = mat->get_emission_energy();
-
-			Ref<Image> img_emission;
-
-			if (emission_tex.is_valid()) {
-
-				img_emission = emission_tex->get_data();
-			}
-
-			if (mat->get_emission_operator() == SpatialMaterial::EMISSION_OP_ADD) {
-				emission_texture = _get_bake_texture(img_emission, size, Color(1, 1, 1) * emission_energy, emission_col * emission_energy);
-			} else {
-				emission_texture = _get_bake_texture(img_emission, size, emission_col * emission_energy, Color(0, 0, 0));
-			}
-		} else {
-			Ref<Image> empty;
-			albedo_texture = _get_bake_texture(empty, size, Color(0, 0, 0), Color(1, 1, 1));
-			emission_texture = _get_bake_texture(empty, size, Color(0, 0, 0), Color(0, 0, 0));
-		}
-
-		Array a = mesh->surface_get_arrays(i);
+		Array a = plot_mesh.surface_arrays[i];
 
 		PoolVector<Vector3> vertices = a[Mesh::ARRAY_VERTEX];
 		PoolVector<Vector3>::Read vr = vertices.read();
@@ -600,7 +665,7 @@ void RaytraceLightBaker::_make_lightmap(const RaytraceLightBaker::PlotMesh &p_pl
 				Vector3 normal[3];
 
 				for (int k = 0; k < 3; k++) {
-					vtxs[k] = p_plot_mesh.local_xform.xform(vr[ir[j * 3 + k]]);
+					vtxs[k] = plot_mesh.local_xform.xform(vr[ir[j * 3 + k]]);
 				}
 
 				if (read_uv) {
@@ -611,15 +676,19 @@ void RaytraceLightBaker::_make_lightmap(const RaytraceLightBaker::PlotMesh &p_pl
 
 				for (int k = 0; k < 3; k++) {
 					uv2s[k] = uv2r[ir[j * 3 + k]];
+					if (uv2s[k].x < 0.0f || uv2s[k].x > 1.0f || uv2s[k].y < 0.0f || uv2s[k].y > 1.0f) {
+						plot_mesh.invalid_uv2s = true;
+						return;
+					}
 				}
 
 				if (read_normals) {
 					for (int k = 0; k < 3; k++) {
-						normal[k] = p_plot_mesh.local_xform.basis.xform(nr[ir[j * 3 + k]]).normalized();
+						normal[k] = plot_mesh.local_xform.basis.xform(nr[ir[j * 3 + k]]).normalized();
 					}
 				}
 
-				_plot_triangle(uv2s, vtxs, normal, uvs, albedo_texture, emission_texture, size.x, size.y, lightmap_ptr, lightmap_index, lightmap_indices_ptr);
+				_plot_triangle(uv2s, vtxs, normal, uvs, plot_mesh.albedo_textures[i], plot_mesh.albedo_texture_sizes[i], plot_mesh.emission_textures[i], plot_mesh.emission_texture_sizes[i], size.x, size.y, lightmap.ptr(), lightmap_index, lightmap_indices.ptr());
 			}
 
 		} else {
@@ -647,7 +716,7 @@ void RaytraceLightBaker::_compute_direct_light(const RaytraceLightBaker::PlotLig
 	Color c = light->get_color();
 	Vector3 light_energy = Vector3(c.r, c.g, c.b) * light->get_param(Light::Param::PARAM_ENERGY);
 
-	for (int i = 0; i < p_size; ++i) {
+	for (int i = 0; i < p_size; i++) {
 
 		Vector3 normal = r_lightmap[i].normal;
 		Vector3 position = r_lightmap[i].pos;
@@ -709,53 +778,65 @@ void RaytraceLightBaker::_compute_direct_light(const RaytraceLightBaker::PlotLig
 	}
 }
 
-static Color _bilinear_sample(Vector<Color> texture, Vector2i size, Vector2 uv, bool wrap_x_axis = false) {
+static Color _bilinear_sample(Vector<Color> texture, Vector2i size, Vector2 uv, bool wrap_y_axis = true) {
 
-	float albedo_y = uv.y * size.y;
-	float albedo_x = uv.x * size.x;
+	uv.x = Math::fposmod(uv.x, 1.0f);
+	uv.y = wrap_y_axis ? Math::fposmod(uv.y, 1.0f) : uv.y;
 
-	int xi = (int)albedo_x;
-	int yi = (int)albedo_y;
+	float xf = uv.x * size.x;
+	float yf = uv.y * size.y;
+
+	int xi = (int)xf;
+	int yi = (int)yf;
 
 	Color texels[4];
-	for (int i = 0; i < 4; ++i) {
-		int sample_x;
-		if (wrap_x_axis) {
-			sample_x = (xi + i % 2) % size.x;
+	for (int i = 0; i < 4; i++) {
+		int sample_x = (xi + i % 2) % size.x;
+
+		int sample_y;
+		if (wrap_y_axis) {
+			sample_y = (yi + i / 2) % size.y;
 		} else {
-			sample_x = CLAMP(xi + i % 2, 0, size.x - 1);
+			sample_y = CLAMP(yi + i / 2, 0, size.y - 1);
 		}
-		int sample_y = CLAMP(yi + i / 2, 0, size.y - 1);
 		texels[i] = texture[sample_y * size.x + sample_x];
 	}
 
-	float tx = albedo_x - xi;
-	float ty = albedo_y - yi;
+	float tx = xf - xi;
+	float ty = yf - yi;
 
 	Color c;
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < 4; i++) {
 		c[i] = Math::lerp(Math::lerp(texels[0][i], texels[1][i], tx), Math::lerp(texels[2][i], texels[3][i], tx), ty);
 	}
 	return c;
+}
+
+_ALWAYS_INLINE_ float uniform_rand() {
+	/* Algorithm "xor" from p. 4 of Marsaglia, "Xorshift RNGs" */
+	static thread_local uint32_t state = rand();
+	state ^= state << 13;
+	state ^= state >> 17;
+	state ^= state << 5;
+	return float(state) / UINT32_MAX;
 }
 
 void RaytraceLightBaker::_compute_ray_trace(uint32_t p_idx, LightMapElement *r_texels) {
 
 	LightMapElement &texel = r_texels[p_idx];
 
-	const static int samples_per_quality[4] = { 64, 128, 256, 512 };
+	const static int samples_per_quality[4] = { 64, 256, 512, 1024 };
 
 	int samples = samples_per_quality[bake_quality];
 
-	static thread_local std::random_device r;
-	static thread_local std::seed_seq seed{ r(), r(), r(), r(), r(), r(), r(), r() };
-	static thread_local std::mt19937 generator(seed);
-	std::uniform_real_distribution<float> uniform_dist(0.0, 1.0);
-
 	Vector3 accum;
 
-	for (int i = 0; i < samples; ++i) {
-		Vector3 color = Vector3();
+	const Vector3 const_forward = Vector3(0, 0, 1);
+	const Vector3 const_up = Vector3(0, 1, 0);
+
+	for (int i = 0; i < samples; i++) {
+
+		Vector3 color;
 		Vector3 throughput = Vector3(1.0f, 1.0f, 1.0f);
 
 		Vector3 position = texel.pos;
@@ -764,38 +845,36 @@ void RaytraceLightBaker::_compute_ray_trace(uint32_t p_idx, LightMapElement *r_t
 
 		for (int depth = 0; depth < bounces; depth++) {
 
-			Vector3 v0 = Math::abs(normal.z) < 0.999 ? Vector3(0, 0, 1) : Vector3(0, 1, 0);
-			Vector3 tangent = v0.cross(normal).normalized();
-			Vector3 bitangent = tangent.cross(normal).normalized();
-			Basis normal_xform = Basis(tangent, bitangent, normal).transposed();
+			Vector3 tangent = const_forward.cross(normal);
+			if (unlikely(tangent.length_squared() < 0.005f)) {
+				tangent = const_up.cross(normal);
+			}
+			tangent.normalize();
+			Vector3 bitangent = tangent.cross(normal);
+			bitangent.normalize();
 
-			float u1 = uniform_dist(generator);
-			float u2 = uniform_dist(generator);
+			Basis normal_xform = Basis(tangent, bitangent, normal);
+			normal_xform.transpose();
+
+			float u1 = uniform_rand();
+			float u2 = uniform_rand();
 
 			float radius = Math::sqrt(u1);
-			float theta = 2 * Math_PI * u2;
+			float theta = Math_TAU * u2;
 
-			Vector3 axis = Vector3(radius * Math::cos(theta), radius * Math::sin(theta), Math::sqrt(MAX(0.0f, 1 - u1)));
+			Vector3 axis = Vector3(radius * Math::cos(theta), radius * Math::sin(theta), Math::sqrt(MAX(0.0f, 1.0f - u1)));
 
-			direction = normal_xform.xform(axis).normalized();
+			direction = normal_xform.xform(axis);
 
 			// We can skip multiplying throughput by cos(theta) because de sampling PDF is also cos(theta) and they cancel each other
 			//float pdf = normal.dot(direction);
 			//throughput *= normal.dot(direction)/pdf;
 
-			RaytraceEngine::Ray ray(position + normal * bias * 2, direction, bias);
+			RaytraceEngine::Ray ray(position + normal * bias * 2.0f, direction, bias);
 			bool hit = RaytraceEngine::get_singleton()->intersect(ray);
 
-			if (hit) {
-				// Reject if away from any edge more than a half texel
-				Vector2 half_texel = Vector2(0.5, 0.5) / scene_lightmap_sizes[ray.geomID];
-				if (unlikely(ray.u < -half_texel.x || ray.v < -half_texel.y || ray.u > 1.0 + half_texel.x || ray.v > 1.0 + half_texel.y)) {
-					hit = false;
-				}
-			}
-
 			if (!hit) {
-				Color c = Color(0, 0, 0);
+				Color c = sky_color;
 				if (!sky_data.empty()) {
 
 					direction = sky_orientation.xform_inv(direction);
@@ -806,31 +885,28 @@ void RaytraceLightBaker::_compute_ray_trace(uint32_t p_idx, LightMapElement *r_t
 					}
 
 					st.x += Math_PI;
-					st /= Vector2(Math_PI * 2.0, Math_PI);
+					st /= Vector2(Math_TAU, Math_PI);
 					st.x = Math::fmod(st.x + 0.75, 1.0);
 
-					c = _bilinear_sample(sky_data, sky_size, st, true);
+					c = _bilinear_sample(sky_data, sky_size, st, false);
 				}
 				color += throughput * Vector3(c.r, c.g, c.b) * c.a;
-
 				break;
 			}
 
 			unsigned int hit_mesh_id = ray.geomID;
 			const Size2i &size = scene_lightmap_sizes[hit_mesh_id];
 
-			int x = CLAMP(ray.u * size.x, 0, size.x - 1);
-			int y = CLAMP(ray.v * size.y, 0, size.y - 1);
+			int x = ray.u * size.x;
+			int y = ray.v * size.y;
 
-			int idx = y * size.x + x;
-			idx = scene_lightmap_indices[ray.geomID][idx];
+			const int &idx = scene_lightmap_indices[hit_mesh_id][y * size.x + x];
 
-			// Should not happen, just to be safe
-			if (unlikely(idx < 0)) {
+			if (idx < 0) {
 				break;
 			}
 
-			const LightMapElement &sample = scene_lightmaps[ray.geomID][idx];
+			const LightMapElement &sample = scene_lightmaps[hit_mesh_id][idx];
 
 			if (sample.normal.dot(ray.dir) > 0.0 && !no_shadow_meshes.has(hit_mesh_id)) {
 				// We hit a back-face
@@ -844,8 +920,9 @@ void RaytraceLightBaker::_compute_ray_trace(uint32_t p_idx, LightMapElement *r_t
 			// Russian Roulette
 			// https://computergraphics.stackexchange.com/questions/2316/is-russian-roulette-really-the-answer
 			const float p = throughput[throughput.max_axis()];
-			if (uniform_dist(generator) > p)
+			if (uniform_rand() > p) {
 				break;
+			}
 			throughput *= 1.0f / p;
 
 			position = sample.pos;
@@ -859,33 +936,30 @@ void RaytraceLightBaker::_compute_ray_trace(uint32_t p_idx, LightMapElement *r_t
 
 Error RaytraceLightBaker::_compute_indirect_light(unsigned int mesh_id) {
 
-	int total_size = scene_lightmaps.write[mesh_id].size();
-	LightMapElement *lightmap_ptr = scene_lightmaps.write[mesh_id].ptrw();
+	int total_size = scene_lightmaps[mesh_id].size();
+	LightMapElement *lightmap_ptr = scene_lightmaps[mesh_id].ptr();
 
 #if 0
 		// Disable threading, for debugging
-		for (int i = 0; i < total_size; ++i) {
+		for (int i = 0; i < total_size; i++) {
 			_compute_ray_trace(i,lightmap_ptr);
 	 	}
 		return OK;
 #endif
 
-	int slice_size = 512;
+	int slice_size = 8192;
 	int n_slices = total_size / slice_size;
 	int leftover_slice = total_size % slice_size;
 
 	uint64_t begin_time = OS::get_singleton()->get_ticks_usec();
-	volatile int lines = 0;
 
-	for (int i = 0; i < n_slices; ++i) {
+	for (int i = 0; i < n_slices; i++) {
 		thread_process_array(slice_size, this, &RaytraceLightBaker::_compute_ray_trace, &lightmap_ptr[i * slice_size]);
-
-		lines = MAX(lines, i); //for multithread
 
 		uint64_t elapsed = OS::get_singleton()->get_ticks_usec() - begin_time;
 		float elapsed_sec = double(elapsed) / 1000000.0;
-		float remaining = lines < 1 ? -1.0 : (elapsed_sec / lines) * (n_slices - lines);
-		if (_bake_time(remaining, lines / float(n_slices + 1))) {
+		float remaining = i < 1 ? -1.0 : (elapsed_sec / i) * (n_slices - i);
+		if (_bake_time(remaining, i / float(n_slices + 1))) {
 			return ERR_SKIP;
 		}
 	}
@@ -894,6 +968,93 @@ Error RaytraceLightBaker::_compute_indirect_light(unsigned int mesh_id) {
 
 	if (_bake_time(0.0, 1.0)) {
 		return ERR_SKIP;
+	}
+
+	return OK;
+}
+
+Error RaytraceLightBaker::_generate_buffers(int *r_progress_step) {
+
+	int total_size = scene_lightmaps.size();
+
+	int slice_size = OS::get_singleton()->get_processor_count();
+	int n_slices = total_size / slice_size;
+	int leftover_slice = total_size % slice_size;
+
+	for (int i = 0; i < n_slices; i++) {
+		*r_progress_step += slice_size;
+
+		if (BakedLightmap::bake_step_function) {
+			bool cancel = BakedLightmap::bake_step_function(*r_progress_step, RTR("Build buffers ") + " (" + itos(i * slice_size + 1) + "/" + itos(total_size) + ")");
+			if (cancel) {
+				return ERR_SKIP;
+			}
+		}
+
+		for (int j = 0; j < slice_size; ++j) {
+			_get_material_images(mesh_list[i * slice_size + j]);
+		}
+
+		thread_process_array(slice_size, this, &RaytraceLightBaker::_make_lightmap, i * slice_size);
+
+		for (int j = 0; j < slice_size; ++j) {
+			_clear_material_textures(mesh_list[i * slice_size + j]);
+			if (mesh_list[i * slice_size + j].invalid_uv2s) {
+				return ERR_INVALID_DATA;
+			}
+		}
+	}
+
+	if (leftover_slice > 0) {
+		*r_progress_step += leftover_slice;
+		if (BakedLightmap::bake_step_function) {
+			bool cancel = BakedLightmap::bake_step_function(*r_progress_step, RTR("Build buffers ") + " (" + itos(total_size) + "/" + itos(total_size) + ")");
+			if (cancel) {
+				return ERR_SKIP;
+			}
+		}
+
+		for (int j = 0; j < leftover_slice; ++j) {
+			_get_material_images(mesh_list[n_slices * slice_size + j]);
+		}
+
+		thread_process_array(leftover_slice, this, &RaytraceLightBaker::_make_lightmap, n_slices * slice_size);
+
+		for (int j = 0; j < leftover_slice; ++j) {
+			_clear_material_textures(mesh_list[n_slices * slice_size + j]);
+			if (mesh_list[n_slices * slice_size + j].invalid_uv2s) {
+				return ERR_INVALID_DATA;
+			}
+		}
+	}
+
+	for (uint32_t i = 0; i < mesh_list.size(); i++) {
+		const Size2i &size = scene_lightmap_sizes[i];
+		bool has_alpha = false;
+		PoolVector<uint8_t> alpha_data;
+		alpha_data.resize(size.x * size.y);
+		{
+			PoolVector<uint8_t>::Write w = alpha_data.write();
+			for (unsigned int j = 0; j < scene_lightmap_indices[i].size(); ++j) {
+				int idx = scene_lightmap_indices[i][j];
+				uint8_t alpha = 0;
+				if (idx >= 0) {
+					alpha = CLAMP(scene_lightmaps[i][idx].alpha * 255, 0, 255);
+					if (alpha < 255) {
+						has_alpha = true;
+					}
+				}
+				w[j] = alpha;
+			}
+		}
+
+		if (has_alpha) {
+			Ref<Image> alpha_texture;
+			alpha_texture.instance();
+			alpha_texture->create(size.x, size.y, false, Image::FORMAT_L8, alpha_data);
+
+			RaytraceEngine::get_singleton()->set_mesh_alpha_texture(alpha_texture, i);
+		}
 	}
 
 	return OK;
@@ -932,7 +1093,44 @@ Vector3 RaytraceLightBaker::_fix_sample_position(const Vector3 &p_position, cons
 	return corrected;
 }
 
-void RaytraceLightBaker::_plot_triangle(Vector2 *p_vertices, Vector3 *p_positions, Vector3 *p_normals, Vector2 *p_uvs, const Vector<Color> &p_albedo_texture, const Vector<Color> &p_emission_texture, int p_width, int p_height, LightMapElement *r_texels, int &r_lightmap_index, int *r_lightmap_indices) {
+bool _segment_intersect(Vector2 x0, Vector2 x1, Vector2 y0, Vector2 y1) {
+#define edgeFunction(a, b, c) (c[0] - a[0]) * (b[1] - a[1]) - (c[1] - a[1]) * (b[0] - a[0])
+#define onSegment(a, b, c) (b[0] <= MAX(a[0], c[0]) && b[0] >= MIN(a[0], c[0]) && b[1] <= MAX(a[1], c[1]) && b[1] >= MIN(a[1], c[1]))
+
+	float orient1 = edgeFunction(x0, x1, y0);
+	float orient2 = edgeFunction(x0, x1, y1);
+	float orient3 = edgeFunction(y0, y1, x0);
+	float orient4 = edgeFunction(y0, y1, x1);
+
+	int o1 = orient1 == 0.0f ? 0 : (orient1 > 0.0f ? 1 : -1);
+	int o2 = orient2 == 0.0f ? 0 : (orient2 > 0.0f ? 1 : -1);
+	int o3 = orient3 == 0.0f ? 0 : (orient3 > 0.0f ? 1 : -1);
+	int o4 = orient4 == 0.0f ? 0 : (orient4 > 0.0f ? 1 : -1);
+
+	// General case
+	if (o1 != o2 && o3 != o4)
+		return true;
+
+	// Special Cases
+	// x0, x1 and y0 are colinear and y0 lies on segment x0x1
+	if (o1 == 0 && onSegment(x0, y0, x1)) return true;
+
+	// x0, x1 and y1 are colinear and y1 lies on segment x0x1
+	if (o2 == 0 && onSegment(x0, y1, x1)) return true;
+
+	// y0, y1 and x0 are colinear and x0 lies on segment y0y1
+	if (o3 == 0 && onSegment(y0, x0, y1)) return true;
+
+	// y0, y1 and x1 are colinear and x1 lies on segment y0y1
+	if (o4 == 0 && onSegment(y0, x1, y1)) return true;
+
+	return false; // Doesn't fall in any of the above cases
+
+#undef edgeFunction
+#undef onSegment
+}
+
+void RaytraceLightBaker::_plot_triangle(Vector2 *p_vertices, Vector3 *p_positions, Vector3 *p_normals, Vector2 *p_uvs, const Vector<Color> &p_albedo_texture, const Size2i &p_albedo_size, const Vector<Color> &p_emission_texture, const Size2i &p_emission_size, int p_width, int p_height, LightMapElement *r_texels, int &r_lightmap_index, int *r_lightmap_indices) {
 	Vector2 pv0 = p_vertices[0];
 	Vector2 pv1 = p_vertices[1];
 	Vector2 pv2 = p_vertices[2];
@@ -995,7 +1193,7 @@ void RaytraceLightBaker::_plot_triangle(Vector2 *p_vertices, Vector3 *p_position
 
 	Vector2 texel_size;
 
-	for (int i = 0; i < 2; ++i) {
+	for (int i = 0; i < 2; i++) {
 		Vector2i p = v0;
 		p[i] += 1;
 
@@ -1022,21 +1220,38 @@ void RaytraceLightBaker::_plot_triangle(Vector2 *p_vertices, Vector3 *p_position
 	}
 
 	for (uint32_t j = min_y; j <= max_y; ++j) {
-		for (uint32_t i = min_x; i < max_x; ++i) {
+		for (uint32_t i = min_x; i <= max_x; i++) {
 
 			bool inside = false;
-			for (int l = 0; l <= 1; l++) {
-				for (int k = 0; k <= 1; k++) {
-					Vector2 p = Vector2(i + k, j + l);
-					float w0 = edgeFunction(v1, v2, p);
-					float w1 = edgeFunction(v2, v0, p);
-					float w2 = edgeFunction(v0, v1, p);
-					if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+			const Vector2 pixel = Vector2(i, j);
+
+			if (v0.floor() == pixel || v1.floor() == pixel || v2.floor() == pixel) {
+				inside = true;
+			}
+
+			if (!inside) {
+				Vector2 p = pixel + Vector2(0.5f, 0.5f);
+				float w0 = edgeFunction(v1, v2, p);
+				float w1 = edgeFunction(v2, v0, p);
+				float w2 = edgeFunction(v0, v1, p);
+				if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+					inside = true;
+				}
+			}
+
+			if (!inside) {
+				const float neg_offset = -0.1f;
+				const float pos_offset = 1.1f;
+				const Vector2 corners[4] = { Vector2(neg_offset, neg_offset), Vector2(neg_offset, pos_offset), Vector2(pos_offset, pos_offset), Vector2(pos_offset, neg_offset) };
+				for (int k = 0; k < 4; k++) {
+					Vector2 p = pixel + corners[k];
+					Vector2 q = pixel + corners[(k + 1) % 4];
+
+					if (_segment_intersect(p, q, v0, v1) || _segment_intersect(p, q, v1, v2) || _segment_intersect(p, q, v2, v0)) {
 						inside = true;
 						break;
 					}
 				}
-				if (inside) break;
 			}
 
 			if (!inside) continue;
@@ -1046,10 +1261,13 @@ void RaytraceLightBaker::_plot_triangle(Vector2 *p_vertices, Vector3 *p_position
 			float w1 = edgeFunction(v2, v0, p);
 			float w2 = edgeFunction(v0, v1, p);
 
-			w0 /= area;
-			w1 /= area;
-			w2 /= area;
-
+			if (Math::is_zero_approx(area)) {
+				w0 = w1 = w2 = 1.0f / 3.0f;
+			} else {
+				w0 /= area;
+				w1 /= area;
+				w2 /= area;
+			}
 			int ofs = j * p_width + i;
 			if (r_lightmap_indices[ofs] >= 0) {
 				continue;
@@ -1058,8 +1276,8 @@ void RaytraceLightBaker::_plot_triangle(Vector2 *p_vertices, Vector3 *p_position
 			Vector3 pos = p0 * w0 + p1 * w1 + p2 * w2;
 			Vector3 normal = n0 * w0 + n1 * w1 + n2 * w2;
 			Vector2 uv = uv0 * w0 + uv1 * w1 + uv2 * w2;
-			Color c = _bilinear_sample(p_albedo_texture, Vector2i(p_width, p_height), uv);
-			Color e = _bilinear_sample(p_emission_texture, Vector2i(p_width, p_height), uv);
+			Color c = _bilinear_sample(p_albedo_texture, p_albedo_size, uv);
+			Color e = _bilinear_sample(p_emission_texture, p_emission_size, uv);
 
 			pos = _fix_sample_position(pos, normal, tangent, bitangent, texel_size);
 
@@ -1091,17 +1309,16 @@ struct SeamEdge {
 	}
 };
 
-void RaytraceLightBaker::_fix_seams(const PlotMesh &p_plot_mesh, Vector3 *r_lightmap, const Vector2i &p_size) {
-	Ref<Mesh> mesh = p_plot_mesh.mesh;
+void RaytraceLightBaker::_fix_seams(const PlotMesh &p_plot_mesh, Vector3 *r_lightmap, const Size2i &p_size) {
 
 	float max_uv_distance = 1.5f / MAX(p_size.x, p_size.y);
 
-	for (int i = 0; i < mesh->get_surface_count(); i++) {
+	for (int i = 0; i < p_plot_mesh.surface_arrays.size(); i++) {
 
-		if (mesh->surface_get_primitive_type(i) != Mesh::PRIMITIVE_TRIANGLES)
+		if (p_plot_mesh.surface_primitive_types[i] != Mesh::PRIMITIVE_TRIANGLES)
 			continue; //only triangles
 
-		Array arr = mesh->surface_get_arrays(i);
+		Array arr = p_plot_mesh.surface_arrays[i];
 
 		PoolVector<Vector3> vertices = arr[Mesh::ARRAY_VERTEX];
 		PoolVector<Vector3>::Read vr = vertices.read();
@@ -1185,7 +1402,7 @@ void RaytraceLightBaker::_fix_seams(const PlotMesh &p_plot_mesh, Vector3 *r_ligh
 	}
 }
 
-void RaytraceLightBaker::_fix_seam(const Vector2 &p_uv0, const Vector2 &p_uv1, const Vector2 &p_uv3, const Vector2 &p_uv4, Vector3 *r_lightmap, const Vector2i &p_size) {
+void RaytraceLightBaker::_fix_seam(const Vector2 &p_uv0, const Vector2 &p_uv1, const Vector2 &p_uv3, const Vector2 &p_uv4, Vector3 *r_lightmap, const Size2i &p_size) {
 
 	Vector2 p0 = p_uv0 * p_size;
 	Vector2 p1 = p_uv1 * p_size;
@@ -1266,10 +1483,9 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 
 	RaytraceEngine *rt = RaytraceEngine::get_singleton();
 	rt->init_scene();
-	int mesh_id = 0;
-	for (List<PlotMesh>::Element *E = mesh_list.front(); E; E = E->next()) {
-		rt->add_mesh(E->get().mesh, E->get().local_xform, mesh_id);
-		++mesh_id;
+
+	for (uint32_t mesh_id = 0; mesh_id < mesh_list.size(); mesh_id++) {
+		rt->add_mesh(mesh_list[mesh_id].mesh, mesh_list[mesh_id].local_xform, mesh_id);
 	}
 	rt->commit_scene();
 
@@ -1281,15 +1497,13 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 
 	Set<int> no_lightmap_meshes;
 
-	mesh_id = 0;
-	for (List<PlotMesh>::Element *E = mesh_list.front(); E; E = E->next()) {
-		if (!E->get().cast_shadows) {
+	for (uint32_t mesh_id = 0; mesh_id < mesh_list.size(); mesh_id++) {
+		if (!mesh_list[mesh_id].cast_shadows) {
 			no_shadow_meshes.insert(mesh_id);
 		}
-		if (!E->get().save_lightmap) {
+		if (!mesh_list[mesh_id].save_lightmap) {
 			no_lightmap_meshes.insert(mesh_id);
 		}
-		mesh_id++;
 	}
 
 	int n_lit_meshes = mesh_list.size() - no_lightmap_meshes.size();
@@ -1312,24 +1526,21 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 
 	Size2i atlas_size;
 
-	mesh_id = 0;
-	for (List<PlotMesh>::Element *E = mesh_list.front(); E; E = E->next()) {
+	for (uint32_t mesh_id = 0; mesh_id < mesh_list.size(); mesh_id++) {
 
-		Vector2 size = E->get().size_hint;
+		Size2i size = mesh_list[mesh_id].size_hint;
 
 		if (size == Size2()) {
-			size = _compute_lightmap_size(E->get());
-			ERR_FAIL_COND_V(size == Vector2(), BakedLightmap::BAKE_ERROR_LIGHTMAP_SIZE);
+			size = _compute_lightmap_size(mesh_list[mesh_id]);
+			ERR_FAIL_COND_V(size == Size2i(), BakedLightmap::BAKE_ERROR_LIGHTMAP_SIZE);
 		}
 
-		scene_lightmap_sizes.write[mesh_id] = size;
+		scene_lightmap_sizes[mesh_id] = size;
 
-		if (E->get().save_lightmap) {
+		if (mesh_list[mesh_id].save_lightmap) {
 			atlas_size.width = MAX(atlas_size.width, size.width);
 			atlas_size.height = MAX(atlas_size.height, size.height);
 		}
-
-		mesh_id++;
 	}
 
 	// Determine best atlas layout by bruteforce fitting
@@ -1347,13 +1558,6 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 
 		if (max > p_max_atlas_size) {
 			return BakedLightmap::BAKE_ERROR_LIGHTMAP_SIZE;
-		}
-
-		if (BakedLightmap::bake_step_function) {
-			bool cancel = BakedLightmap::bake_step_function(step++, TTR("Determining optimal atlas size"));
-			if (cancel) {
-				return BakedLightmap::BAKE_ERROR_USER_ABORTED;
-			}
 		}
 
 		Size2i best_atlas_size;
@@ -1381,9 +1585,9 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 					// Find out how much memory is not recoverable (because of lightmaps that can't grow),
 					// to compute a greater recovery scale for those that can.
 					int mem_unrecoverable = 0;
-					List<PlotMesh>::Element *E = mesh_list.front();
-					for (int i = 0; i < scene_lightmap_sizes.size(); i++) {
-						if (E->get().save_lightmap) {
+
+					for (unsigned int i = 0; i < scene_lightmap_sizes.size(); i++) {
+						if (mesh_list[i].save_lightmap) {
 							Vector2i scaled_size = Vector2i(
 									static_cast<int>(recovery_scale * scene_lightmap_sizes[i].x),
 									static_cast<int>(recovery_scale * scene_lightmap_sizes[i].y));
@@ -1391,7 +1595,6 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 								mem_unrecoverable += scaled_size.x * scaled_size.y - scene_lightmap_sizes[i].x * scene_lightmap_sizes[i].y;
 							}
 						}
-						E = E->next();
 					}
 					recovery_scale = Math::sqrt(static_cast<float>(target_mem_occupied - mem_unrecoverable) / (first_try_mem_occupied - mem_unrecoverable));
 				}
@@ -1399,9 +1602,8 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 				Vector<Size2i> scaled_sizes;
 				scaled_sizes.resize(scene_lightmap_sizes.size());
 				{
-					List<PlotMesh>::Element *E = mesh_list.front();
-					for (int i = 0; i < scene_lightmap_sizes.size(); i++) {
-						if (E->get().save_lightmap) {
+					for (unsigned int i = 0; i < scene_lightmap_sizes.size(); i++) {
+						if (mesh_list[i].save_lightmap) {
 							if (recovery_percent == 0) {
 								scaled_sizes.write[i] = scene_lightmap_sizes[i];
 							} else {
@@ -1418,7 +1620,6 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 							// Don't consider meshes with no generated lightmap here; will compensate later
 							scaled_sizes.write[i] = Vector2i();
 						}
-						E = E->next();
 					}
 				}
 
@@ -1487,9 +1688,9 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 		atlas_offsets = best_atlas_offsets;
 
 		// Set new lightmap sizes with possible texture space recovery
-		for (int i = 0; i < scene_lightmap_sizes.size(); i++) {
+		for (unsigned int i = 0; i < scene_lightmap_sizes.size(); i++) {
 			if (best_scaled_sizes[i] != Size2i()) {
-				scene_lightmap_sizes.write[i] = best_scaled_sizes[i];
+				scene_lightmap_sizes[i] = best_scaled_sizes[i];
 			}
 		}
 
@@ -1498,60 +1699,22 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 		time_split("Optimize atlas");
 	}
 
-	step = 0;
-	mesh_id = 0;
-	for (List<PlotMesh>::Element *E = mesh_list.front(); E; E = E->next()) {
+	Error err = _generate_buffers(&step);
 
-		if (BakedLightmap::bake_step_function) {
-			bool cancel = BakedLightmap::bake_step_function(step++, RTR("Generating buffers ") + " (" + itos(mesh_id + 1) + "/" + itos(mesh_list.size()) + ")");
-			if (cancel) {
-				return BakedLightmap::BAKE_ERROR_USER_ABORTED;
-			}
-		}
-
-		_make_lightmap(E->get(), mesh_id);
-
-		Vector2 size = scene_lightmap_sizes[mesh_id];
-
-		bool has_alpha = false;
-		PoolVector<uint8_t> alpha_data;
-		alpha_data.resize(size.x * size.y);
-		{
-			PoolVector<uint8_t>::Write w = alpha_data.write();
-			for (int i = 0; i < scene_lightmap_indices[mesh_id].size(); ++i) {
-				int idx = scene_lightmap_indices[mesh_id][i];
-				uint8_t alpha = 0;
-				if (idx >= 0) {
-					alpha = CLAMP(scene_lightmaps[mesh_id][idx].alpha * 255, 0, 255);
-					if (alpha < 255) {
-						has_alpha = true;
-					}
-				}
-				w[i] = alpha;
-			}
-		}
-
-		if (has_alpha) {
-			Ref<Image> alpha_texture;
-			alpha_texture.instance();
-			alpha_texture->create(size.x, size.y, false, Image::FORMAT_L8, alpha_data);
-
-			rt->set_mesh_alpha_texture(alpha_texture, mesh_id);
-		}
-
-		mesh_id++;
+	if (err == ERR_SKIP) {
+		return BakedLightmap::BAKE_ERROR_USER_ABORTED;
+	} else if (err == ERR_INVALID_DATA) {
+		return BakedLightmap::BAKE_ERROR_INVALID_MESH;
 	}
 
 	time_split("Build buffers");
 
 	rt->set_mesh_filter(no_shadow_meshes);
 
-	mesh_id = 0;
 	int mesh_step = 0;
-	for (List<PlotMesh>::Element *E = mesh_list.front(); E; E = E->next()) {
+	for (uint32_t mesh_id = 0; mesh_id < mesh_list.size(); mesh_id++) {
 
-		if (!E->get().save_lightmap) {
-			mesh_id++;
+		if (!mesh_list[mesh_id].save_lightmap) {
 			continue;
 		}
 
@@ -1562,11 +1725,9 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 			}
 		}
 
-		// TODO Parallelize direct light?
-		for (List<PlotLight>::Element *L = light_list.front(); L; L = L->next()) {
-			_compute_direct_light(L->get(), scene_lightmaps.write[mesh_id].ptrw(), scene_lightmaps[mesh_id].size());
+		for (uint32_t i = 0; i < light_list.size(); i++) {
+			_compute_direct_light(light_list[i], scene_lightmaps[mesh_id].ptr(), scene_lightmaps[mesh_id].size());
 		}
-		mesh_id++;
 		mesh_step++;
 	}
 
@@ -1574,12 +1735,10 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 
 	time_split("Direct light");
 
-	mesh_id = 0;
 	mesh_step = 0;
-	for (List<PlotMesh>::Element *E = mesh_list.front(); E; E = E->next()) {
+	for (uint32_t mesh_id = 0; mesh_id < mesh_list.size(); mesh_id++) {
 
-		if (!E->get().save_lightmap) {
-			mesh_id++;
+		if (!mesh_list[mesh_id].save_lightmap) {
 			continue;
 		}
 
@@ -1596,12 +1755,11 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 			_compute_indirect_light(mesh_id);
 		}
 
-		if (BakedLightmap::bake_end_substep_function) {
-			BakedLightmap::bake_end_substep_function();
-		}
-
-		mesh_id++;
 		mesh_step++;
+	}
+
+	if (BakedLightmap::bake_end_substep_function) {
+		BakedLightmap::bake_end_substep_function();
 	}
 
 	time_split("Indirect light");
@@ -1613,12 +1771,10 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 		LightmapDenoiser::get_singleton()->init();
 	}
 
-	mesh_id = 0;
 	mesh_step = 0;
-	for (List<PlotMesh>::Element *E = mesh_list.front(); E; E = E->next()) {
+	for (uint32_t mesh_id = 0; mesh_id < mesh_list.size(); mesh_id++) {
 
-		if (!E->get().save_lightmap) {
-			mesh_id++;
+		if (!mesh_list[mesh_id].save_lightmap) {
 			continue;
 		}
 
@@ -1629,9 +1785,9 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 			}
 		}
 
-		const Vector2i &size = scene_lightmap_sizes[mesh_id];
-		LightMapElement *lightmap_ptr = scene_lightmaps.write[mesh_id].ptrw();
-		int *lightmap_indices_ptr = scene_lightmap_indices.write[mesh_id].ptrw();
+		const Size2i &size = scene_lightmap_sizes[mesh_id];
+		LightMapElement *lightmap_ptr = scene_lightmaps[mesh_id].ptr();
+		int *lightmap_indices_ptr = scene_lightmap_indices[mesh_id].ptr();
 
 		Vector<Vector3> *lightmap_data = &lightmaps_data.ptrw()[mesh_id];
 		lightmap_data->resize(size.x * size.y);
@@ -1679,15 +1835,14 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 			}
 		}
 
-		scene_lightmaps.write[mesh_id].clear(); // Free now to save memory
+		scene_lightmaps[mesh_id].clear(); // Free now to save memory
 
 		if (use_denoiser) {
 			LightmapDenoiser::get_singleton()->denoise_lightmap((float *)lightmap_data->ptrw(), size);
 		}
 
-		_fix_seams(E->get(), lightmap_data->ptrw(), size);
+		_fix_seams(mesh_list[mesh_id], lightmap_data->ptrw(), size);
 
-		mesh_id++;
 		mesh_step++;
 	}
 
@@ -1700,9 +1855,9 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 	// 1. Create all the images (either per mesh or per atlas slice)
 
 	Vector<PlotMesh *> lit_meshes;
-	for (List<PlotMesh>::Element *E = mesh_list.front(); E; E = E->next()) {
-		if (E->get().save_lightmap) {
-			lit_meshes.push_back(&E->get());
+	for (uint32_t mesh_id = 0; mesh_id < mesh_list.size(); mesh_id++) {
+		if (mesh_list[mesh_id].save_lightmap) {
+			lit_meshes.push_back(&mesh_list[mesh_id]);
 		}
 	}
 
@@ -1715,21 +1870,19 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 		for (int i = 0; i < atlas_slices; i++) {
 			Ref<Image> image;
 			image.instance();
-			image->create(atlas_size.x, atlas_size.y, false, Image::FORMAT_RGBH);
+			image->create(atlas_size.x, atlas_size.y, false, Image::FORMAT_RGBF);
 			images.set(i, image);
 		}
 	} else {
 		images.resize(n_lit_meshes);
 
-		mesh_id = 0;
 		mesh_step = 0;
-		for (List<PlotMesh>::Element *E = mesh_list.front(); E; E = E->next()) {
-			if (!E->get().save_lightmap) {
-				mesh_id++;
+		for (uint32_t mesh_id = 0; mesh_id < mesh_list.size(); mesh_id++) {
+			if (!mesh_list[mesh_id].save_lightmap) {
 				continue;
 			}
 
-			String mesh_name = E->get().mesh->get_name();
+			String mesh_name = mesh_list[mesh_id].node->get_name();
 			if (mesh_name == "" || mesh_name.find(":") != -1 || mesh_name.find("/") != -1) {
 				mesh_name = "LightMap";
 			}
@@ -1748,11 +1901,10 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 
 			Ref<Image> image;
 			image.instance();
-			image->create(scene_lightmap_sizes[mesh_id].x, scene_lightmap_sizes[mesh_id].y, false, Image::FORMAT_RGB8);
+			image->create(scene_lightmap_sizes[mesh_id].x, scene_lightmap_sizes[mesh_id].y, false, Image::FORMAT_RGBF);
 			image->set_name(mesh_name);
 			images.set(mesh_step, image);
 
-			mesh_id++;
 			mesh_step++;
 		}
 	}
@@ -1775,11 +1927,9 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 		p_dst->unlock();
 	};
 
-	mesh_id = 0;
 	mesh_step = 0;
-	for (List<PlotMesh>::Element *E = mesh_list.front(); E; E = E->next()) {
-		if (!E->get().save_lightmap) {
-			mesh_id++;
+	for (uint32_t mesh_id = 0; mesh_id < mesh_list.size(); mesh_id++) {
+		if (!mesh_list[mesh_id].save_lightmap) {
 			continue;
 		}
 
@@ -1796,7 +1946,6 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 			_blit_lightmap(lightmaps_data[mesh_id], scene_lightmap_sizes[mesh_id], images.get(mesh_step).ptr(), 0, 0);
 		}
 
-		mesh_id++;
 		mesh_step++;
 	}
 
@@ -1879,19 +2028,17 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 				texture = tex;
 			}
 
-			mesh_id = 0;
 			mesh_step = 0;
-			for (List<PlotMesh>::Element *E = mesh_list.front(); E; E = E->next()) {
-				if (E->get().save_lightmap) {
+			for (uint32_t mesh_id = 0; mesh_id < mesh_list.size(); mesh_id++) {
+				if (mesh_list[mesh_id].save_lightmap) {
 					Rect2 uv_rect = Rect2(
 							static_cast<real_t>(atlas_offsets[mesh_id].x) / atlas_size.x,
 							static_cast<real_t>(atlas_offsets[mesh_id].y) / atlas_size.y,
 							static_cast<real_t>(scene_lightmap_sizes[mesh_id].x) / atlas_size.x,
 							static_cast<real_t>(scene_lightmap_sizes[mesh_id].y) / atlas_size.y);
-					r_lightmap_data->add_user(p_base_node->get_path_to(E->get().node), texture, atlas_offsets[mesh_id].slice, uv_rect, E->get().instance_idx);
+					r_lightmap_data->add_user(p_base_node->get_path_to(mesh_list[mesh_id].node), texture, atlas_offsets[mesh_id].slice, uv_rect, mesh_list[mesh_id].instance_idx);
 					mesh_step++;
 				}
-				mesh_id++;
 			}
 		}
 	} else {
@@ -1977,14 +2124,15 @@ BakedLightmap::BakeError RaytraceLightBaker::bake(Node *p_base_node, Node *p_fro
 
 		voxel_baker.begin_bake(capture_subdiv + 1, bake_bounds);
 
-		for (List<PlotMesh>::Element *E = mesh_list.front(); E; E = E->next()) {
-			voxel_baker.plot_mesh(E->get().local_xform, E->get().mesh, E->get().instance_materials, E->get().override_material);
+		for (uint32_t mesh_id = 0; mesh_id < mesh_list.size(); mesh_id++) {
+			PlotMesh &pm = mesh_list[mesh_id];
+			voxel_baker.plot_mesh(pm.local_xform, pm.mesh, pm.surface_materials, Ref<Material>());
 		}
 
 		voxel_baker.begin_bake_light(VoxelLightBaker::BakeQuality(capture_quality), capture_propagation);
 
-		for (List<PlotLight>::Element *E = light_list.front(); E; E = E->next()) {
-			PlotLight pl = E->get();
+		for (uint32_t i = 0; i < light_list.size(); i++) {
+			PlotLight &pl = light_list[i];
 			switch (pl.light->get_light_type()) {
 				case VS::LIGHT_DIRECTIONAL: {
 					voxel_baker.plot_light_directional(-pl.global_xform.basis.get_axis(2), pl.light->get_color(), pl.light->get_param(Light::PARAM_ENERGY), pl.light->get_param(Light::PARAM_INDIRECT_ENERGY), pl.light->get_bake_mode() == Light::BAKE_ALL);
@@ -2108,7 +2256,7 @@ BakedLightmap::BakeError BakedLightmap::bake(Node *p_from_node, bool p_create_vi
 
 	Vector<Color> environment_data;
 	Basis environment_transform;
-	Vector2i environment_size;
+	Size2i environment_size;
 
 	if (environment_mode != ENVIRONMENT_MODE_DISABLED) {
 
@@ -2143,17 +2291,7 @@ BakedLightmap::BakeError BakedLightmap::bake(Node *p_from_node, bool p_create_vi
 
 			} break;
 			case ENVIRONMENT_MODE_CUSTOM_COLOR: {
-				environment_data.resize(8 * 8);
-				Color c = environment_custom_color;
-				c.r *= environment_custom_energy;
-				c.g *= environment_custom_energy;
-				c.b *= environment_custom_energy;
-				for (int i = 0; i < 8; i++) {
-					for (int j = 0; j < 8; j++) {
-						environment_data.write[j * 8 + i] = c;
-					}
-				}
-				environment_size = Vector2i(8, 8);
+				//nothing
 			} break;
 		}
 	}
@@ -2167,9 +2305,13 @@ BakedLightmap::BakeError BakedLightmap::bake(Node *p_from_node, bool p_create_vi
 	baker.bounces = bounces;
 	baker.use_denoiser = use_denoiser;
 	baker.capture_enabled = capture_enabled;
-	baker.sky_data = environment_data;
-	baker.sky_size = environment_size;
-	baker.sky_orientation = environment_transform;
+	if (environment_data.empty()) {
+		baker.sky_color = environment_mode == ENVIRONMENT_MODE_CUSTOM_COLOR ? environment_custom_color * environment_custom_energy : Color(0, 0, 0);
+	} else {
+		baker.sky_data = environment_data;
+		baker.sky_size = environment_size;
+		baker.sky_orientation = environment_transform;
+	}
 
 	baker.local_bounds = AABB(-extents, extents * 2);
 	baker.global_bounds = get_global_transform().xform(baker.local_bounds);
@@ -2260,7 +2402,7 @@ void BakedLightmap::_clear_lightmaps() {
 	}
 }
 
-Vector<Color> BakedLightmap::_get_irradiance_map(Ref<Environment> p_env, Vector2i &r_size) {
+Vector<Color> BakedLightmap::_get_irradiance_map(Ref<Environment> p_env, Size2i &r_size) {
 	Vector<Color> ret;
 
 	switch (p_env->get_background()) {
@@ -2346,7 +2488,9 @@ void BakedLightmap::set_light_data(const Ref<BakedLightmapData> &p_data) {
 		}
 		set_base(RID());
 	}
+
 	light_data = p_data;
+	_change_notify("light_data");
 
 	if (light_data.is_valid()) {
 		set_base(light_data->get_rid());
@@ -2629,7 +2773,7 @@ BakedLightmap::BakedLightmap() {
 	environment_custom_energy = 1.0;
 
 	use_denoiser = true;
-	bias = 0.0005;
+	bias = 0.005;
 
 	generate_atlas = true;
 	max_atlas_size = 4096;

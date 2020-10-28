@@ -94,7 +94,7 @@ void embree_error_handler(void *p_user_data, RTCError p_code, const char *p_str)
 
 void EmbreeRaytraceEngine::init_scene() {
 	if (embree_device == NULL) {
-		embree_device = rtcNewDevice(NULL);
+		embree_device = rtcNewDevice(nullptr);
 	}
 
 	rtcSetDeviceErrorFunction(embree_device, &embree_error_handler, NULL);
@@ -125,15 +125,17 @@ uint8_t EmbreeRaytraceEngine::AlphaTextureData::sample(float u, float v) const {
 	int xi = (int)x;
 	int yi = (int)y;
 
-	uint8_t texels[4];
+	return data[yi * size.x + xi];
 
-	for (int i = 0; i < 4; ++i) {
-		int sample_x = CLAMP(xi + i % 2, 0, size.x - 1);
-		int sample_y = CLAMP(yi + i / 2, 0, size.y - 1);
-		texels[i] = data[sample_y * size.x + sample_x];
-	}
+	//uint8_t texels[4];
 
-	return Math::round(blerp(texels[0], texels[1], texels[2], texels[3], x - xi, y - yi));
+	//for (int i = 0; i < 4; ++i) {
+	//	int sample_x = CLAMP(xi + i % 2, 0, size.x - 1);
+	//	int sample_y = CLAMP(yi + i / 2, 0, size.y - 1);
+	//	texels[i] = data[sample_y * size.x + sample_x];
+	//}
+
+	//return Math::round(blerp(texels[0], texels[1], texels[2], texels[3], x - xi, y - yi));
 }
 
 void EmbreeRaytraceEngine::add_mesh(const Ref<Mesh> p_mesh, const Transform &p_xform, unsigned int p_id) {

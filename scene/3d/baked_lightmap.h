@@ -31,6 +31,7 @@
 #ifndef BAKED_INDIRECT_LIGHT_H
 #define BAKED_INDIRECT_LIGHT_H
 
+#include "core/local_vector.h"
 #include "modules/raytrace/raytrace.h"
 #include "multimesh_instance.h"
 #include "scene/3d/light.h"
@@ -112,6 +113,7 @@ public:
 		BAKE_ERROR_NO_MESHES,
 		BAKE_ERROR_CANT_CREATE_IMAGE,
 		BAKE_ERROR_LIGHTMAP_SIZE,
+		BAKE_ERROR_INVALID_MESH,
 		BAKE_ERROR_USER_ABORTED
 
 	};
@@ -249,15 +251,28 @@ class RaytraceLightBaker {
 	};
 
 	struct PlotMesh {
-		Ref<Material> override_material;
-		Vector<Ref<Material> > instance_materials;
 		Ref<Mesh> mesh;
-		Vector2 size_hint;
+		Vector<Ref<Material> > surface_materials;
+
+		// Store all these values because they can't be accessed from a separate thread when generating buffers
+		Vector<Mesh::PrimitiveType> surface_primitive_types;
+		Vector<Array> surface_arrays;
+
+		Vector<Ref<Image> > albedo_images;
+		Vector<Ref<Image> > emission_images;
+
+		Vector<Vector<Color> > albedo_textures;
+		Vector<Size2i> albedo_texture_sizes;
+		Vector<Vector<Color> > emission_textures;
+		Vector<Size2i> emission_texture_sizes;
+
+		Size2i size_hint;
 		Transform local_xform;
 		Node *node;
 		int instance_idx;
 		bool cast_shadows;
 		bool save_lightmap;
+		bool invalid_uv2s;
 	};
 
 	struct PlotLight {
@@ -265,23 +280,28 @@ class RaytraceLightBaker {
 		Transform global_xform;
 	};
 
-	List<PlotMesh> mesh_list;
-	List<PlotLight> light_list;
+	LocalVector<PlotMesh> mesh_list;
+	LocalVector<PlotLight> light_list;
 	Set<String> used_mesh_names;
 	Set<int> no_shadow_meshes;
 
-	Vector<Vector<LightMapElement> > scene_lightmaps;
-	Vector<Vector<int> > scene_lightmap_indices;
-	Vector<Vector2i> scene_lightmap_sizes;
+	LocalVector<LocalVector<LightMapElement> > scene_lightmaps;
+	LocalVector<LocalVector<int> > scene_lightmap_indices;
+	LocalVector<Vector2i> scene_lightmap_sizes;
 
+	void _get_material_images(PlotMesh &r_plot_mesh);
+	void _get_material_textures(PlotMesh &r_plot_mesh);
+	void _clear_material_textures(PlotMesh &r_plot_mesh);
 	void _find_meshes_and_lights(Node *p_at_node);
 
 	void _init_sky(Ref<World> p_world);
-	Vector2 _compute_lightmap_size(const PlotMesh &p_plot_mesh);
-	Vector<Color> _get_bake_texture(Ref<Image> p_image, const Vector2 &p_bake_size, const Color &p_color_mul, const Color &p_color_add);
+	Size2i _compute_lightmap_size(const PlotMesh &p_plot_mesh);
+	Vector<Color> _get_bake_texture(Ref<Image> p_image, const Color &p_color_mul, const Color &p_color_add);
+	void _get_solid_texture(const Color &p_color, const Size2i &p_size, Vector<Color> &r_texture);
 	Vector3 _fix_sample_position(const Vector3 &p_position, const Vector3 &p_normal, const Vector3 &p_tangent, const Vector3 &p_bitangent, const Vector2 &p_texel_size);
-	void _plot_triangle(Vector2 *p_vertices, Vector3 *p_positions, Vector3 *p_normals, Vector2 *p_uvs, const Vector<Color> &p_albedo_texture, const Vector<Color> &p_emission_texture, int p_width, int p_height, LightMapElement *r_texels, int &r_lightmap_index, int *r_lightmap_indices);
-	void _make_lightmap(const PlotMesh &p_plot_mesh, int p_idx);
+	void _plot_triangle(Vector2 *p_vertices, Vector3 *p_positions, Vector3 *p_normals, Vector2 *p_uvs, const Vector<Color> &p_albedo_texture, const Size2i &p_albedo_size, const Vector<Color> &p_emission_texture, const Size2i &p_emission_size, int p_width, int p_height, LightMapElement *r_texels, int &r_lightmap_index, int *r_lightmap_indices);
+	Error _generate_buffers(int *r_progress_step);
+	void _make_lightmap(uint32_t p_idx, int p_base_idx);
 
 	bool _cast_shadow_ray(RaytraceEngine::Ray &r_ray);
 	void _compute_direct_light(const PlotLight &p_plot_light, LightMapElement *r_lightmap, int p_size);
@@ -301,6 +321,7 @@ public:
 	int bounces;
 	bool use_denoiser;
 	Vector<Color> sky_data;
+	Color sky_color;
 	Basis sky_orientation;
 	Vector2i sky_size;
 	float bias;

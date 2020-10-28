@@ -53,6 +53,9 @@ void BakedLightmapEditorPlugin::_bake() {
 			case BakedLightmap::BAKE_ERROR_LIGHTMAP_SIZE:
 				EditorNode::get_singleton()->show_warning(TTR("Failed determining lightmap size. Maximum lightmap size too small?"));
 				break;
+			case BakedLightmap::BAKE_ERROR_INVALID_MESH:
+				EditorNode::get_singleton()->show_warning(TTR("Some mesh is invalid. Make sure the UV2 channel values are conatined within the [0.0,1.0] square region."));
+				break;
 			default: {
 			}
 		}
