@@ -34,15 +34,18 @@
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
 #include "core/io/resource_loader.h"
+#include "core/math/vector2.h"
 #include "core/os/keyboard.h"
 #include "core/os/os.h"
 #include "core/templates/list.h"
+#include "core/variant/callable.h"
 #include "editor_feature_profile.h"
 #include "editor_node.h"
 #include "editor_resource_preview.h"
 #include "editor_scale.h"
 #include "editor_settings.h"
 #include "import_dock.h"
+#include "scene/gui/tree.h"
 #include "scene/main/window.h"
 #include "scene/resources/packed_scene.h"
 #include "servers/display_server.h"
@@ -1592,40 +1595,153 @@ Vector<String> FileSystemDock::_check_existing() {
 	return conflicting_items;
 }
 
-void FileSystemDock::_move_operation_confirm(const String &p_to_path, bool p_overwrite) {
-	if (!p_overwrite) {
-		to_move_path = p_to_path;
-		Vector<String> conflicting_items = _check_existing();
-		if (!conflicting_items.is_empty()) {
-			// Ask to do something.
-			overwrite_dialog->set_text(vformat(
-					TTR("The following files or folders conflict with items in the target location '%s':\n\n%s\n\nDo you wish to overwrite them?"),
-					to_move_path,
-					String("\n").join(conflicting_items)));
-			overwrite_dialog->popup_centered();
-			return;
-		}
-	}
+void FileSystemDock::_move_operation_with_deps_confirm(const String &p_to_path) {
+	_move_operation_confirm(p_to_path, false, true);
+}
 
-	// Check groups.
-	for (int i = 0; i < to_move.size(); i++) {
-		if (to_move[i].is_file && EditorFileSystem::get_singleton()->is_group_file(to_move[i].path)) {
-			EditorFileSystem::get_singleton()->move_group_file(to_move[i].path, p_to_path.plus_file(to_move[i].path.get_file()));
+void FileSystemDock::_find_to_dependency_delete(TreeItem *p_item, Array &paths) {
+	while (p_item) {
+		bool is_check_cell = p_item->get_cell_mode(DEPS_CHECKBOX_COLUMN) == TreeItem::CELL_MODE_CHECK;
+		bool is_checked = p_item->is_checked(DEPS_CHECKBOX_COLUMN);
+		if (is_check_cell && is_checked) {
+			String path = p_item->get_text(DEPS_PATH_COLUMN);
+			paths.push_back(path);
 		}
-	}
+		Array children = p_item->get_children();
+		for (int32_t child_i = 0; child_i < children.size(); child_i++) {
+			TreeItem *item = cast_to<TreeItem>(children[child_i]);
+			_find_to_dependency_delete(item, paths);
+		}
 
+		p_item = p_item->get_next();
+	}
+}
+
+void FileSystemDock::_move_operation_confirm(const String &p_to_path, bool p_overwrite, bool p_move_dependencies) {
+	to_move_path = p_to_path;
+	Vector<String> conflicting_items;
+	conflicting_items.append_array(_check_existing());
+	if (!p_overwrite && !conflicting_items.is_empty()) {
+		// Ask to do something.
+		overwrite_dialog->set_text(vformat(
+				TTR("The following files or folders conflict with items in the target location '%s':\n\n%s\n\nDo you wish to overwrite them?"),
+				to_move_path,
+				String("\n").join(conflicting_items)));
+		overwrite_dialog->popup_centered();
+		return;
+	}
+	if (!p_move_dependencies) {
+		_move_dependencies(p_to_path, false);
+		return;
+	}
+	Set<String> file_dependencies;
+	file_dependencies.insert(path);
+	for (FileOrFolder move : to_move) {
+		_scan_file_dependencies(move.path, file_dependencies);
+	}
+	for (String file_dep : file_dependencies) {
+		FileOrFolder new_move;
+		new_move.is_file = true;
+		new_move.path = file_dep;
+		to_move.push_back(new_move);
+	}
+	if (!conflicting_items.is_empty()) {
+		ignore_overwrite_with_deps_dialog->grab_focus();
+		return;
+	}
+	overwrite_dialog->grab_focus();
+	new_deps_tree->clear();
+	new_deps_tree->set_v_size_flags(SIZE_SHRINK_CENTER);
+	new_deps_tree->set_column_titles_visible(true);
+	new_deps_tree->set_columns(3);
+	new_deps_tree->set_column_title(DEPS_PATH_COLUMN, TTR("Path"));
+	new_deps_tree->set_column_custom_minimum_width(DEPS_PATH_COLUMN, 100);
+	new_deps_tree->set_column_expand(DEPS_PATH_COLUMN, true);
+	new_deps_tree->set_column_clip_content(DEPS_PATH_COLUMN, true);
+	new_deps_tree->set_column_title(DEPS_RESOURCE_COLUMN, TTR("Resource"));
+	new_deps_tree->set_column_custom_minimum_width(DEPS_RESOURCE_COLUMN, 50);
+	new_deps_tree->set_column_expand(DEPS_RESOURCE_COLUMN, false);
+	new_deps_tree->set_column_clip_content(DEPS_RESOURCE_COLUMN, false);
+	new_deps_tree->set_column_title(DEPS_CHECKBOX_COLUMN, TTR("Move"));
+	new_deps_tree->set_column_custom_minimum_width(DEPS_CHECKBOX_COLUMN, 50);
+	new_deps_tree->set_column_expand(DEPS_CHECKBOX_COLUMN, false);
+	new_deps_tree->set_column_clip_content(DEPS_CHECKBOX_COLUMN, true);
+	TreeItem *root = new_deps_tree->create_item();
+	new_deps_tree->set_hide_root(true);
+	for (Set<String>::Element *E = file_dependencies.front(); E; E = E->next()) {
+		TreeItem *item = new_deps_tree->create_item(root);
+
+		// Check groups.
+		for (int i = 0; i < to_move.size(); i++) {
+			if (to_move[i].is_file && EditorFileSystem::get_singleton()->is_group_file(to_move[i].path)) {
+				EditorFileSystem::get_singleton()->move_group_file(to_move[i].path, p_to_path.plus_file(to_move[i].path.get_file()));
+			}
+		}
+
+		String n = E->get();
+		String path;
+		String type;
+
+		if (n.find("::") != String::npos) {
+			path = n.get_slice("::", 0);
+			type = n.get_slice("::", 1);
+		} else {
+			path = n;
+			type = "Resource";
+		}
+		String name = path.get_file();
+		Ref<Texture> icon = EditorNode::get_singleton()->get_class_icon(type);
+		item->set_text(DEPS_RESOURCE_COLUMN, name);
+		item->set_icon(DEPS_RESOURCE_COLUMN, icon);
+		item->set_metadata(DEPS_RESOURCE_COLUMN, type);
+		item->set_selectable(DEPS_RESOURCE_COLUMN, false);
+		item->set_text(DEPS_PATH_COLUMN, path);
+		item->set_selectable(DEPS_PATH_COLUMN, false);
+		item->set_cell_mode(DEPS_CHECKBOX_COLUMN, TreeItem::TreeCellMode::CELL_MODE_CHECK);
+		item->set_editable(DEPS_CHECKBOX_COLUMN, true);
+		item->set_checked(DEPS_CHECKBOX_COLUMN, true);
+	}
+	new_deps_dialog->popup_centered_ratio();
+	new_deps_dialog->disconnect("confirmed", callable_mp(this, &FileSystemDock::_move_dependencies));
+	new_deps_dialog->connect("confirmed", callable_mp(this, &FileSystemDock::_move_dependencies), varray(p_to_path, true));
+}
+
+void FileSystemDock::_scan_file_dependencies(String p_path, Set<String> &p_file_dependencies) {
+	List<String> deps;
+	ResourceLoader::get_dependencies(p_path, &deps, false);
+	for (List<String>::Element *E = deps.front(); E; E = E->next()) {
+		p_file_dependencies.insert(E->get());
+		_scan_file_dependencies(E->get(), p_file_dependencies);
+	}
+}
+
+void FileSystemDock::_move_dependencies(String p_to_path, bool p_move_dependencies) {
 	Map<String, String> file_renames;
 	Map<String, String> folder_renames;
 	bool is_moved = false;
-	for (int i = 0; i < to_move.size(); i++) {
-		String old_path = to_move[i].path.ends_with("/") ? to_move[i].path.substr(0, to_move[i].path.length() - 1) : to_move[i].path;
-		String new_path = p_to_path.plus_file(old_path.get_file());
-		if (old_path != new_path) {
-			_try_move_item(to_move[i], new_path, file_renames, folder_renames);
-			is_moved = true;
+	if (!p_move_dependencies) {
+		for (int i = 0; i < to_move.size(); ++i) {
+			String old_path = to_move[i].path.ends_with("/") ? to_move[i].path.substr(0, to_move[i].path.length() - 1) : to_move[i].path;
+			String new_path = p_to_path.plus_file(old_path.get_file());
+			if (old_path != new_path) {
+				_try_move_item(to_move[i], new_path, file_renames, folder_renames);
+				is_moved = true;
+			}
+		}
+		return;
+	} else {
+		Array move_paths;
+		_find_to_dependency_delete(new_deps_tree->get_root(), move_paths);
+		for (int32_t i = 0; i < move_paths.size(); ++i) {
+			String old_path = move_paths[i];
+			String new_path = p_to_path.plus_file(String(move_paths[i]).get_file());
+			print_verbose("Moving dependencies for: " + old_path);
+			if (old_path != new_path) {
+				is_moved = true;
+				_try_move_item(FileOrFolder(old_path, true), new_path, file_renames, folder_renames);
+			}
 		}
 	}
-
 	if (is_moved) {
 		int current_tab = editor->get_current_tab();
 		_save_scenes_after_move(file_renames); // Save scenes before updating.
@@ -1841,15 +1957,14 @@ void FileSystemDock::_file_option(int p_option, const Vector<String> &p_selected
 		case FILE_MOVE: {
 			// Move the files to a given location.
 			to_move.clear();
-			Vector<String> collapsed_paths = _remove_self_included_paths(p_selected);
-			for (int i = collapsed_paths.size() - 1; i >= 0; i--) {
-				String fpath = collapsed_paths[i];
+			for (int i = 0; i < p_selected.size(); ++i) {
+				String fpath = p_selected[i];
 				if (fpath != "res://") {
 					to_move.push_back(FileOrFolder(fpath, !fpath.ends_with("/")));
 				}
 			}
 			if (to_move.size() > 0) {
-				move_dialog->popup_centered_ratio();
+				move_with_deps_dialog->popup_centered_ratio();
 			}
 		} break;
 
@@ -2798,13 +2913,30 @@ void FileSystemDock::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_file_list_thumbnail_done"), &FileSystemDock::_file_list_thumbnail_done);
 	ClassDB::bind_method(D_METHOD("_tree_thumbnail_done"), &FileSystemDock::_tree_thumbnail_done);
 	ClassDB::bind_method(D_METHOD("_select_file"), &FileSystemDock::_select_file);
+	ClassDB::bind_method(D_METHOD("_navigate_to_path"), &FileSystemDock::_navigate_to_path, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("_toggle_file_display"), &FileSystemDock::_toggle_file_display);
+	ClassDB::bind_method(D_METHOD("_fw_history"), &FileSystemDock::_fw_history);
+	ClassDB::bind_method(D_METHOD("_bw_history"), &FileSystemDock::_bw_history);
+	ClassDB::bind_method(D_METHOD("_fs_changed"), &FileSystemDock::_fs_changed);
+	ClassDB::bind_method(D_METHOD("_tree_multi_selected"), &FileSystemDock::_tree_multi_selected);
+	ClassDB::bind_method(D_METHOD("_make_dir_confirm"), &FileSystemDock::_make_dir_confirm);
+	ClassDB::bind_method(D_METHOD("_resource_created"), &FileSystemDock::_resource_created);
+	ClassDB::bind_method(D_METHOD("_move_operation_confirm", "to_path", "overwrite", "with_dependencies"), &FileSystemDock::_move_operation_confirm, DEFVAL(false), DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("_move_operation_with_deps_confirm", "to_path"), &FileSystemDock::_move_operation_with_deps_confirm);
 
 	ClassDB::bind_method(D_METHOD("_get_drag_data_fw", "position", "from"), &FileSystemDock::get_drag_data_fw);
 	ClassDB::bind_method(D_METHOD("_can_drop_data_fw", "position", "data", "from"), &FileSystemDock::can_drop_data_fw);
 	ClassDB::bind_method(D_METHOD("_drop_data_fw", "position", "data", "from"), &FileSystemDock::drop_data_fw);
+
+	ClassDB::bind_method(D_METHOD("_move_with_overwrite"), &FileSystemDock::_move_with_overwrite);
+	ClassDB::bind_method(D_METHOD("_rename_operation_confirm"), &FileSystemDock::_rename_operation_confirm);
+	ClassDB::bind_method(D_METHOD("_duplicate_operation_confirm"), &FileSystemDock::_duplicate_operation_confirm);
+
 	ClassDB::bind_method(D_METHOD("navigate_to_path", "path"), &FileSystemDock::navigate_to_path);
 
 	ClassDB::bind_method(D_METHOD("_update_import_dock"), &FileSystemDock::_update_import_dock);
+
+	ClassDB::bind_method(D_METHOD("_move_dependencies"), &FileSystemDock::_move_dependencies);
 
 	ADD_SIGNAL(MethodInfo("inherit", PropertyInfo(Variant::STRING, "file")));
 	ADD_SIGNAL(MethodInfo("instance", PropertyInfo(Variant::PACKED_STRING_ARRAY, "files")));
@@ -2971,7 +3103,11 @@ FileSystemDock::FileSystemDock(EditorNode *p_editor) {
 	move_dialog = memnew(EditorDirDialog);
 	move_dialog->get_ok_button()->set_text(TTR("Move"));
 	add_child(move_dialog);
-	move_dialog->connect("dir_selected", callable_mp(this, &FileSystemDock::_move_operation_confirm), make_binds(false));
+	move_dialog->connect("dir_selected", callable_mp(this, &FileSystemDock::_move_operation_confirm), make_binds(false, false));
+
+	move_with_deps_dialog = memnew(EditorDirDialog);
+	add_child(move_with_deps_dialog);
+	move_with_deps_dialog->connect("dir_selected", callable_mp(this, &FileSystemDock::_move_operation_with_deps_confirm));
 
 	rename_dialog = memnew(ConfirmationDialog);
 	VBoxContainer *rename_dialog_vb = memnew(VBoxContainer);
@@ -2988,6 +3124,10 @@ FileSystemDock::FileSystemDock(EditorNode *p_editor) {
 	overwrite_dialog->get_ok_button()->set_text(TTR("Overwrite"));
 	add_child(overwrite_dialog);
 	overwrite_dialog->connect("confirmed", callable_mp(this, &FileSystemDock::_move_with_overwrite));
+
+	ignore_overwrite_with_deps_dialog = memnew(ConfirmationDialog);
+	ignore_overwrite_with_deps_dialog->set_text(TTR("There is already file or folder with the same name in this location."));
+	add_child(ignore_overwrite_with_deps_dialog);
 
 	duplicate_dialog = memnew(ConfirmationDialog);
 	VBoxContainer *duplicate_dialog_vb = memnew(VBoxContainer);
@@ -3033,6 +3173,12 @@ FileSystemDock::FileSystemDock(EditorNode *p_editor) {
 	add_child(new_resource_dialog);
 	new_resource_dialog->set_base_type("Resource");
 	new_resource_dialog->connect("create", callable_mp(this, &FileSystemDock::_resource_created));
+
+	new_deps_dialog = memnew(ConfirmationDialog);
+	add_child(new_deps_dialog);
+	new_deps_tree = memnew(Tree);
+	new_deps_dialog->add_child(new_deps_tree);
+	new_deps_dialog->connect("confirmed", callable_mp(this, &FileSystemDock::_move_dependencies), make_binds("", false, Array()));
 
 	searched_string = String();
 	uncollapsed_paths_before_search = Vector<String>();
