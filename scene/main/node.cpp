@@ -502,8 +502,8 @@ MultiplayerAPI::RPCMode Node::rpc_get_mode(const StringName &p_method) {
 
 	if (data.rpc_methods.has(p_method)) {
 		return data.rpc_methods[p_method];
-	} else {
-		return MultiplayerAPI::RPC_MODE_DISABLED;
+	} else if (get_script_instance()) {
+		return get_script_instance()->get_rpc_mode(p_method);
 	}
 }
 
@@ -511,8 +511,8 @@ MultiplayerAPI::RPCMode Node::rset_get_mode(const StringName &p_property) {
 
 	if (data.rpc_properties.has(p_property)) {
 		return data.rpc_properties[p_property];
-	} else {
-		return MultiplayerAPI::RPC_MODE_DISABLED;
+	} else if (get_script_instance()) {
+		return get_script_instance()->get_rpc_mode(p_property);
 	}
 }
 
