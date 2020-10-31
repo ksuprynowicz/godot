@@ -19,7 +19,7 @@
 /* #undef EMBREE_API_NAMESPACE */
 
 #if defined(EMBREE_API_NAMESPACE)
-#  define RTC_NAMESPACE 
+#  define RTC_NAMESPACE
 #  define RTC_NAMESPACE_BEGIN namespace  {
 #  define RTC_NAMESPACE_END }
 #  define RTC_NAMESPACE_USE using namespace ;

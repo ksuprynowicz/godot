@@ -36,8 +36,8 @@
 #define NOMINMAX
 // -- GODOT start --
 #endif
-// -- GODOT end --
 #include "windows.h"
+// -- GODOT end --
 #endif
 
 /* normally defined in pmmintrin.h, but we always need this */
