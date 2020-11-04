@@ -89,6 +89,7 @@ def get_flags():
 
 
 def configure(env):
+
     ## Build type
 
     if env["target"] == "release":
@@ -140,7 +141,7 @@ def configure(env):
                 # A convenience so you don't need to write use_lto too when using SCons
                 env["use_lto"] = True
         else:
-            print("Using LLD with GCC is not supported yet. Try compiling with 'use_llvm=yes'.")
+            print("Using LLD with GCC is not supported yet, try compiling with 'use_llvm=yes'.")
             sys.exit(255)
 
     if env["use_coverage"]:
@@ -202,6 +203,10 @@ def configure(env):
 
     env.Append(CCFLAGS=["-pipe"])
     env.Append(LINKFLAGS=["-pipe"])
+
+    # -fpie and -no-pie is supported on GCC 6+ and Clang 4+, both below our
+    # minimal requirements.
+    env.Append(CCFLAGS=["-fpie"])
 
     ## Dependencies
 
@@ -331,32 +336,36 @@ def configure(env):
     ## Flags
 
     if os.system("pkg-config --exists alsa") == 0:  # 0 means found
+        print("Enabling ALSA")
         env["alsa"] = True
         env.Append(CPPDEFINES=["ALSA_ENABLED", "ALSAMIDI_ENABLED"])
     else:
-        print("Warning: ALSA libraries not found. Disabling the ALSA audio driver.")
+        print("ALSA libraries not found, disabling driver")
 
     if env["pulseaudio"]:
         if os.system("pkg-config --exists libpulse") == 0:  # 0 means found
+            print("Enabling PulseAudio")
             env.Append(CPPDEFINES=["PULSEAUDIO_ENABLED"])
             env.ParseConfig("pkg-config --cflags libpulse")
         else:
-            print("Warning: PulseAudio development libraries not found. Disabling the PulseAudio audio driver.")
+            print("PulseAudio development libraries not found, disabling driver")
 
     if env["dbus"]:
         if os.system("pkg-config --exists dbus-1") == 0:  # 0 means found
+            print("Enabling D-Bus")
             env.Append(CPPDEFINES=["DBUS_ENABLED"])
             env.ParseConfig("pkg-config --cflags --libs dbus-1")
         else:
-            print("Warning: D-Bus development libraries not found. Disabling screensaver prevention.")
+            print("D-Bus development libraries not found, disabling dependent features")
 
     if platform.system() == "Linux":
         env.Append(CPPDEFINES=["JOYDEV_ENABLED"])
         if env["udev"]:
             if os.system("pkg-config --exists libudev") == 0:  # 0 means found
+                print("Enabling udev support")
                 env.Append(CPPDEFINES=["UDEV_ENABLED"])
             else:
-                print("Warning: libudev development libraries not found. Disabling controller hotplugging support.")
+                print("libudev development libraries not found, disabling udev support")
     else:
         env["udev"] = False  # Linux specific
 
@@ -405,7 +414,7 @@ def configure(env):
         gnu_ld_version = re.search("^GNU ld [^$]*(\d+\.\d+)$", linker_version_str, re.MULTILINE)
         if not gnu_ld_version:
             print(
-                "Warning: Creating template binaries enabled for PCK embedding is currently only supported with GNU ld, not gold or LLD."
+                "Warning: Creating template binaries enabled for PCK embedding is currently only supported with GNU ld"
             )
         else:
             if float(gnu_ld_version.group(1)) >= 2.30:
@@ -431,3 +440,8 @@ def configure(env):
     else:
         if env["use_llvm"]:
             env.Append(LIBS=["atomic"])
+
+    ## Enable Shared library
+    if env["platform"] != "windows":
+        env.Append(CCFLAGS=["-fPIC"])
+        env.Append(LINKFLAGS=["-fPIC"])

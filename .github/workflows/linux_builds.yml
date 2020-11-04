@@ -45,7 +45,7 @@ jobs:
             tests: false
             sconsflags: module_mono_enabled=yes mono_glue=no debug_symbols=no
             artifact: true
-
+            
     steps:
       - uses: actions/checkout@v2
 
@@ -66,6 +66,11 @@ jobs:
         with:
           cache-name: ${{ matrix.cache-name }}
         continue-on-error: true
+
+      # Install elixir dev
+      - name: Configure dependencies
+        run: |
+          sudo apt-get install elixir erlang-dev
 
       - name: Setup python and scons
         uses: ./.github/actions/godot-deps
