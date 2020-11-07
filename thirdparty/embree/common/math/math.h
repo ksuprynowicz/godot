@@ -13,7 +13,7 @@
 #include <immintrin.h>
 
 #if defined(__WIN32__)
-#if (__MSV_VER <= 1700)
+#if defined(_MSC_VER) && (_MSC_VER <= 1700)
 namespace std
 {
   __forceinline bool isinf ( const float x ) { return _finite(x) == 0; }
