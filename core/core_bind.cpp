@@ -175,6 +175,12 @@ PackedStringArray OS::get_connected_midi_inputs() {
 	return ::OS::get_singleton()->get_connected_midi_inputs();
 }
 
+void _OS::debug_crash() const {
+	// From breakpad https://stackoverflow.com/a/39920519/381724
+	volatile int *a = reinterpret_cast<volatile int *>(NULL);
+	*a = 1;
+}
+
 void OS::open_midi_inputs() {
 	::OS::get_singleton()->open_midi_inputs();
 }

@@ -124,6 +124,10 @@ opts.Add(EnumVariable("float", "Floating-point precision", "default", ("default"
 opts.Add(EnumVariable("optimize", "Optimization type", "speed", ("speed", "size", "none")))
 opts.Add(BoolVariable("production", "Set defaults to build Godot for use in production", False))
 opts.Add(BoolVariable("use_lto", "Use link-time optimization", False))
+opts.Add("crashpad_url", "Set crashpad crash reporter url", "")
+opts.Add(
+    "crashpad_handler_path", "Set crashpad crash reporter handler path", "res://crashpad_handler.com",
+)
 
 # Components
 opts.Add(BoolVariable("deprecated", "Enable deprecated features", True))
@@ -503,7 +507,13 @@ if selected_platform in platform_list:
     # Configure compiler warnings
     if env.msvc:  # MSVC
         # Truncations, narrowing conversions, signed/unsigned comparisons...
-        disable_nonessential_warnings = ["/wd4267", "/wd4244", "/wd4305", "/wd4018", "/wd4800"]
+        disable_nonessential_warnings = [
+            "/wd4267",
+            "/wd4244",
+            "/wd4305",
+            "/wd4018",
+            "/wd4800",
+        ]
         if env["warnings"] == "extra":
             env.Append(CCFLAGS=["/Wall"])  # Implies /W4
         elif env["warnings"] == "all":
@@ -663,6 +673,15 @@ if selected_platform in platform_list:
     if env["tools"]:
         env.Append(CPPDEFINES=["TOOLS_ENABLED"])
     methods.write_disabled_classes(env["disable_classes"].split(","))
+    if env["disable_3d"]:
+        if env["tools"]:
+            print(
+                "Build option 'disable_3d=yes' cannot be used with 'tools=yes' (editor), only with 'tools=no' (export template)."
+            )
+    if env.use_ptrcall:
+        env.Append(CPPDEFINES=["PTRCALL_ENABLED"])
+    if env["tools"]:
+        env.Append(CPPDEFINES=["TOOLS_ENABLED"])
     if env["disable_3d"]:
         if env["tools"]:
             print(
