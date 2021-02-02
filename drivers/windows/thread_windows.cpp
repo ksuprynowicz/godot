@@ -101,8 +101,8 @@ void ThreadWindows::make_default() {
 
 	// SetThreadDescription is implemented in Windows 10, version 1607.
 	lpSetThreadDescription = (PSETTHREADDESCRIPTION)GetProcAddress(
-					GetModuleHandle(TEXT("kernel32.dll")),
-					"SetThreadDescription");
+			GetModuleHandle(TEXT("kernel32.dll")),
+			"SetThreadDescription");
 	if (lpSetThreadDescription != NULL) {
 		set_name_func = set_name_func_windows;
 	}
