@@ -157,6 +157,7 @@ public:
 
 	StringName _spatial_editor_group;
 	StringName _request_gizmo;
+	StringName _set_subgizmo_selection;
 	StringName _clear_subgizmo_selection;
 
 	StringName offset;
