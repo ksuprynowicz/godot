@@ -32,6 +32,7 @@
 
 #include "core/object/message_queue.h"
 #include "core/variant/type_info.h"
+#include "editor/plugins/skeleton_3d_editor_plugin.h"
 #include "scene/3d/physics_body_3d.h"
 #include "scene/resources/skeleton_modification_3d.h"
 #include "scene/resources/surface_tool.h"
@@ -270,6 +271,7 @@ void Skeleton3D::_notification(int p_what) {
 			}
 
 #ifdef TOOLS_ENABLED
+			_redraw_gizmo();
 			emit_signal(SceneStringNames::get_singleton()->pose_updated);
 #endif // TOOLS_ENABLED
 
@@ -318,6 +320,24 @@ void Skeleton3D::_notification(int p_what) {
 #endif // _3D_DISABLED
 	}
 }
+
+#ifdef TOOLS_ENABLED
+void Skeleton3D::_redraw_gizmo() {
+	Vector<Ref<Node3DGizmo>> gizmos = get_gizmos();
+	for (int i = 0; i < gizmos.size(); i++) {
+		Ref<EditorNode3DGizmo> gizmo = gizmos[i];
+		if (!gizmo.is_valid()) {
+			continue;
+		}
+		Ref<Skeleton3DGizmoPlugin> plugin = gizmo->get_plugin();
+		if (!plugin.is_valid()) {
+			continue;
+		}
+		gizmo->redraw();
+		break;
+	}
+}
+#endif // TOOLS_ENABLED
 
 void Skeleton3D::clear_bones_global_pose_override() {
 	for (int i = 0; i < bones.size(); i += 1) {
@@ -625,6 +645,7 @@ void Skeleton3D::set_bone_enabled(int p_bone, bool p_enabled) {
 	ERR_FAIL_INDEX(p_bone, bone_size);
 
 	bones.write[p_bone].enabled = p_enabled;
+	emit_signal(SceneStringNames::get_singleton()->bone_enabled_changed, p_bone);
 	_make_dirty();
 }
 
@@ -938,6 +959,12 @@ Ref<SkinReference> Skeleton3D::register_skin(const Ref<Skin> &p_skin) {
 	return skin_ref;
 }
 
+void Skeleton3D::force_update_all_dirty_bones() {
+	if (dirty) {
+		const_cast<Skeleton3D *>(this)->notification(NOTIFICATION_UPDATE_SKELETON);
+	}
+}
+
 void Skeleton3D::force_update_all_bone_transforms() {
 	_update_process_order();
 
@@ -1133,6 +1160,16 @@ void Skeleton3D::execute_modifications(real_t p_delta, int p_execution_mode) {
 
 #endif // _3D_DISABLED
 
+void Skeleton3D::set_selected_bone(int p_bone) {
+	selected_bone = p_bone;
+	update_gizmos();
+	return;
+}
+
+int Skeleton3D::get_selected_bone() const {
+	return selected_bone;
+}
+
 void Skeleton3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_bone", "name"), &Skeleton3D::add_bone);
 	ClassDB::bind_method(D_METHOD("find_bone", "name"), &Skeleton3D::find_bone);
@@ -1213,6 +1250,7 @@ void Skeleton3D::_bind_methods() {
 #endif // TOOLS_ENABLED
 
 	ADD_SIGNAL(MethodInfo("bone_pose_changed", PropertyInfo(Variant::INT, "bone_idx")));
+	ADD_SIGNAL(MethodInfo("bone_enabled_changed", PropertyInfo(Variant::INT, "bone_idx")));
 
 	BIND_CONSTANT(NOTIFICATION_UPDATE_SKELETON);
 }
