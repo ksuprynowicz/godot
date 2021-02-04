@@ -283,6 +283,7 @@ public:
 	Position3DGizmoPlugin();
 };
 
+/*
 class Skeleton3DGizmoPlugin : public EditorNode3DGizmoPlugin {
 	GDCLASS(Skeleton3DGizmoPlugin, EditorNode3DGizmoPlugin);
 
@@ -294,6 +295,7 @@ public:
 
 	Skeleton3DGizmoPlugin();
 };
+*/
 
 class PhysicalBone3DGizmoPlugin : public EditorNode3DGizmoPlugin {
 	GDCLASS(PhysicalBone3DGizmoPlugin, EditorNode3DGizmoPlugin);
