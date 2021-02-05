@@ -31,9 +31,9 @@
 #ifndef IMAGE_COMPRESS_BC7E_H
 #define IMAGE_COMPRESS_BC7E_H
 
-#include "core/io/image.h"
+#include "core/image.h"
 #include "thirdparty/bc7e/bc7e_ispc.h"
 #include "bc7e.h"
 
-void image_compress_bc7e(Image *p_image, float p_lossy_quality, Image::UsedChannels p_channels);
+void image_compress_bc7e(Image *p_image, float p_lossy_quality, Image::CompressSource p_source);
 #endif // IMAGE_COMPRESS_BC7E_H

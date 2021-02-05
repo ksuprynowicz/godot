@@ -31,7 +31,7 @@
 #ifndef IMAGE_DECOMPRESS_BC7E_H
 #define IMAGE_DECOMPRESS_BC7E_H
 
-#include "core/io/image.h"
+#include "core/image.h"
 #include "thirdparty/bc7e/bc7decomp.h"
 #include "bc7e.h"
 

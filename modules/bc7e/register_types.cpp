@@ -34,7 +34,7 @@
 
 #include "image_compress_bc7e.h"
 #include "image_decompress_bc7e.h"
-#include "core/io/image.h"
+#include "core/image.h"
 
 void register_bc7e_types() {
 	Image::set_compress_bptc_func(image_compress_bc7e);

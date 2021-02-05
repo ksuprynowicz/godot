@@ -38,7 +38,7 @@
 #include "thirdparty/bc7e/bc7e_ispc_avx2.h"
 #include "thirdparty/bc7e/bc7e_ispc_sse4.h"
 
-#include "core/variant/variant.h"
+#include "core/variant.h"
 
 struct color_quad_u8 {
 	uint8_t m_c[4];
@@ -130,8 +130,8 @@ public:
 
 		image_u8 new_image(new_width, new_height);
 
-		const uint32_t w = std::min(m_width, new_width);
-		const uint32_t h = std::min(m_height, new_height);
+		const uint32_t w = MIN(m_width, new_width);
+		const uint32_t h = MIN(m_height, new_height);
 
 		for (uint32_t y = 0; y < h; y++) {
 			for (uint32_t x = 0; x < w; x++) {

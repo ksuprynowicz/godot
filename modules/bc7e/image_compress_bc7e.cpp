@@ -31,11 +31,12 @@
 #include "image_compress_bc7e.h"
 #include "bc7e.h"
 
-#include "core/io/image.h"
+#include "core/image.h"
 #include "core/os/os.h"
 #include "core/os/thread.h"
 #include "core/os/threaded_array_processor.h"
-#include "core/string/print_string.h"
+#include "core/print_string.h"
+#include "core/variant.h"
 
 // Want to expose this.
 class ImageMetrics {
@@ -53,8 +54,8 @@ public:
 	void compute(const image_u8 &a, const image_u8 &b, uint32_t first_channel, uint32_t num_channels) {
 		const bool average_component_error = true;
 
-		const uint32_t width = std::min(a.width(), b.width());
-		const uint32_t height = std::min(a.height(), b.height());
+		const uint32_t width = MIN(a.width(), b.width());
+		const uint32_t height = MIN(a.height(), b.height());
 
 		ERR_FAIL_COND(!((first_channel < 4U) && (first_channel + num_channels <= 4U)));
 
@@ -82,7 +83,7 @@ public:
 			if (!hist[i])
 				continue;
 
-			m_max = std::max<double>(m_max, i);
+			m_max = MAX(m_max, i);
 
 			double x = i * hist[i];
 
@@ -108,7 +109,7 @@ public:
 	}
 };
 
-void image_compress_bc7e(Image *p_image, float p_lossy_quality, Image::UsedChannels p_channels) {
+void image_compress_bc7e(Image *p_image, float p_lossy_quality, Image::CompressSource p_channels) {
 	struct bc7_block {
 		uint64_t m_vals[2];
 	};
@@ -129,7 +130,7 @@ void image_compress_bc7e(Image *p_image, float p_lossy_quality, Image::UsedChann
 
 			BC7EData *data = bc7e_data + index;
 			for (uint32_t bx = 0; bx < data->blocks_x; bx += N) {
-				const uint32_t num_blocks_to_process = std::min<uint32_t>(data->blocks_x - bx, N);
+				const uint32_t num_blocks_to_process = MIN(data->blocks_x - bx, N);
 
 				color_quad_u8 pixels[16 * N];
 
@@ -146,7 +147,7 @@ void image_compress_bc7e(Image *p_image, float p_lossy_quality, Image::UsedChann
 		}
 	};
 	Image::Format input_format = p_image->get_format();
-	if (input_format >= Image::FORMAT_BPTC_RGBA) {
+	if (p_image->is_compressed()) {
 		return; //do not compress, already compressed
 	}
 	if (input_format != Image::FORMAT_RGB8 && input_format != Image::FORMAT_RGBA8) {
@@ -205,10 +206,11 @@ void image_compress_bc7e(Image *p_image, float p_lossy_quality, Image::UsedChann
 	new_img.instance();
 	new_img->create(p_image->get_width(), p_image->get_height(), p_image->has_mipmaps(), target_format);
 
-	Vector<uint8_t> data = new_img->get_data();
-
-	uint8_t *wr = data.ptrw();
-	const uint8_t *r = p_image->get_data().ptr();
+	PoolVector<uint8_t> data = new_img->get_data();
+	PoolVector<uint8_t>::Write write_data = data.write();
+	uint8_t *wr = write_data.ptr();
+	PoolVector<uint8_t>::Write p_write_data = p_image->get_data().write();
+	const uint8_t *r = p_write_data.ptr();
 
 	Ref<Image> image = p_image->duplicate();
 	int mmc = 1 + (new_img->has_mipmaps() ? Image::get_image_required_mipmaps(new_img->get_width(), new_img->get_height(), target_format) : 0);
@@ -217,23 +219,27 @@ void image_compress_bc7e(Image *p_image, float p_lossy_quality, Image::UsedChann
 		new_img->get_mipmap_offset_size_and_dimensions(i, ofs, size, mip_w, mip_h);
 		mip_w = (mip_w + 3) & ~3;
 		mip_h = (mip_h + 3) & ~3;
+		image->unlock();
 		image->resize(mip_w, mip_h);
+		image->lock();
 		const uint32_t blocks_y = mip_h / 4;
 		const uint32_t blocks_x = mip_w / 4;
 		Vector<bc7_block> packed_image;
 		packed_image.resize(blocks_x * blocks_y);
 		image_u8 mip_source_image(mip_w, mip_h);
-		PackedByteArray image_data = image->get_data();
+		PoolByteArray image_data = image->get_data();
+		image->lock();
 		for (uint32_t y = 0; y < mip_h; y++) {
 			for (uint32_t x = 0; x < mip_w; x++) {
 				Color c = image->get_pixel(x, y);
-				uint8_t r = c.get_r8();
-				uint8_t g = c.get_g8();
-				uint8_t b = c.get_b8();
-				uint8_t a = c.get_a8();
+				uint8_t r = CLAMP(c.r * 255.0, 0.0f, 255.0);
+				uint8_t g = CLAMP(c.g * 255.0, 0.0f, 255.0);
+				uint8_t b = CLAMP(c.b * 255.0, 0.0f, 255.0);
+				uint8_t a = CLAMP(c.a * 255.0, 0.0f, 255.0);
 				mip_source_image(x, y).set(r, g, b, a);
 			}
 		}
+		image->unlock();
 		Vector<BC7EData> bc7e_arr;
 		bc7e_arr.resize(blocks_y);
 		for (int32_t by = 0; by < blocks_y; by++) {
@@ -279,5 +285,5 @@ void image_compress_bc7e(Image *p_image, float p_lossy_quality, Image::UsedChann
 
 	p_image->create(new_img->get_width(), new_img->get_height(), new_img->has_mipmaps(), new_img->get_format(), data);
 	clock_t end_t = clock();
-	print_line(vformat("Total time: %.2f secs", (double)(end_t - start_t) / CLOCKS_PER_SEC));
+	print_line(vformat("BC7e total time: %.2f secs", (double)(end_t - start_t) / CLOCKS_PER_SEC));
 }
