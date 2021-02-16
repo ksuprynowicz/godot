@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  image_loader_tinyexr.h                                               */
+/*  GodotPluginInfoProvider.java                                         */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,16 +28,41 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef IMAGE_LOADER_TINYEXR_H
-#define IMAGE_LOADER_TINYEXR_H
+package org.godotengine.godot.plugin;
 
-#include "core/io/image_loader.h"
+import androidx.annotation.NonNull;
 
-class ImageLoaderTinyEXR : public ImageFormatLoader {
-public:
-	virtual Error load_image(Ref<Image> p_image, FileAccess *f, bool p_force_linear, float p_scale);
-	virtual void get_recognized_extensions(List<String> *p_extensions) const;
-	ImageLoaderTinyEXR();
-};
+import java.util.List;
+import java.util.Set;
 
-#endif
+/**
+ * Provides the set of information expected from a Godot plugin.
+ */
+public interface GodotPluginInfoProvider {
+
+	/**
+	 * Returns the name of the plugin.
+	 */
+	@NonNull
+	String getPluginName();
+
+	/**
+	 * Returns the list of methods to be exposed to Godot.
+	 */
+	@NonNull
+	List<String> getPluginMethods();
+
+	/**
+	 * Returns the list of signals to be exposed to Godot.
+	 */
+	@NonNull
+	Set<SignalInfo> getPluginSignals();
+
+	/**
+	 * Returns the paths for the plugin's gdnative libraries (if any).
+	 *
+	 * The paths must be relative to the 'assets' directory and point to a '*.gdnlib' file.
+	 */
+	@NonNull
+	Set<String> getPluginGDNativeLibrariesPaths();
+}
