@@ -1110,7 +1110,7 @@ Ref<Image> RasterizerStorageGLES3::texture_get_data(RID p_texture, int p_layer) 
 	ERR_FAIL_COND_V(!texture->active, Ref<Image>());
 	ERR_FAIL_COND_V(texture->data_size == 0 && !texture->render_target, Ref<Image>());
 
-	if (p_layer >= 0 && !texture->images[p_layer].is_null()) {
+	if (p_layer >= 0 && p_layer < texture->images.size() && !texture->images[p_layer].is_null()) {
 		return texture->images[p_layer];
 	}
 
@@ -1388,7 +1388,10 @@ Ref<Image> RasterizerStorageGLES3::texture_get_data(RID p_texture, int p_layer) 
 void RasterizerStorageGLES3::texture_set_flags(RID p_texture, uint32_t p_flags) {
 
 	Texture *texture = texture_owner.get(p_texture);
+
 	ERR_FAIL_COND(!texture);
+	ERR_FAIL_COND(!texture->active);
+
 	if (texture->render_target) {
 
 		p_flags &= VS::TEXTURE_FLAG_FILTER; //can change only filter
