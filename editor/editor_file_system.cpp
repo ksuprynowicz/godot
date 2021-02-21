@@ -405,6 +405,13 @@ bool EditorFileSystem::_test_for_reimport(const String &p_path, bool p_only_impo
 
 	memdelete(f);
 
+	// 3.2 Compatibility
+	if (importer_name == "texture_array") {
+		importer_name = "2d_array_texture";
+	} else if (importer_name == "texture_3d") {
+		importer_name = "3d_texture";
+	}
+
 	Ref<ResourceImporter> importer = ResourceFormatImporter::get_singleton()->get_importer_by_name(importer_name);
 
 	if (importer.is_null() || importer->get_format_version() > version) {
