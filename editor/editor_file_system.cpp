@@ -414,7 +414,9 @@ bool EditorFileSystem::_test_for_reimport(const String &p_path, bool p_only_impo
 
 	Ref<ResourceImporter> importer = ResourceFormatImporter::get_singleton()->get_importer_by_name(importer_name);
 
-	if (importer.is_null() || importer->get_format_version() > version) {
+	ERR_FAIL_COND_V(importer.is_null(), true);
+
+	if (importer->get_format_version() > version) {
 		return true; // version changed, reimport
 	}
 
