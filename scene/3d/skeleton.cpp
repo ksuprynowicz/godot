@@ -948,8 +948,3 @@ Skeleton::~Skeleton() {
 		E->get()->skeleton_node = nullptr;
 	}
 }
-
-Vector<int> Skeleton::get_bone_process_order() {
-	_update_process_order();
-	return process_order;
-}

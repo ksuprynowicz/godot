@@ -237,14 +237,7 @@ void BoneTransformEditor::_value_changed(const double p_value, const bool p_from
 	if (updating)
 		return;
 
-	if (property.get_slicec('/', 0) == "bones" && property.get_slicec('/', 2) == "custom_pose") {
-		const Transform tform = compute_transform(p_from_transform);
-
-		undo_redo->create_action(TTR("Set Custom Bone Pose Transform"), UndoRedo::MERGE_ENDS);
-		undo_redo->add_undo_method(skeleton, "set_bone_custom_pose", property.get_slicec('/', 1).to_int(), skeleton->get_bone_custom_pose(property.get_slicec('/', 1).to_int()));
-		undo_redo->add_do_method(skeleton, "set_bone_custom_pose", property.get_slicec('/', 1).to_int(), tform);
-		undo_redo->commit_action();
-	} else if (property.get_slicec('/', 0) == "bones") {
+	if (property.get_slicec('/', 0) == "bones") {
 		const Transform tform = compute_transform(p_from_transform);
 
 		undo_redo->create_action(TTR("Set Bone Transform"), UndoRedo::MERGE_ENDS);
@@ -301,19 +294,6 @@ void BoneTransformEditor::_update_properties() {
 	updating = true;
 
 	Transform tform = skeleton->get(property);
-	_update_transform_properties(tform);
-}
-
-void BoneTransformEditor::_update_custom_pose_properties() {
-	if (updating)
-		return;
-
-	if (skeleton == nullptr)
-		return;
-
-	updating = true;
-
-	Transform tform = skeleton->get_bone_custom_pose(property.to_int());
 	_update_transform_properties(tform);
 }
 
@@ -604,11 +584,9 @@ void SkeletonEditor::_joint_tree_selection_changed() {
 
 		pose_editor->set_target(bone_path + "pose");
 		rest_editor->set_target(bone_path + "rest");
-		custom_pose_editor->set_target(bone_path + "custom_pose");
 
 		pose_editor->set_visible(true);
 		rest_editor->set_visible(true);
-		custom_pose_editor->set_visible(true);
 	}
 
 	_update_properties();
@@ -622,8 +600,6 @@ void SkeletonEditor::_update_properties() {
 		rest_editor->_update_properties();
 	if (pose_editor)
 		pose_editor->_update_properties();
-	if (custom_pose_editor)
-		custom_pose_editor->_update_custom_pose_properties();
 }
 
 void SkeletonEditor::update_joint_tree() {
@@ -638,7 +614,7 @@ void SkeletonEditor::update_joint_tree() {
 
 	items.insert(-1, root);
 
-	const Vector<int> &joint_porder = skeleton->get_bone_process_order();
+	const Vector<int> &joint_porder = skeleton->get_bone_process_orders();
 
 	Ref<Texture> bone_icon = get_icon("Skeleton", "EditorIcons");
 
@@ -713,11 +689,6 @@ void SkeletonEditor::create_editors() {
 	rest_editor->set_label(TTR("Bone Rest"));
 	rest_editor->set_visible(false);
 	add_child(rest_editor);
-
-	custom_pose_editor = memnew(BoneTransformEditor(skeleton));
-	custom_pose_editor->set_label(TTR("Bone Custom Pose"));
-	custom_pose_editor->set_visible(false);
-	add_child(custom_pose_editor);
 }
 
 void SkeletonEditor::_notification(int p_what) {
