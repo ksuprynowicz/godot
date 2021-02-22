@@ -382,6 +382,10 @@ void Skeleton::_notification(int p_what) {
 			}
 
 			emit_signal("skeleton_updated");
+#ifdef TOOLS_ENABLED
+			emit_signal("pose_updated");
+#endif // TOOLS_ENABLED
+
 		} break;
 	}
 }
@@ -929,6 +933,8 @@ void Skeleton::_bind_methods() {
 #ifdef TOOLS_ENABLED
 	ADD_SIGNAL(MethodInfo("pose_updated"));
 #endif
+
+	BIND_CONSTANT(NOTIFICATION_UPDATE_SKELETON);
 }
 
 Skeleton::Skeleton() :
@@ -941,4 +947,9 @@ Skeleton::~Skeleton() {
 	for (Set<SkinReference *>::Element *E = skin_bindings.front(); E; E = E->next()) {
 		E->get()->skeleton_node = nullptr;
 	}
+}
+
+Vector<int> Skeleton::get_bone_process_order() {
+	_update_process_order();
+	return process_order;
 }
