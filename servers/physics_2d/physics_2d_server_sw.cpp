@@ -1456,10 +1456,6 @@ Physics2DServerSW::Physics2DServerSW() {
 	BroadPhase2DSW::create_func = BroadPhase2DHashGrid::_create;
 	//BroadPhase2DSW::create_func=BroadPhase2DBasic::_create;
 
-#ifndef NO_THREADS
-	pending_shape_update_list_lock = Mutex::create();
-#endif
-
 	active = true;
 	island_count = 0;
 	active_objects = 0;
@@ -1473,7 +1469,4 @@ Physics2DServerSW::Physics2DServerSW() {
 };
 
 Physics2DServerSW::~Physics2DServerSW() {
-#ifndef NO_THREADS
-	memdelete(pending_shape_update_list_lock);
-#endif
 };

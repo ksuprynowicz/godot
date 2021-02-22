@@ -1583,10 +1583,6 @@ PhysicsServerSW::PhysicsServerSW() {
 
 	bool use_bvh_or_octree = GLOBAL_GET("physics/3d/godot_physics/use_bvh");
 
-#ifndef NO_THREADS
-	pending_shape_update_list_lock = Mutex::create();
-#endif
-
 	if (use_bvh_or_octree) {
 		BroadPhaseSW::create_func = BroadPhaseBVH::_create;
 	} else {
@@ -1602,7 +1598,4 @@ PhysicsServerSW::PhysicsServerSW() {
 };
 
 PhysicsServerSW::~PhysicsServerSW() {
-#ifndef NO_THREADS
-	memdelete(pending_shape_update_list_lock);
-#endif
 };
