@@ -154,12 +154,11 @@ class ARVROrigin : public Spatial {
 	GDCLASS(ARVROrigin, Spatial);
 
 private:
+	static const int TRANSFORM_BUFFER_SIZE = 3;
 	Mutex *update_mutex;
 
-	Transform current_global_transform;
-	Transform pending_global_transform;
-	bool transform_cached = false;
-	bool get_pending_global_transform = true;
+	Transform pending_transform_buffer[TRANSFORM_BUFFER_SIZE];
+	uint64_t pending_count = 0;
 	ARVRCamera *tracked_camera;
 
 protected:
