@@ -33,8 +33,11 @@
 #include "collision_object.h"
 #include "core/engine.h"
 #include "core/math/camera_matrix.h"
+#include "modules/resonanceaudio/resonance_audio_wrapper.h"
 #include "scene/resources/material.h"
 #include "scene/resources/surface_tool.h"
+#include "servers/audio_server.h"
+
 void Camera::_update_audio_listener_state() {
 }
 
@@ -103,6 +106,20 @@ void Camera::_update_camera() {
 void Camera::_notification(int p_what) {
 
 	switch (p_what) {
+		case NOTIFICATION_ENTER_TREE: {
+			if (viewport->is_audio_listener() && GLOBAL_GET("audio/enable_resonance_audio")) {
+				if (is_current()) {
+					ResonanceAudioWrapper::get_singleton()->set_head_transform(get_global_transform());
+				}
+			}
+		} break;
+		case NOTIFICATION_EXIT_TREE: {
+			if (viewport->is_audio_listener() && GLOBAL_GET("audio/enable_resonance_audio")) {
+				if (is_current()) {
+					ResonanceAudioWrapper::get_singleton()->listener_count_decrement();
+				}
+			}
+		} break;
 
 		case NOTIFICATION_ENTER_WORLD: {
 
@@ -118,6 +135,11 @@ void Camera::_notification(int p_what) {
 
 		} break;
 		case NOTIFICATION_TRANSFORM_CHANGED: {
+			if (viewport->is_audio_listener() && GLOBAL_GET("audio/enable_resonance_audio")) {
+				if (is_current()) {
+					ResonanceAudioWrapper::get_singleton()->set_head_transform(get_global_transform());
+				}
+			}
 
 			_request_camera_update();
 			if (doppler_tracking != DOPPLER_TRACKING_DISABLED) {
@@ -145,11 +167,21 @@ void Camera::_notification(int p_what) {
 		case NOTIFICATION_BECAME_CURRENT: {
 			if (viewport) {
 				viewport->find_world()->_register_camera(this);
+				if (viewport->is_audio_listener() && GLOBAL_GET("audio/enable_resonance_audio")) {
+					if (is_current()) {
+						ResonanceAudioWrapper::get_singleton()->listener_count_increment();
+					}
+				}
 			}
 		} break;
 		case NOTIFICATION_LOST_CURRENT: {
 			if (viewport) {
 				viewport->find_world()->_remove_camera(this);
+				if (viewport->is_audio_listener() && GLOBAL_GET("audio/enable_resonance_audio")) {
+					if (is_current()) {
+						ResonanceAudioWrapper::get_singleton()->listener_count_decrement();
+					}
+				}
 			}
 		} break;
 	}
@@ -676,6 +708,7 @@ Vector3 Camera::get_doppler_tracked_velocity() const {
 		return Vector3();
 	}
 }
+
 Camera::Camera() {
 
 	camera = VisualServer::get_singleton()->camera_create();
