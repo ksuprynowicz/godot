@@ -155,7 +155,7 @@ class ARVROrigin : public Spatial {
 
 private:
 	static const int TRANSFORM_BUFFER_SIZE = 3;
-	Mutex *update_mutex;
+	Mutex update_mutex;
 
 	Transform pending_transform_buffer[TRANSFORM_BUFFER_SIZE];
 	uint64_t pending_count = 0;
