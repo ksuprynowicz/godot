@@ -103,7 +103,6 @@ public:
 	void set_label(const String &p_label) { label = p_label; }
 
 	void _update_properties();
-	void _update_custom_pose_properties();
 	void _update_transform_properties(Transform p_transform);
 
 	// Can/cannot modify the spinner values for the Transform
@@ -147,7 +146,6 @@ class SkeletonEditor : public VBoxContainer {
 	Tree *joint_tree;
 	BoneTransformEditor *rest_editor;
 	BoneTransformEditor *pose_editor;
-	BoneTransformEditor *custom_pose_editor;
 
 	MenuButton *options;
 	EditorFileDialog *file_dialog;

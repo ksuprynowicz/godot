@@ -2232,12 +2232,13 @@ void main_late(vec3 vertex, vec3 normal, vec2 uv2, vec3 eye_vec, vec3 binormal, 
 
 #endif //#USE_LIGHT_DIRECTIONAL
 
+#ifdef USE_VERTEX_LIGHTING
+	diffuse_light *= albedo;
+#endif
+
 #ifdef USE_FORWARD_LIGHTING
 
-#ifdef USE_VERTEX_LIGHTING
-
-	diffuse_light *= albedo;
-#else
+#ifndef USE_VERTEX_LIGHTING
 
 	for (int i = 0; i < omni_light_count; i++) {
 		light_process_omni(omni_light_indices[i], vertex, eye_vec, normal, binormal, tangent, albedo, transmission, roughness, metallic, specular, rim, rim_tint, clearcoat, clearcoat_gloss, anisotropy, specular_blob_intensity, diffuse_light, specular_light, alpha);

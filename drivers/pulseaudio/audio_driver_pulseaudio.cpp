@@ -236,7 +236,12 @@ Error AudioDriverPulseAudio::init_device() {
 }
 
 Error AudioDriverPulseAudio::init() {
-	if (initialize_pulse()) {
+#ifdef DEBUG_ENABLED
+	int dylibloader_verbose = 1;
+#else
+	int dylibloader_verbose = 0;
+#endif
+	if (initialize_pulse(dylibloader_verbose)) {
 		return ERR_CANT_OPEN;
 	}
 
@@ -294,8 +299,7 @@ Error AudioDriverPulseAudio::init() {
 
 	Error err = init_device();
 	if (err == OK) {
-		mutex = Mutex::create();
-		thread = Thread::create(AudioDriverPulseAudio::thread_func, this);
+		thread.start(AudioDriverPulseAudio::thread_func, this);
 	}
 
 	return OK;
@@ -328,7 +332,6 @@ float AudioDriverPulseAudio::get_latency() {
 }
 
 void AudioDriverPulseAudio::thread_func(void *p_udata) {
-	Thread::set_name("GODOT:AudioDriverPulseAudio::thread_func");
 
 	AudioDriverPulseAudio *ad = (AudioDriverPulseAudio *)p_udata;
 	unsigned int write_ofs = 0;
@@ -601,16 +604,12 @@ void AudioDriverPulseAudio::set_device(String device) {
 
 void AudioDriverPulseAudio::lock() {
 
-	if (!thread || !mutex)
-		return;
-	mutex->lock();
+	mutex.lock();
 }
 
 void AudioDriverPulseAudio::unlock() {
 
-	if (!thread || !mutex)
-		return;
-	mutex->unlock();
+	mutex.unlock();
 }
 
 void AudioDriverPulseAudio::finish_device() {
@@ -624,11 +623,11 @@ void AudioDriverPulseAudio::finish_device() {
 
 void AudioDriverPulseAudio::finish() {
 
-	if (!thread)
+	if (!thread.is_started())
 		return;
 
 	exit_thread = true;
-	Thread::wait_to_finish(thread);
+	thread.wait_to_finish();
 
 	finish_device();
 
@@ -642,14 +641,6 @@ void AudioDriverPulseAudio::finish() {
 		pa_mainloop_free(pa_ml);
 		pa_ml = NULL;
 	}
-
-	memdelete(thread);
-	if (mutex) {
-		memdelete(mutex);
-		mutex = NULL;
-	}
-
-	thread = NULL;
 }
 
 Error AudioDriverPulseAudio::capture_init_device() {
@@ -803,8 +794,6 @@ String AudioDriverPulseAudio::capture_get_device() {
 }
 
 AudioDriverPulseAudio::AudioDriverPulseAudio() :
-		thread(NULL),
-		mutex(NULL),
 		pa_ml(NULL),
 		pa_ctx(NULL),
 		pa_str(NULL),

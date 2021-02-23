@@ -154,7 +154,7 @@ class ARVROrigin : public Spatial {
 	GDCLASS(ARVROrigin, Spatial);
 
 private:
-	Mutex *update_mutex;
+	Mutex update_mutex;
 
 	Transform current_global_transform;
 	Transform pending_global_transform;
