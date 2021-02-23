@@ -692,13 +692,7 @@ void ARVROrigin::_notification(int p_what) {
 
 ARVROrigin::ARVROrigin() {
 	tracked_camera = NULL;
-#ifndef NO_THREADS
-	update_mutex = Mutex::create();
-#endif
 };
 
 ARVROrigin::~ARVROrigin() {
-#ifndef NO_THREADS
-	memdelete(update_mutex);
-#endif
 };
