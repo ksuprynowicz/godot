@@ -169,6 +169,8 @@ void BakedLightmapData::clear_data() {
 void BakedLightmapData::_set_user_data(const Array &p_data) {
 	ERR_FAIL_COND(p_data.size() <= 0);
 
+	clear_data();
+
 	// Detect old lightmapper format
 	if (p_data.size() % 3 == 0) {
 		bool is_old_format = true;
