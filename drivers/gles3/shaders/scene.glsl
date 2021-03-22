@@ -1555,8 +1555,6 @@ vec4 textureArray_bicubic(sampler2DArray tex, vec3 uv) {
 
 #ifdef USE_LIGHTMAP_CAPTURE
 uniform mediump vec4[12] lightmap_captures;
-uniform bool lightmap_capture_sky;
-
 #endif
 
 #ifdef USE_GI_PROBES
@@ -2008,8 +2006,9 @@ void ambient_process_internal(vec3 vertex, vec3 normal, float roughness, float s
 
 		captured /= sum;
 
-		if (lightmap_capture_sky) {
-			ambient_light = mix(ambient_light, captured.rgb, captured.a);
+		// Alpha channel is used to indicate if dynamic objects keep the environment lighting
+		if (lightmap_captures[0].a > 0.5) {
+			ambient_light += captured.rgb;
 		} else {
 			ambient_light = captured.rgb;
 		}

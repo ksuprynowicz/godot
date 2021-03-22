@@ -36,6 +36,7 @@
 #include "scene/resources/mesh_library.h"
 #include "scene/resources/surface_tool.h"
 #include "scene/scene_string_names.h"
+#include "servers/navigation_server.h"
 #include "servers/visual_server.h"
 
 bool GridMap::_set(const StringName &p_name, const Variant &p_value) {
@@ -208,6 +209,14 @@ void GridMap::set_mesh_library(const Ref<MeshLibrary> &p_mesh_library) {
 Ref<MeshLibrary> GridMap::get_mesh_library() const {
 
 	return mesh_library;
+}
+
+void GridMap::set_use_in_baked_light(bool p_use_baked_light) {
+	use_in_baked_light = p_use_baked_light;
+}
+
+bool GridMap::get_use_in_baked_light() const {
+	return use_in_baked_light;
 }
 
 void GridMap::set_cell_size(const Vector3 &p_size) {
@@ -418,12 +427,10 @@ bool GridMap::_octant_update(const OctantKey &p_key) {
 	}
 
 	//erase navigation
-	if (navigation) {
-		for (Map<IndexKey, Octant::NavMesh>::Element *E = g.navmesh_ids.front(); E; E = E->next()) {
-			navigation->navmesh_remove(E->get().id);
-		}
-		g.navmesh_ids.clear();
+	for (Map<IndexKey, Octant::NavMesh>::Element *E = g.navmesh_ids.front(); E; E = E->next()) {
+		NavigationServer::get_singleton()->free(E->get().region);
 	}
+	g.navmesh_ids.clear();
 
 	//erase multimeshes
 
@@ -498,9 +505,11 @@ bool GridMap::_octant_update(const OctantKey &p_key) {
 			nm.xform = xform * mesh_library->get_item_navmesh_transform(c.item);
 
 			if (navigation) {
-				nm.id = navigation->navmesh_add(navmesh, xform, this);
-			} else {
-				nm.id = -1;
+				RID region = NavigationServer::get_singleton()->region_create();
+				NavigationServer::get_singleton()->region_set_navmesh(region, navmesh);
+				NavigationServer::get_singleton()->region_set_transform(region, navigation->get_global_transform() * nm.xform);
+				NavigationServer::get_singleton()->region_set_map(region, navigation->get_rid());
+				nm.region = region;
 			}
 			g.navmesh_ids[E->get()] = nm;
 		}
@@ -591,10 +600,14 @@ void GridMap::_octant_enter_world(const OctantKey &p_key) {
 	if (navigation && mesh_library.is_valid()) {
 		for (Map<IndexKey, Octant::NavMesh>::Element *F = g.navmesh_ids.front(); F; F = F->next()) {
 
-			if (cell_map.has(F->key()) && F->get().id < 0) {
+			if (cell_map.has(F->key()) && F->get().region.is_valid() == false) {
 				Ref<NavigationMesh> nm = mesh_library->get_item_navmesh(cell_map[F->key()].item);
 				if (nm.is_valid()) {
-					F->get().id = navigation->navmesh_add(nm, F->get().xform, this);
+					RID region = NavigationServer::get_singleton()->region_create();
+					NavigationServer::get_singleton()->region_set_navmesh(region, nm);
+					NavigationServer::get_singleton()->region_set_transform(region, navigation->get_global_transform() * F->get().xform);
+					NavigationServer::get_singleton()->region_set_map(region, navigation->get_rid());
+					F->get().region = region;
 				}
 			}
 		}
@@ -620,9 +633,9 @@ void GridMap::_octant_exit_world(const OctantKey &p_key) {
 	if (navigation) {
 		for (Map<IndexKey, Octant::NavMesh>::Element *F = g.navmesh_ids.front(); F; F = F->next()) {
 
-			if (F->get().id >= 0) {
-				navigation->navmesh_remove(F->get().id);
-				F->get().id = -1;
+			if (F->get().region.is_valid()) {
+				NavigationServer::get_singleton()->free(F->get().region);
+				F->get().region = RID();
 			}
 		}
 	}
@@ -640,13 +653,11 @@ void GridMap::_octant_clean_up(const OctantKey &p_key) {
 
 	PhysicsServer::get_singleton()->free(g.static_body);
 
-	//erase navigation
-	if (navigation) {
-		for (Map<IndexKey, Octant::NavMesh>::Element *E = g.navmesh_ids.front(); E; E = E->next()) {
-			navigation->navmesh_remove(E->get().id);
-		}
-		g.navmesh_ids.clear();
+	// Erase navigation
+	for (Map<IndexKey, Octant::NavMesh>::Element *E = g.navmesh_ids.front(); E; E = E->next()) {
+		NavigationServer::get_singleton()->free(E->get().region);
 	}
+	g.navmesh_ids.clear();
 
 	//erase multimeshes
 
@@ -737,6 +748,10 @@ void GridMap::_update_visibility() {
 			const Octant::MultimeshInstance &mi = octant->multimesh_instances[i];
 			VS::get_singleton()->instance_set_visible(mi.instance, is_visible_in_tree());
 		}
+	}
+
+	for (int i = 0; i < baked_meshes.size(); i++) {
+		VS::get_singleton()->instance_set_visible(baked_meshes[i].instance, is_visible_in_tree());
 	}
 }
 
@@ -864,7 +879,11 @@ void GridMap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("clear_baked_meshes"), &GridMap::clear_baked_meshes);
 	ClassDB::bind_method(D_METHOD("make_baked_meshes", "gen_lightmap_uv", "lightmap_uv_texel_size"), &GridMap::make_baked_meshes, DEFVAL(false), DEFVAL(0.1));
 
+	ClassDB::bind_method(D_METHOD("set_use_in_baked_light", "use_in_baked_light"), &GridMap::set_use_in_baked_light);
+	ClassDB::bind_method(D_METHOD("get_use_in_baked_light"), &GridMap::get_use_in_baked_light);
+
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh_library", PROPERTY_HINT_RESOURCE_TYPE, "MeshLibrary"), "set_mesh_library", "get_mesh_library");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_in_baked_light"), "set_use_in_baked_light", "get_use_in_baked_light");
 	ADD_GROUP("Cell", "cell_");
 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3, "cell_size"), "set_cell_size", "get_cell_size");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "cell_octant_size", PROPERTY_HINT_RANGE, "1,1024,1"), "set_octant_size", "get_octant_size");
@@ -1066,6 +1085,10 @@ void GridMap::make_baked_meshes(bool p_gen_lightmap_uv, float p_lightmap_uv_texe
 
 Array GridMap::get_bake_meshes() {
 
+	if (!use_in_baked_light) {
+		return Array();
+	}
+
 	if (!baked_meshes.size()) {
 		make_baked_meshes(true);
 	}
@@ -1107,6 +1130,8 @@ GridMap::GridMap() {
 	navigation = NULL;
 	set_notify_transform(true);
 	recreating_octants = false;
+
+	use_in_baked_light = false;
 }
 
 GridMap::~GridMap() {

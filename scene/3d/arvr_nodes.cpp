@@ -600,21 +600,16 @@ void ARVROrigin::set_world_scale(float p_world_scale) {
 };
 
 void ARVROrigin::_cache_world_origin_transform() {
-	pending_global_transform = get_global_transform();
+	Transform new_global_transform = get_global_transform();
 	{
 #ifndef NO_THREADS
 		MutexLock lock(update_mutex);
 #endif
-		if (!transform_cached) {
-			current_global_transform = pending_global_transform;
-			transform_cached = true;
-			ARVRServer::get_singleton()->connect("processed", this, "_arvr_server_processed");
-		} else {
-			get_pending_global_transform = !get_pending_global_transform;
-
-			// Flip the buffer if required
-			if (get_pending_global_transform) {
-				current_global_transform = pending_global_transform;
+		{
+			pending_transform_buffer[pending_count] = new_global_transform;
+			pending_count++;
+			if (pending_count > TRANSFORM_BUFFER_SIZE - 1) {
+				pending_count = TRANSFORM_BUFFER_SIZE - 1;
 			}
 		}
 	}
@@ -637,20 +632,18 @@ void ARVROrigin::_update_tracked_camera() {
 
 void ARVROrigin::_arvr_server_processed() {
 	ARVRServer *arvr_server = ARVRServer::get_singleton();
-	Transform world_origin_transform;
 	{
 #ifndef NO_THREADS
 		MutexLock lock(update_mutex);
 #endif
-		world_origin_transform = current_global_transform;
-		get_pending_global_transform = !get_pending_global_transform;
-
-		// Flip the buffer if required
-		if (get_pending_global_transform) {
-			current_global_transform = pending_global_transform;
+		arvr_server->set_world_origin(pending_transform_buffer[0]);
+		if (pending_count > 0) {
+			for (int i = 0; i < pending_count; i++) {
+				pending_transform_buffer[i] = pending_transform_buffer[i + 1];
+			}
+			pending_count--;
 		}
 	}
-	arvr_server->set_world_origin(world_origin_transform);
 }
 
 void ARVROrigin::_notification(int p_what) {
@@ -661,7 +654,6 @@ void ARVROrigin::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
 			set_process_internal(true);
-			transform_cached = false;
 		}; break;
 		case NOTIFICATION_EXIT_TREE: {
 			set_process_internal(false);
@@ -678,6 +670,13 @@ void ARVROrigin::_notification(int p_what) {
 			_cache_world_origin_transform();
 			_update_tracked_camera();
 		}; break;
+		case NOTIFICATION_READY: {
+			Transform current_global_transform = get_global_transform();
+			for (int i = 0; i < TRANSFORM_BUFFER_SIZE; i++) {
+				pending_transform_buffer[i] = current_global_transform;
+			}
+			ARVRServer::get_singleton()->connect("processed", this, "_arvr_server_processed");
+		} break;
 		default:
 			break;
 	};

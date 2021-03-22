@@ -237,6 +237,7 @@ struct _VariantCall {
 
 	VCALL_LOCALMEM1R(String, casecmp_to);
 	VCALL_LOCALMEM1R(String, nocasecmp_to);
+	VCALL_LOCALMEM1R(String, naturalnocasecmp_to);
 	VCALL_LOCALMEM0R(String, length);
 	VCALL_LOCALMEM3R(String, count);
 	VCALL_LOCALMEM3R(String, countn);
@@ -299,6 +300,7 @@ struct _VariantCall {
 	VCALL_LOCALMEM0R(String, json_escape);
 	VCALL_LOCALMEM0R(String, percent_encode);
 	VCALL_LOCALMEM0R(String, percent_decode);
+	VCALL_LOCALMEM0R(String, validate_node_name);
 	VCALL_LOCALMEM0R(String, is_valid_identifier);
 	VCALL_LOCALMEM0R(String, is_valid_integer);
 	VCALL_LOCALMEM0R(String, is_valid_float);
@@ -347,6 +349,24 @@ struct _VariantCall {
 		retval.resize(len);
 		PoolByteArray::Write w = retval.write();
 		copymem(w.ptr(), charstr.ptr(), len);
+		w.release();
+
+		r_ret = retval;
+	}
+
+	static void _call_String_to_wchar(Variant &r_ret, Variant &p_self, const Variant **p_args) {
+
+		String *s = reinterpret_cast<String *>(p_self._data._mem);
+		if (s->empty()) {
+			r_ret = PoolByteArray();
+			return;
+		}
+
+		PoolByteArray retval;
+		size_t len = s->length() * sizeof(wchar_t);
+		retval.resize(len);
+		PoolByteArray::Write w = retval.write();
+		copymem(w.ptr(), s->ptr(), len);
 		w.release();
 
 		r_ret = retval;
@@ -1558,6 +1578,7 @@ void register_variant_methods() {
 	/* STRING */
 	ADDFUNC1R(STRING, INT, String, casecmp_to, STRING, "to", varray());
 	ADDFUNC1R(STRING, INT, String, nocasecmp_to, STRING, "to", varray());
+	ADDFUNC1R(STRING, INT, String, naturalnocasecmp_to, STRING, "to", varray());
 	ADDFUNC0R(STRING, INT, String, length, varray());
 	ADDFUNC2R(STRING, STRING, String, substr, INT, "from", INT, "len", varray(-1));
 
@@ -1626,6 +1647,7 @@ void register_variant_methods() {
 	ADDFUNC0R(STRING, STRING, String, json_escape, varray());
 	ADDFUNC0R(STRING, STRING, String, percent_encode, varray());
 	ADDFUNC0R(STRING, STRING, String, percent_decode, varray());
+	ADDFUNC0R(STRING, STRING, String, validate_node_name, varray());
 	ADDFUNC0R(STRING, BOOL, String, is_valid_identifier, varray());
 	ADDFUNC0R(STRING, BOOL, String, is_valid_integer, varray());
 	ADDFUNC0R(STRING, BOOL, String, is_valid_float, varray());
@@ -1643,6 +1665,7 @@ void register_variant_methods() {
 
 	ADDFUNC0R(STRING, POOL_BYTE_ARRAY, String, to_ascii, varray());
 	ADDFUNC0R(STRING, POOL_BYTE_ARRAY, String, to_utf8, varray());
+	ADDFUNC0R(STRING, POOL_BYTE_ARRAY, String, to_wchar, varray());
 
 	ADDFUNC0R(VECTOR2, REAL, Vector2, angle, varray());
 	ADDFUNC1R(VECTOR2, REAL, Vector2, angle_to, VECTOR2, "to", varray());

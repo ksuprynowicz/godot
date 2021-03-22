@@ -62,6 +62,8 @@
 #include "scene/gui/texture_progress.h"
 #include "scene/gui/tool_button.h"
 #include "scene/resources/packed_scene.h"
+#include "servers/navigation_2d_server.h"
+#include "servers/navigation_server.h"
 #include "servers/physics_2d_server.h"
 
 #include "editor/audio_stream_preview.h"
@@ -818,7 +820,8 @@ void EditorNode::_scan_external_changes() {
 	// Check if any edited scene has changed.
 
 	for (int i = 0; i < editor_data.get_edited_scene_count(); i++) {
-		if (editor_data.get_scene_path(i) == "") {
+		DirAccessRef da = DirAccess::create(DirAccess::ACCESS_RESOURCES);
+		if (editor_data.get_scene_path(i) == "" || !da->file_exists(editor_data.get_scene_path(i))) {
 			continue;
 		}
 
@@ -2339,11 +2342,14 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 				_scene_tab_changed(tab_closing);
 
 				if (unsaved_cache || p_option == FILE_CLOSE_ALL_AND_QUIT || p_option == FILE_CLOSE_ALL_AND_RUN_PROJECT_MANAGER) {
-					String scene_filename = editor_data.get_edited_scene_root(tab_closing)->get_filename();
-					save_confirmation->get_ok()->set_text(TTR("Save & Close"));
-					save_confirmation->set_text(vformat(TTR("Save changes to '%s' before closing?"), scene_filename != "" ? scene_filename : "unsaved scene"));
-					save_confirmation->popup_centered_minsize();
-					break;
+					Node *scene_root = editor_data.get_edited_scene_root(tab_closing);
+					if (scene_root) {
+						String scene_filename = scene_root->get_filename();
+						save_confirmation->get_ok()->set_text(TTR("Save & Close"));
+						save_confirmation->set_text(vformat(TTR("Save changes to '%s' before closing?"), scene_filename != "" ? scene_filename : "unsaved scene"));
+						save_confirmation->popup_centered_minsize();
+						break;
+					}
 				}
 			} else if (p_option == FILE_CLOSE) {
 				tab_closing = editor_data.get_edited_scene();
@@ -3206,7 +3212,11 @@ void EditorNode::_update_addon_config() {
 	project_settings->queue_save();
 }
 
-void EditorNode::set_addon_plugin_enabled(const String &p_addon, bool p_enabled, bool p_config_changed) {
+void EditorNode::set_addon_plugin_enabled(String p_addon, bool p_enabled, bool p_config_changed) {
+
+	if (!p_addon.begins_with("res://")) {
+		p_addon = _to_absolute_plugin_path(p_addon);
+	}
 
 	ERR_FAIL_COND(p_enabled && plugin_addons.has(p_addon));
 	ERR_FAIL_COND(!p_enabled && !plugin_addons.has(p_addon));
@@ -3289,7 +3299,11 @@ void EditorNode::set_addon_plugin_enabled(const String &p_addon, bool p_enabled,
 
 bool EditorNode::is_addon_plugin_enabled(const String &p_addon) const {
 
-	return plugin_addons.has(p_addon);
+	if (p_addon.begins_with("res://")) {
+		return plugin_addons.has(p_addon);
+	}
+
+	return plugin_addons.has(_to_absolute_plugin_path(p_addon));
 }
 
 void EditorNode::_remove_edited_scene(bool p_change_tab) {
@@ -3962,6 +3976,10 @@ Ref<ImageTexture> EditorNode::_load_custom_class_icon(const String &p_path) cons
 		}
 	}
 	return NULL;
+}
+
+String EditorNode::_to_absolute_plugin_path(const String &p_plugin_name) {
+	return "res://addons/" + p_plugin_name + "/plugin.cfg";
 }
 
 Ref<Texture> EditorNode::get_object_icon(const Object *p_object, const String &p_fallback) const {
@@ -5322,7 +5340,7 @@ void EditorNode::_global_menu_action(const Variant &p_id, const Variant &p_meta)
 	if (id == GLOBAL_NEW_WINDOW) {
 		if (OS::get_singleton()->get_main_loop()) {
 			List<String> args;
-			args.push_back("-e");
+			args.push_back("-p");
 			String exec = OS::get_singleton()->get_executable_path();
 
 			OS::ProcessID pid = 0;
@@ -5795,6 +5813,8 @@ EditorNode::EditorNode() {
 
 	VisualServer::get_singleton()->textures_keep_original(true);
 	VisualServer::get_singleton()->set_debug_generate_wireframes(true);
+
+	NavigationServer::get_singleton()->set_active(false); // no nav by default if editor
 
 	PhysicsServer::get_singleton()->set_active(false); // no physics by default if editor
 	Physics2DServer::get_singleton()->set_active(false); // no physics by default if editor
@@ -6530,7 +6550,11 @@ EditorNode::EditorNode() {
 	p = help_menu->get_popup();
 	p->set_hide_on_window_lose_focus(true);
 	p->connect("id_pressed", this, "_menu_option");
-	p->add_icon_shortcut(gui_base->get_icon("HelpSearch", "EditorIcons"), ED_SHORTCUT("editor/editor_help", TTR("Search")), HELP_SEARCH);
+#ifdef OSX_ENABLED
+	p->add_icon_shortcut(gui_base->get_icon("HelpSearch", "EditorIcons"), ED_SHORTCUT("editor/editor_help", TTR("Search Help"), KEY_MASK_ALT | KEY_SPACE), HELP_SEARCH);
+#else
+	p->add_icon_shortcut(gui_base->get_icon("HelpSearch", "EditorIcons"), ED_SHORTCUT("editor/editor_help", TTR("Search Help"), KEY_F1), HELP_SEARCH);
+#endif
 	p->add_separator();
 	p->add_icon_shortcut(gui_base->get_icon("Instance", "EditorIcons"), ED_SHORTCUT("editor/online_docs", TTR("Online Docs")), HELP_DOCS);
 	p->add_icon_shortcut(gui_base->get_icon("Instance", "EditorIcons"), ED_SHORTCUT("editor/q&a", TTR("Q&A")), HELP_QA);
@@ -7081,14 +7105,12 @@ EditorNode::EditorNode() {
 	ED_SHORTCUT("editor/editor_3d", TTR("Open 3D Editor"), KEY_MASK_ALT | KEY_2);
 	ED_SHORTCUT("editor/editor_script", TTR("Open Script Editor"), KEY_MASK_ALT | KEY_3);
 	ED_SHORTCUT("editor/editor_assetlib", TTR("Open Asset Library"), KEY_MASK_ALT | KEY_4);
-	ED_SHORTCUT("editor/editor_help", TTR("Search Help"), KEY_MASK_ALT | KEY_SPACE);
 #else
 	// Use the Ctrl modifier so F2 can be used to rename nodes in the scene tree dock.
 	ED_SHORTCUT("editor/editor_2d", TTR("Open 2D Editor"), KEY_MASK_CTRL | KEY_F1);
 	ED_SHORTCUT("editor/editor_3d", TTR("Open 3D Editor"), KEY_MASK_CTRL | KEY_F2);
 	ED_SHORTCUT("editor/editor_script", TTR("Open Script Editor"), KEY_MASK_CTRL | KEY_F3);
 	ED_SHORTCUT("editor/editor_assetlib", TTR("Open Asset Library"), KEY_MASK_CTRL | KEY_F4);
-	ED_SHORTCUT("editor/editor_help", TTR("Search Help"), KEY_F1);
 #endif
 	ED_SHORTCUT("editor/editor_next", TTR("Open the next Editor"));
 	ED_SHORTCUT("editor/editor_prev", TTR("Open the previous Editor"));

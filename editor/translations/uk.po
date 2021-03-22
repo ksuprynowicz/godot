@@ -12,7 +12,7 @@
 # Kirill Omelchenko <kirill.omelchenko@gmail.com>, 2018.
 # Александр <ol-vin@mail.ru>, 2018.
 # Богдан Матвіїв <bomtvv@gmail.com>, 2019.
-# Tymofij Lytvynenko <till.svit@gmail.com>, 2020.
+# Tymofij Lytvynenko <till.svit@gmail.com>, 2020, 2021.
 # Vladislav Glinsky <cl0ne@mithril.org.ua>, 2020.
 # Микола Тимошенко <9081@ukr.net>, 2020.
 # Miroslav <zinmirx@gmail.com>, 2020.
@@ -20,8 +20,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Ukrainian (Godot Engine)\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2021-02-05 23:44+0000\n"
-"Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
+"PO-Revision-Date: 2021-03-10 22:14+0000\n"
+"Last-Translator: Tymofij Lytvynenko <till.svit@gmail.com>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/godot-engine/"
 "godot/uk/>\n"
 "Language: uk\n"
@@ -30,7 +30,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 4.5-dev\n"
+"X-Generator: Weblate 4.5.2-dev\n"
 
 #: core/math/expression.cpp modules/gdscript/gdscript_functions.cpp
 #: modules/visual_script/visual_script_builtin_funcs.cpp
@@ -666,7 +666,7 @@ msgstr "Виберіть доріжки для копіювання"
 #: editor/plugins/animation_player_editor_plugin.cpp
 #: editor/plugins/script_text_editor.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp editor/property_editor.cpp
-#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
+#: editor/scene_tree_dock.cpp scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Copy"
 msgstr "Копіювати"
 
@@ -1152,7 +1152,7 @@ msgstr "Ведучий розробник"
 #. you do not have to keep it in your translation.
 #: editor/editor_about.cpp
 msgid "Project Manager "
-msgstr "Керівник проектів "
+msgstr "Керівник проєктів "
 
 #: editor/editor_about.cpp
 msgid "Developers"
@@ -1873,8 +1873,8 @@ msgid "Open a File or Directory"
 msgstr "Відкрити файл або каталог"
 
 #: editor/editor_file_dialog.cpp editor/editor_node.cpp
-#: editor/editor_properties.cpp editor/inspector_dock.cpp
-#: editor/plugins/animation_player_editor_plugin.cpp
+#: editor/editor_properties.cpp editor/import_defaults_editor.cpp
+#: editor/inspector_dock.cpp editor/plugins/animation_player_editor_plugin.cpp
 #: editor/plugins/script_editor_plugin.cpp scene/gui/file_dialog.cpp
 msgid "Save"
 msgstr "Зберегти"
@@ -2548,9 +2548,8 @@ msgstr ""
 "налаштування."
 
 #: editor/editor_node.cpp
-msgid "Unable to find script field for addon plugin at: 'res://addons/%s'."
-msgstr ""
-"Не вдалося знайти поле скрипт для доповнення плагіну в: 'res://addons/%s'."
+msgid "Unable to find script field for addon plugin at: '%s'."
+msgstr "Не вдалося знайти поле скрипту для додатка тут: «%s»."
 
 #: editor/editor_node.cpp
 msgid "Unable to load addon script from path: '%s'."
@@ -2984,14 +2983,6 @@ msgid "Help"
 msgstr "Довідка"
 
 #: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
-#: editor/plugins/script_text_editor.cpp
-#: editor/plugins/shader_editor_plugin.cpp editor/plugins/text_editor.cpp
-#: editor/plugins/visual_shader_editor_plugin.cpp editor/project_manager.cpp
-#: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
-msgid "Search"
-msgstr "Пошук"
-
-#: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
 #: editor/plugins/shader_editor_plugin.cpp
 msgid "Online Docs"
 msgstr "Онлайн документація"
@@ -3157,13 +3148,12 @@ msgid "Open & Run a Script"
 msgstr "Відкрити і запустити скрипт"
 
 #: editor/editor_node.cpp
-#, fuzzy
 msgid ""
 "The following files are newer on disk.\n"
 "What action should be taken?"
 msgstr ""
-"Такі файли на диску новіші.\n"
-"Що робити?:"
+"На диску зберігаються новіші версії вказаних нижче файлів.\n"
+"Що слід зробити?"
 
 #: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
 #: editor/plugins/shader_editor_plugin.cpp
@@ -3387,7 +3377,7 @@ msgstr "Зробити унікальним"
 #: editor/plugins/script_text_editor.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp
 #: editor/plugins/tile_map_editor_plugin.cpp editor/property_editor.cpp
-#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
+#: editor/scene_tree_dock.cpp scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Paste"
 msgstr "Вставити"
 
@@ -4091,6 +4081,18 @@ msgstr "Повернули об'єкт, що походить від Node, у м
 #: editor/import/resource_importer_scene.cpp
 msgid "Saving..."
 msgstr "Збереження..."
+
+#: editor/import_defaults_editor.cpp
+msgid "Select Importer"
+msgstr "Виберіть засіб імпортування"
+
+#: editor/import_defaults_editor.cpp
+msgid "Importer:"
+msgstr "Засіб імпортування:"
+
+#: editor/import_defaults_editor.cpp
+msgid "Reset to Defaults"
+msgstr "Відновити типові параметри"
 
 #: editor/import_dock.cpp
 msgid "%d Files"
@@ -5064,8 +5066,8 @@ msgid "Got:"
 msgstr "Отримав:"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
-msgid "Failed sha256 hash check"
-msgstr "Помилка перевірки хешування sha256"
+msgid "Failed SHA-256 hash check"
+msgstr "Не вдалося пройти перевірку хешу SHA-256"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
 msgid "Asset Download Error:"
@@ -5168,7 +5170,6 @@ msgid "Sort:"
 msgstr "Сортувати:"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
-#: editor/project_settings_editor.cpp
 msgid "Category:"
 msgstr "Категорія:"
 
@@ -6996,6 +6997,14 @@ msgstr "Закрити документацію"
 msgid "Run"
 msgstr "Запустити"
 
+#: editor/plugins/script_editor_plugin.cpp
+#: editor/plugins/script_text_editor.cpp
+#: editor/plugins/shader_editor_plugin.cpp editor/plugins/text_editor.cpp
+#: editor/plugins/visual_shader_editor_plugin.cpp editor/project_manager.cpp
+#: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
+msgid "Search"
+msgstr "Пошук"
+
 #: editor/plugins/script_editor_plugin.cpp editor/script_editor_debugger.cpp
 msgid "Step Into"
 msgstr "Крок в"
@@ -7145,8 +7154,8 @@ msgstr "Точки зупину"
 msgid "Go To"
 msgstr "Перейти"
 
-#: editor/plugins/script_text_editor.cpp scene/gui/line_edit.cpp
-#: scene/gui/text_edit.cpp
+#: editor/plugins/script_text_editor.cpp editor/scene_tree_dock.cpp
+#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Cut"
 msgstr "Вирізати"
 
@@ -10057,16 +10066,15 @@ msgstr ""
 #. TRANSLATORS: This refers to the application where users manage their Godot projects.
 #: editor/project_manager.cpp
 msgid "Project Manager"
-msgstr "Керівник проекту"
+msgstr "Керівник проєкту"
 
 #: editor/project_manager.cpp
 msgid "Projects"
 msgstr "Проєкти"
 
 #: editor/project_manager.cpp
-#, fuzzy
 msgid "Loading, please wait..."
-msgstr "Отримання дзеркал, будь ласка, зачекайте..."
+msgstr "Завантаження. Будь ласка, зачекайте..."
 
 #: editor/project_manager.cpp
 msgid "Last Modified"
@@ -10438,6 +10446,10 @@ msgstr "Автозавантаження"
 msgid "Plugins"
 msgstr "Плаґіни (додатки)"
 
+#: editor/project_settings_editor.cpp
+msgid "Import Defaults"
+msgstr "Типові параметри імпортування"
+
 #: editor/property_editor.cpp
 msgid "Preset..."
 msgstr "Заздалегідь установлений..."
@@ -10689,6 +10701,14 @@ msgid "Instance Child Scene"
 msgstr "Створити екземпляр дочірньої сцени"
 
 #: editor/scene_tree_dock.cpp
+msgid "Can't paste root node into the same scene."
+msgstr "Не можна вставляти кореневий вузол до сцени цього кореневого вузла."
+
+#: editor/scene_tree_dock.cpp
+msgid "Paste Node(s)"
+msgstr "Вставити вузли"
+
+#: editor/scene_tree_dock.cpp
 msgid "Detach Script"
 msgstr "Від'єднати скрипт"
 
@@ -10813,6 +10833,10 @@ msgstr "Не можна працювати з вузлами, спадкоємц
 #: editor/scene_tree_dock.cpp
 msgid "Attach Script"
 msgstr "Долучити скрипт"
+
+#: editor/scene_tree_dock.cpp
+msgid "Cut Node(s)"
+msgstr "Вирізати вузли"
 
 #: editor/scene_tree_dock.cpp
 msgid "Remove Node(s)"
@@ -12493,6 +12517,16 @@ msgstr ""
 msgid "An empty CollisionPolygon2D has no effect on collision."
 msgstr "Порожній CollisionPolygon2D ніяк не вплине на зіткнення."
 
+#: scene/2d/collision_polygon_2d.cpp
+msgid "Invalid polygon. At least 3 points are needed in 'Solids' build mode."
+msgstr ""
+"Некоректний полігон. У режимі збирання «Solids» потрібно принаймні 3 точки."
+
+#: scene/2d/collision_polygon_2d.cpp
+msgid "Invalid polygon. At least 2 points are needed in 'Segments' build mode."
+msgstr ""
+"Некоректний полігон. У режимі збирання «Segments» потрібні принаймні 2 точки."
+
 #: scene/2d/collision_shape_2d.cpp
 msgid ""
 "CollisionShape2D only serves to provide a collision shape to a "
@@ -12813,12 +12847,6 @@ msgid ""
 msgstr ""
 "У драйвері GLES2 не передбачено підтримки GIProbes.\n"
 "Скористайтеся замість них BakedLightmap."
-
-#: scene/3d/interpolated_camera.cpp
-msgid ""
-"InterpolatedCamera has been deprecated and will be removed in Godot 4.0."
-msgstr ""
-"InterpolatedCamera вважається застарілою, її буде вилучено у Godot 4.0."
 
 #: scene/3d/light.cpp
 msgid "A SpotLight with an angle wider than 90 degrees cannot cast shadows."
@@ -13164,6 +13192,11 @@ msgstr "Змінні величини можна пов'язувати лише 
 #: servers/visual/shader_language.cpp
 msgid "Constants cannot be modified."
 msgstr "Сталі не можна змінювати."
+
+#~ msgid ""
+#~ "InterpolatedCamera has been deprecated and will be removed in Godot 4.0."
+#~ msgstr ""
+#~ "InterpolatedCamera вважається застарілою, її буде вилучено у Godot 4.0."
 
 #~ msgid "No"
 #~ msgstr "Ні"

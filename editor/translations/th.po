@@ -643,7 +643,7 @@ msgstr "เลือกแทร็กที่จะคัดลอก"
 #: editor/plugins/animation_player_editor_plugin.cpp
 #: editor/plugins/script_text_editor.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp editor/property_editor.cpp
-#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
+#: editor/scene_tree_dock.cpp scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Copy"
 msgstr "คัดลอก"
 
@@ -1836,8 +1836,8 @@ msgid "Open a File or Directory"
 msgstr "เปิดไฟล์หรือโฟลเดอร์"
 
 #: editor/editor_file_dialog.cpp editor/editor_node.cpp
-#: editor/editor_properties.cpp editor/inspector_dock.cpp
-#: editor/plugins/animation_player_editor_plugin.cpp
+#: editor/editor_properties.cpp editor/import_defaults_editor.cpp
+#: editor/inspector_dock.cpp editor/plugins/animation_player_editor_plugin.cpp
 #: editor/plugins/script_editor_plugin.cpp scene/gui/file_dialog.cpp
 msgid "Save"
 msgstr "บันทึก"
@@ -2489,7 +2489,8 @@ msgid "Unable to enable addon plugin at: '%s' parsing of config failed."
 msgstr "ไม่สามารถเปิดใช้งานปลั๊กอิน: '%s'"
 
 #: editor/editor_node.cpp
-msgid "Unable to find script field for addon plugin at: 'res://addons/%s'."
+#, fuzzy
+msgid "Unable to find script field for addon plugin at: '%s'."
 msgstr "ไม่พบชื่อสคริปต์ในปลั๊กอิน: 'res://addons/%s'"
 
 #: editor/editor_node.cpp
@@ -2907,14 +2908,6 @@ msgid "Help"
 msgstr "ช่วยเหลือ"
 
 #: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
-#: editor/plugins/script_text_editor.cpp
-#: editor/plugins/shader_editor_plugin.cpp editor/plugins/text_editor.cpp
-#: editor/plugins/visual_shader_editor_plugin.cpp editor/project_manager.cpp
-#: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
-msgid "Search"
-msgstr "ค้นหา"
-
-#: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
 #: editor/plugins/shader_editor_plugin.cpp
 msgid "Online Docs"
 msgstr "คู่มือ"
@@ -3301,7 +3294,7 @@ msgstr "ไม่ใช้ร่วมกับวัตถุอื่น"
 #: editor/plugins/script_text_editor.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp
 #: editor/plugins/tile_map_editor_plugin.cpp editor/property_editor.cpp
-#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
+#: editor/scene_tree_dock.cpp scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Paste"
 msgstr "วาง"
 
@@ -3993,6 +3986,21 @@ msgstr "คุณส่งคืนออบเจกต์โหนดย่อ
 #: editor/import/resource_importer_scene.cpp
 msgid "Saving..."
 msgstr "กำลังบันทึก..."
+
+#: editor/import_defaults_editor.cpp
+#, fuzzy
+msgid "Select Importer"
+msgstr "โหมดเลือก"
+
+#: editor/import_defaults_editor.cpp
+#, fuzzy
+msgid "Importer:"
+msgstr "นำเข้า"
+
+#: editor/import_defaults_editor.cpp
+#, fuzzy
+msgid "Reset to Defaults"
+msgstr "โหลดค่าเริ่มต้น"
 
 #: editor/import_dock.cpp
 msgid "%d Files"
@@ -4949,7 +4957,8 @@ msgid "Got:"
 msgstr "ที่ได้รับ:"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
-msgid "Failed sha256 hash check"
+#, fuzzy
+msgid "Failed SHA-256 hash check"
 msgstr "ผิดพลาดในการตรวจสอบแฮช SHA256"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
@@ -5053,7 +5062,6 @@ msgid "Sort:"
 msgstr "เรียงตาม:"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
-#: editor/project_settings_editor.cpp
 msgid "Category:"
 msgstr "หมวดหมู่:"
 
@@ -6853,6 +6861,14 @@ msgstr "ปิดคู่มือ"
 msgid "Run"
 msgstr "เริ่ม"
 
+#: editor/plugins/script_editor_plugin.cpp
+#: editor/plugins/script_text_editor.cpp
+#: editor/plugins/shader_editor_plugin.cpp editor/plugins/text_editor.cpp
+#: editor/plugins/visual_shader_editor_plugin.cpp editor/project_manager.cpp
+#: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
+msgid "Search"
+msgstr "ค้นหา"
+
 #: editor/plugins/script_editor_plugin.cpp editor/script_editor_debugger.cpp
 msgid "Step Into"
 msgstr "คำสั่งต่อไป"
@@ -6998,8 +7014,8 @@ msgstr "เบรกพอยต์"
 msgid "Go To"
 msgstr "ไปยัง"
 
-#: editor/plugins/script_text_editor.cpp scene/gui/line_edit.cpp
-#: scene/gui/text_edit.cpp
+#: editor/plugins/script_text_editor.cpp editor/scene_tree_dock.cpp
+#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Cut"
 msgstr "ตัด"
 
@@ -10229,6 +10245,11 @@ msgstr "ออโต้โหลด"
 msgid "Plugins"
 msgstr "ปลั๊กอิน"
 
+#: editor/project_settings_editor.cpp
+#, fuzzy
+msgid "Import Defaults"
+msgstr "โหลดค่าเริ่มต้น"
+
 #: editor/property_editor.cpp
 msgid "Preset..."
 msgstr "พรีเซ็ต..."
@@ -10476,6 +10497,16 @@ msgid "Instance Child Scene"
 msgstr "อินสแตนซ์ฉากลูก"
 
 #: editor/scene_tree_dock.cpp
+#, fuzzy
+msgid "Can't paste root node into the same scene."
+msgstr "ทำกับโหนดของฉากอื่นไม่ได้!"
+
+#: editor/scene_tree_dock.cpp
+#, fuzzy
+msgid "Paste Node(s)"
+msgstr "วางโหนด"
+
+#: editor/scene_tree_dock.cpp
 msgid "Detach Script"
 msgstr "ค้นพบสคริปต์"
 
@@ -10599,6 +10630,11 @@ msgstr "ทำกับโหนดที่ฉากปัจจุบันส
 #: editor/scene_tree_dock.cpp
 msgid "Attach Script"
 msgstr "แนบสคริปต์"
+
+#: editor/scene_tree_dock.cpp
+#, fuzzy
+msgid "Cut Node(s)"
+msgstr "ตัดโหนด"
 
 #: editor/scene_tree_dock.cpp
 msgid "Remove Node(s)"
@@ -12223,6 +12259,14 @@ msgstr ""
 msgid "An empty CollisionPolygon2D has no effect on collision."
 msgstr "CollisionPolygon2D ที่ว่างเปล่าจะไม่มีผลทางกายภาพ"
 
+#: scene/2d/collision_polygon_2d.cpp
+msgid "Invalid polygon. At least 3 points are needed in 'Solids' build mode."
+msgstr ""
+
+#: scene/2d/collision_polygon_2d.cpp
+msgid "Invalid polygon. At least 2 points are needed in 'Segments' build mode."
+msgstr ""
+
 #: scene/2d/collision_shape_2d.cpp
 msgid ""
 "CollisionShape2D only serves to provide a collision shape to a "
@@ -12511,11 +12555,6 @@ msgid ""
 msgstr ""
 "ไดรเวอร์วีดีโอ GLES2 ไม่สนับสนุน GIProbe\n"
 "ใช้ BakedLightmap แทน"
-
-#: scene/3d/interpolated_camera.cpp
-msgid ""
-"InterpolatedCamera has been deprecated and will be removed in Godot 4.0."
-msgstr "InterpolatedCamera เลิกใช้งานแล้วและจะถูกลบออกใน Godot 4.0"
 
 #: scene/3d/light.cpp
 msgid "A SpotLight with an angle wider than 90 degrees cannot cast shadows."
@@ -12836,6 +12875,10 @@ msgstr "Varyings สามารถกำหนดในังก์ชันเ
 #: servers/visual/shader_language.cpp
 msgid "Constants cannot be modified."
 msgstr "ค่าคงที่ไม่สามารถแก้ไขได้"
+
+#~ msgid ""
+#~ "InterpolatedCamera has been deprecated and will be removed in Godot 4.0."
+#~ msgstr "InterpolatedCamera เลิกใช้งานแล้วและจะถูกลบออกใน Godot 4.0"
 
 #~ msgid "No"
 #~ msgstr "ไม่"

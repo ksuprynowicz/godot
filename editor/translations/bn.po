@@ -650,7 +650,7 @@ msgstr "গুণাগুণ/বৈশিষ্ট্য copy করুন"
 #: editor/plugins/animation_player_editor_plugin.cpp
 #: editor/plugins/script_text_editor.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp editor/property_editor.cpp
-#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
+#: editor/scene_tree_dock.cpp scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Copy"
 msgstr "প্রতিলিপি/কপি করুন"
 
@@ -1926,8 +1926,8 @@ msgid "Open a File or Directory"
 msgstr "ফাইল বা পথ/ডিরেক্টরি খুলুন"
 
 #: editor/editor_file_dialog.cpp editor/editor_node.cpp
-#: editor/editor_properties.cpp editor/inspector_dock.cpp
-#: editor/plugins/animation_player_editor_plugin.cpp
+#: editor/editor_properties.cpp editor/import_defaults_editor.cpp
+#: editor/inspector_dock.cpp editor/plugins/animation_player_editor_plugin.cpp
 #: editor/plugins/script_editor_plugin.cpp scene/gui/file_dialog.cpp
 msgid "Save"
 msgstr "সংরক্ষন করুন"
@@ -2641,7 +2641,8 @@ msgid "Unable to enable addon plugin at: '%s' parsing of config failed."
 msgstr "অ্যাড-অন প্লাগইন এনাবল করা সম্ভব হয় নি। কনফিগার পার্সিং ('%s') ব্যর্থ হয়েছে।"
 
 #: editor/editor_node.cpp
-msgid "Unable to find script field for addon plugin at: 'res://addons/%s'."
+#, fuzzy
+msgid "Unable to find script field for addon plugin at: '%s'."
 msgstr ""
 "'res://addons/%s' লোকেশনে অ্যাড-অন প্লাগইনের স্ক্রিপ্ট ফাইল খুঁজে পাওয়া যায়নি।"
 
@@ -3105,14 +3106,6 @@ msgid "Help"
 msgstr "হেল্প"
 
 #: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
-#: editor/plugins/script_text_editor.cpp
-#: editor/plugins/shader_editor_plugin.cpp editor/plugins/text_editor.cpp
-#: editor/plugins/visual_shader_editor_plugin.cpp editor/project_manager.cpp
-#: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
-msgid "Search"
-msgstr "অনুসন্ধান করুন"
-
-#: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
 #: editor/plugins/shader_editor_plugin.cpp
 #, fuzzy
 msgid "Online Docs"
@@ -3523,7 +3516,7 @@ msgstr "বোন্‌/হাড় তৈরি করুন"
 #: editor/plugins/script_text_editor.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp
 #: editor/plugins/tile_map_editor_plugin.cpp editor/property_editor.cpp
-#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
+#: editor/scene_tree_dock.cpp scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Paste"
 msgstr "প্রতিলেপন/পেস্ট করুন"
 
@@ -4313,6 +4306,21 @@ msgstr ""
 #: editor/import/resource_importer_scene.cpp
 msgid "Saving..."
 msgstr "সংরক্ষিত হচ্ছে..."
+
+#: editor/import_defaults_editor.cpp
+#, fuzzy
+msgid "Select Importer"
+msgstr "মোড (Mode) বাছাই করুন"
+
+#: editor/import_defaults_editor.cpp
+#, fuzzy
+msgid "Importer:"
+msgstr "ইম্পোর্ট"
+
+#: editor/import_defaults_editor.cpp
+#, fuzzy
+msgid "Reset to Defaults"
+msgstr "প্রাথমিক sRGB ব্যবহার করুন"
 
 #: editor/import_dock.cpp
 #, fuzzy
@@ -5358,7 +5366,8 @@ msgid "Got:"
 msgstr "প্রাপ্ত:"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
-msgid "Failed sha256 hash check"
+#, fuzzy
+msgid "Failed SHA-256 hash check"
 msgstr "sha256 হ্যাশ চেক ব্যর্থ হয়েছে"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
@@ -5474,7 +5483,6 @@ msgid "Sort:"
 msgstr "সাজান:"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
-#: editor/project_settings_editor.cpp
 msgid "Category:"
 msgstr "বিভাগ:"
 
@@ -7422,6 +7430,14 @@ msgstr "ডকুমেন্টসমূহ বন্ধ করুন"
 msgid "Run"
 msgstr "চালান"
 
+#: editor/plugins/script_editor_plugin.cpp
+#: editor/plugins/script_text_editor.cpp
+#: editor/plugins/shader_editor_plugin.cpp editor/plugins/text_editor.cpp
+#: editor/plugins/visual_shader_editor_plugin.cpp editor/project_manager.cpp
+#: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
+msgid "Search"
+msgstr "অনুসন্ধান করুন"
+
 #: editor/plugins/script_editor_plugin.cpp editor/script_editor_debugger.cpp
 msgid "Step Into"
 msgstr "পদার্পণ করুন"
@@ -7580,8 +7596,8 @@ msgstr "বিন্দু অপসারণ করুন"
 msgid "Go To"
 msgstr ""
 
-#: editor/plugins/script_text_editor.cpp scene/gui/line_edit.cpp
-#: scene/gui/text_edit.cpp
+#: editor/plugins/script_text_editor.cpp editor/scene_tree_dock.cpp
+#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Cut"
 msgstr "কর্তন/কাট করুন"
 
@@ -11011,6 +11027,11 @@ msgstr "স্বয়ংক্রিয়-লোড"
 msgid "Plugins"
 msgstr "প্লাগইন-সমূহ"
 
+#: editor/project_settings_editor.cpp
+#, fuzzy
+msgid "Import Defaults"
+msgstr "লোড ডিফল্ট"
+
 #: editor/property_editor.cpp
 msgid "Preset..."
 msgstr "প্রিসেট..."
@@ -11276,6 +11297,16 @@ msgstr "শীষ্য নোড ইন্সট্যান্স করুন
 
 #: editor/scene_tree_dock.cpp
 #, fuzzy
+msgid "Can't paste root node into the same scene."
+msgstr "বাহিরের দৃশ্যের নোডে এটি করা সম্ভব হবে না!"
+
+#: editor/scene_tree_dock.cpp
+#, fuzzy
+msgid "Paste Node(s)"
+msgstr "নোড-সমূহ প্রতিলেপন/পেস্ট করুন"
+
+#: editor/scene_tree_dock.cpp
+#, fuzzy
 msgid "Detach Script"
 msgstr "স্ক্রিপ্ট সংযুক্ত করুন"
 
@@ -11405,6 +11436,11 @@ msgstr "বর্তমান দৃশ্য যার হতে উৎপত�
 #: editor/scene_tree_dock.cpp
 msgid "Attach Script"
 msgstr "স্ক্রিপ্ট সংযুক্ত করুন"
+
+#: editor/scene_tree_dock.cpp
+#, fuzzy
+msgid "Cut Node(s)"
+msgstr "নোড-সমূহ কর্তন/কাট করুন"
 
 #: editor/scene_tree_dock.cpp
 msgid "Remove Node(s)"
@@ -13187,6 +13223,14 @@ msgstr ""
 msgid "An empty CollisionPolygon2D has no effect on collision."
 msgstr "সংঘর্ষে ফাঁকা/শুন্য CollisionPolygon2D-এর কোনো প্রভাব নেই।"
 
+#: scene/2d/collision_polygon_2d.cpp
+msgid "Invalid polygon. At least 3 points are needed in 'Solids' build mode."
+msgstr ""
+
+#: scene/2d/collision_polygon_2d.cpp
+msgid "Invalid polygon. At least 2 points are needed in 'Segments' build mode."
+msgstr ""
+
 #: scene/2d/collision_shape_2d.cpp
 msgid ""
 "CollisionShape2D only serves to provide a collision shape to a "
@@ -13476,11 +13520,6 @@ msgstr ""
 msgid ""
 "GIProbes are not supported by the GLES2 video driver.\n"
 "Use a BakedLightmap instead."
-msgstr ""
-
-#: scene/3d/interpolated_camera.cpp
-msgid ""
-"InterpolatedCamera has been deprecated and will be removed in Godot 4.0."
 msgstr ""
 
 #: scene/3d/light.cpp
@@ -15422,9 +15461,6 @@ msgstr ""
 
 #~ msgid "Use Default Light"
 #~ msgstr "প্রাথমিক লাইট ব্যবহার করুন"
-
-#~ msgid "Use Default sRGB"
-#~ msgstr "প্রাথমিক sRGB ব্যবহার করুন"
 
 #~ msgid "Default Light Normal:"
 #~ msgstr "লাইটের প্রাথমিক নরমাল:"

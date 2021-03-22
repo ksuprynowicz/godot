@@ -663,7 +663,7 @@ msgstr "Másolandó nyomvonalak kiválasztása"
 #: editor/plugins/animation_player_editor_plugin.cpp
 #: editor/plugins/script_text_editor.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp editor/property_editor.cpp
-#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
+#: editor/scene_tree_dock.cpp scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Copy"
 msgstr "Másolás"
 
@@ -1855,8 +1855,8 @@ msgid "Open a File or Directory"
 msgstr "Fájl vagy Könyvtár Megnyitása"
 
 #: editor/editor_file_dialog.cpp editor/editor_node.cpp
-#: editor/editor_properties.cpp editor/inspector_dock.cpp
-#: editor/plugins/animation_player_editor_plugin.cpp
+#: editor/editor_properties.cpp editor/import_defaults_editor.cpp
+#: editor/inspector_dock.cpp editor/plugins/animation_player_editor_plugin.cpp
 #: editor/plugins/script_editor_plugin.cpp scene/gui/file_dialog.cpp
 msgid "Save"
 msgstr "Mentés"
@@ -2530,7 +2530,8 @@ msgstr ""
 "megbukott."
 
 #: editor/editor_node.cpp
-msgid "Unable to find script field for addon plugin at: 'res://addons/%s'."
+#, fuzzy
+msgid "Unable to find script field for addon plugin at: '%s'."
 msgstr ""
 "Nem található szkript mező az addon pluginnak a következő helyen: 'res://"
 "addons/%s'."
@@ -2970,14 +2971,6 @@ msgid "Help"
 msgstr "Súgó"
 
 #: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
-#: editor/plugins/script_text_editor.cpp
-#: editor/plugins/shader_editor_plugin.cpp editor/plugins/text_editor.cpp
-#: editor/plugins/visual_shader_editor_plugin.cpp editor/project_manager.cpp
-#: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
-msgid "Search"
-msgstr "Keresés"
-
-#: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
 #: editor/plugins/shader_editor_plugin.cpp
 msgid "Online Docs"
 msgstr "Online Dokumentáció"
@@ -3354,7 +3347,7 @@ msgstr "Egyedivé tétel"
 #: editor/plugins/script_text_editor.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp
 #: editor/plugins/tile_map_editor_plugin.cpp editor/property_editor.cpp
-#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
+#: editor/scene_tree_dock.cpp scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Paste"
 msgstr "Beillesztés"
 
@@ -4053,6 +4046,21 @@ msgstr ""
 #: editor/import/resource_importer_scene.cpp
 msgid "Saving..."
 msgstr "Mentés..."
+
+#: editor/import_defaults_editor.cpp
+#, fuzzy
+msgid "Select Importer"
+msgstr "Kiválasztó Mód"
+
+#: editor/import_defaults_editor.cpp
+#, fuzzy
+msgid "Importer:"
+msgstr "Importálás"
+
+#: editor/import_defaults_editor.cpp
+#, fuzzy
+msgid "Reset to Defaults"
+msgstr "Alapértelmezett Betöltése"
 
 #: editor/import_dock.cpp
 msgid "%d Files"
@@ -5012,7 +5020,8 @@ msgid "Got:"
 msgstr "Kapott:"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
-msgid "Failed sha256 hash check"
+#, fuzzy
+msgid "Failed SHA-256 hash check"
 msgstr "sha256 hash ellenőrzés megbukott"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
@@ -5116,7 +5125,6 @@ msgid "Sort:"
 msgstr "Rendezés:"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
-#: editor/project_settings_editor.cpp
 msgid "Category:"
 msgstr "Kategória:"
 
@@ -6923,6 +6931,14 @@ msgstr "Dokumentációs Lapok Bezárása"
 msgid "Run"
 msgstr "Futtatás"
 
+#: editor/plugins/script_editor_plugin.cpp
+#: editor/plugins/script_text_editor.cpp
+#: editor/plugins/shader_editor_plugin.cpp editor/plugins/text_editor.cpp
+#: editor/plugins/visual_shader_editor_plugin.cpp editor/project_manager.cpp
+#: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
+msgid "Search"
+msgstr "Keresés"
+
 #: editor/plugins/script_editor_plugin.cpp editor/script_editor_debugger.cpp
 msgid "Step Into"
 msgstr "Belépés"
@@ -7068,8 +7084,8 @@ msgstr "Töréspontok"
 msgid "Go To"
 msgstr ""
 
-#: editor/plugins/script_text_editor.cpp scene/gui/line_edit.cpp
-#: scene/gui/text_edit.cpp
+#: editor/plugins/script_text_editor.cpp editor/scene_tree_dock.cpp
+#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Cut"
 msgstr "Kivágás"
 
@@ -10213,6 +10229,11 @@ msgstr ""
 msgid "Plugins"
 msgstr "Bővítmények"
 
+#: editor/project_settings_editor.cpp
+#, fuzzy
+msgid "Import Defaults"
+msgstr "Alapértelmezett Betöltése"
+
 #: editor/property_editor.cpp
 msgid "Preset..."
 msgstr "Beépített Beállítások..."
@@ -10457,6 +10478,15 @@ msgid "Instance Child Scene"
 msgstr ""
 
 #: editor/scene_tree_dock.cpp
+msgid "Can't paste root node into the same scene."
+msgstr ""
+
+#: editor/scene_tree_dock.cpp
+#, fuzzy
+msgid "Paste Node(s)"
+msgstr "Node-ok beillesztése"
+
+#: editor/scene_tree_dock.cpp
 msgid "Detach Script"
 msgstr "Szkript leválasztása"
 
@@ -10575,6 +10605,11 @@ msgstr ""
 #: editor/scene_tree_dock.cpp
 msgid "Attach Script"
 msgstr ""
+
+#: editor/scene_tree_dock.cpp
+#, fuzzy
+msgid "Cut Node(s)"
+msgstr "Node-ok kivágása"
 
 #: editor/scene_tree_dock.cpp
 msgid "Remove Node(s)"
@@ -12171,6 +12206,14 @@ msgstr ""
 msgid "An empty CollisionPolygon2D has no effect on collision."
 msgstr ""
 
+#: scene/2d/collision_polygon_2d.cpp
+msgid "Invalid polygon. At least 3 points are needed in 'Solids' build mode."
+msgstr ""
+
+#: scene/2d/collision_polygon_2d.cpp
+msgid "Invalid polygon. At least 2 points are needed in 'Segments' build mode."
+msgstr ""
+
 #: scene/2d/collision_shape_2d.cpp
 msgid ""
 "CollisionShape2D only serves to provide a collision shape to a "
@@ -12429,11 +12472,6 @@ msgstr ""
 msgid ""
 "GIProbes are not supported by the GLES2 video driver.\n"
 "Use a BakedLightmap instead."
-msgstr ""
-
-#: scene/3d/interpolated_camera.cpp
-msgid ""
-"InterpolatedCamera has been deprecated and will be removed in Godot 4.0."
 msgstr ""
 
 #: scene/3d/light.cpp

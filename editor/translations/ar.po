@@ -46,12 +46,13 @@
 # Musab Alasaifer <mousablasefer@gmail.com>, 2020.
 # Yassine Oudjana <y.oudjana@protonmail.com>, 2020.
 # bruvzg <bruvzg13@gmail.com>, 2020.
-# StarlkYT <mrsstarlkps4@gmail.com>, 2020.
+# StarlkYT <mrsstarlkps4@gmail.com>, 2020, 2021.
+# Games Toon <xxtvgoodxx@gmail.com>, 2021.
 msgid ""
 msgstr ""
 "Project-Id-Version: Godot Engine editor\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2020-12-29 15:03+0000\n"
+"PO-Revision-Date: 2021-03-07 06:04+0000\n"
 "Last-Translator: StarlkYT <mrsstarlkps4@gmail.com>\n"
 "Language-Team: Arabic <https://hosted.weblate.org/projects/godot-engine/"
 "godot/ar/>\n"
@@ -61,7 +62,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
 "&& n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
-"X-Generator: Weblate 4.4.1-dev\n"
+"X-Generator: Weblate 4.5.1\n"
 
 #: core/math/expression.cpp modules/gdscript/gdscript_functions.cpp
 #: modules/visual_script/visual_script_builtin_funcs.cpp
@@ -684,7 +685,7 @@ msgstr "إختر المقاطع المراد نسخها"
 #: editor/plugins/animation_player_editor_plugin.cpp
 #: editor/plugins/script_text_editor.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp editor/property_editor.cpp
-#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
+#: editor/scene_tree_dock.cpp scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Copy"
 msgstr "نسخ"
 
@@ -1701,9 +1702,8 @@ msgid "Node Dock"
 msgstr "رصيف العُقد"
 
 #: editor/editor_feature_profile.cpp
-#, fuzzy
 msgid "FileSystem Dock"
-msgstr "نظام الملفات"
+msgstr "قوائم نظام الملفات"
 
 #: editor/editor_feature_profile.cpp
 msgid "Import Dock"
@@ -1885,8 +1885,8 @@ msgid "Open a File or Directory"
 msgstr "إفتح ملف أو وجهة"
 
 #: editor/editor_file_dialog.cpp editor/editor_node.cpp
-#: editor/editor_properties.cpp editor/inspector_dock.cpp
-#: editor/plugins/animation_player_editor_plugin.cpp
+#: editor/editor_properties.cpp editor/import_defaults_editor.cpp
+#: editor/inspector_dock.cpp editor/plugins/animation_player_editor_plugin.cpp
 #: editor/plugins/script_editor_plugin.cpp scene/gui/file_dialog.cpp
 msgid "Save"
 msgstr "حفظ"
@@ -2342,6 +2342,9 @@ msgid ""
 "To restore the Default layout to its base settings, use the Delete Layout "
 "option and delete the Default layout."
 msgstr ""
+"تم تجاوز اعدادات المحرر الاساسيه.\n"
+"لإستعادة اعدادات المحرر, اذهب إلى خيار 'Delete Layout' من ثم إحفظ الاعدادات "
+"الاساسيه."
 
 #: editor/editor_node.cpp
 msgid "Layout name not found!"
@@ -2406,7 +2409,7 @@ msgstr "ليس هناك مشهد محدد ليتم تشغيله."
 
 #: editor/editor_node.cpp
 msgid "Save scene before running..."
-msgstr ""
+msgstr "احفظ المشهد قبل التشغيل..."
 
 #: editor/editor_node.cpp
 msgid "Could not start subprocess!"
@@ -2551,7 +2554,8 @@ msgid "Unable to enable addon plugin at: '%s' parsing of config failed."
 msgstr "غير قادر علي تفعيل إضافة البرنامج المُساعد في: '%s' تحميل الظبط فشل."
 
 #: editor/editor_node.cpp
-msgid "Unable to find script field for addon plugin at: 'res://addons/%s'."
+#, fuzzy
+msgid "Unable to find script field for addon plugin at: '%s'."
 msgstr ""
 "غير قادر علي إيجاد منطقة النص البرمجي من أجل إضافة البرنامج في: 'res://"
 "addons/%s'."
@@ -2983,14 +2987,6 @@ msgid "Help"
 msgstr "مساعدة"
 
 #: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
-#: editor/plugins/script_text_editor.cpp
-#: editor/plugins/shader_editor_plugin.cpp editor/plugins/text_editor.cpp
-#: editor/plugins/visual_shader_editor_plugin.cpp editor/project_manager.cpp
-#: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
-msgid "Search"
-msgstr "بحث"
-
-#: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
 #: editor/plugins/shader_editor_plugin.cpp
 msgid "Online Docs"
 msgstr "مستندات الإنترنت"
@@ -3154,13 +3150,12 @@ msgid "Open & Run a Script"
 msgstr "فتح و تشغيل كود"
 
 #: editor/editor_node.cpp
-#, fuzzy
 msgid ""
 "The following files are newer on disk.\n"
 "What action should be taken?"
 msgstr ""
 "الملفات التالية أحدث على القرص.\n"
-"ما الإجراء الذي ينبغي اتخاذه؟:"
+"ما الإجراء الذي ينبغي اتخاذه؟"
 
 #: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
 #: editor/plugins/shader_editor_plugin.cpp
@@ -3382,7 +3377,7 @@ msgstr "إجعلة مميزاً"
 #: editor/plugins/script_text_editor.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp
 #: editor/plugins/tile_map_editor_plugin.cpp editor/property_editor.cpp
-#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
+#: editor/scene_tree_dock.cpp scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Paste"
 msgstr "لصق"
 
@@ -4080,6 +4075,21 @@ msgstr "هل قمت بإرجاع كائن مشتق من العقدة في دال
 #: editor/import/resource_importer_scene.cpp
 msgid "Saving..."
 msgstr "جاري الحفظ..."
+
+#: editor/import_defaults_editor.cpp
+#, fuzzy
+msgid "Select Importer"
+msgstr "تحديد الوضع"
+
+#: editor/import_defaults_editor.cpp
+#, fuzzy
+msgid "Importer:"
+msgstr "إستيراد"
+
+#: editor/import_defaults_editor.cpp
+#, fuzzy
+msgid "Reset to Defaults"
+msgstr "تحميل الإفتراضي"
 
 #: editor/import_dock.cpp
 msgid "%d Files"
@@ -5047,7 +5057,8 @@ msgid "Got:"
 msgstr "ما تم الحصول عليه:"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
-msgid "Failed sha256 hash check"
+#, fuzzy
+msgid "Failed SHA-256 hash check"
 msgstr "فشل التاكد من ترميز sha256"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
@@ -5151,7 +5162,6 @@ msgid "Sort:"
 msgstr "ترتيب:"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
-#: editor/project_settings_editor.cpp
 msgid "Category:"
 msgstr "الفئة:"
 
@@ -6974,6 +6984,14 @@ msgstr "إغلاق المستندات"
 msgid "Run"
 msgstr "تشغيل"
 
+#: editor/plugins/script_editor_plugin.cpp
+#: editor/plugins/script_text_editor.cpp
+#: editor/plugins/shader_editor_plugin.cpp editor/plugins/text_editor.cpp
+#: editor/plugins/visual_shader_editor_plugin.cpp editor/project_manager.cpp
+#: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
+msgid "Search"
+msgstr "بحث"
+
 #: editor/plugins/script_editor_plugin.cpp editor/script_editor_debugger.cpp
 msgid "Step Into"
 msgstr "اخط خطوة ضمن"
@@ -7120,8 +7138,8 @@ msgstr "نقاط التكسّر"
 msgid "Go To"
 msgstr "التوجه إلى"
 
-#: editor/plugins/script_text_editor.cpp scene/gui/line_edit.cpp
-#: scene/gui/text_edit.cpp
+#: editor/plugins/script_text_editor.cpp editor/scene_tree_dock.cpp
+#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Cut"
 msgstr "قص"
 
@@ -7344,9 +7362,8 @@ msgid "Yaw"
 msgstr "الإنحراف Yaw"
 
 #: editor/plugins/spatial_editor_plugin.cpp
-#, fuzzy
 msgid "Size"
-msgstr "الحجم: "
+msgstr "الحجم"
 
 #: editor/plugins/spatial_editor_plugin.cpp
 msgid "Objects Drawn"
@@ -10411,6 +10428,11 @@ msgstr "تحميل تلقائي"
 msgid "Plugins"
 msgstr "إضافات"
 
+#: editor/project_settings_editor.cpp
+#, fuzzy
+msgid "Import Defaults"
+msgstr "تحميل الإفتراضي"
+
 #: editor/property_editor.cpp
 msgid "Preset..."
 msgstr "إعداد مُسبق..."
@@ -10472,9 +10494,8 @@ msgid "Batch Rename"
 msgstr "إعادة تسمية الدفعة"
 
 #: editor/rename_dialog.cpp
-#, fuzzy
 msgid "Replace:"
-msgstr "إستبدال: "
+msgstr "إستبدال:"
 
 #: editor/rename_dialog.cpp
 #, fuzzy
@@ -10663,6 +10684,16 @@ msgid "Instance Child Scene"
 msgstr "نمذجة المشهد الابن"
 
 #: editor/scene_tree_dock.cpp
+#, fuzzy
+msgid "Can't paste root node into the same scene."
+msgstr "لا يمكن تنفيذ الإجراء على عُقدة من مشهد أجنبي!"
+
+#: editor/scene_tree_dock.cpp
+#, fuzzy
+msgid "Paste Node(s)"
+msgstr "لصق العُقد"
+
+#: editor/scene_tree_dock.cpp
 msgid "Detach Script"
 msgstr "فصل النص البرمجي"
 
@@ -10788,6 +10819,11 @@ msgstr "لا يمكن تنفيذ الإجراء على عُقد يرثها ال�
 #: editor/scene_tree_dock.cpp
 msgid "Attach Script"
 msgstr "إلحاق نص برمجي"
+
+#: editor/scene_tree_dock.cpp
+#, fuzzy
+msgid "Cut Node(s)"
+msgstr "قص العُقد"
 
 #: editor/scene_tree_dock.cpp
 msgid "Remove Node(s)"
@@ -12446,6 +12482,14 @@ msgstr ""
 "مُضلع تصادم ثنائي الأبعاد (CollisionPolygon2D) الفارغ ليس له أي تأثير على "
 "التصادم."
 
+#: scene/2d/collision_polygon_2d.cpp
+msgid "Invalid polygon. At least 3 points are needed in 'Solids' build mode."
+msgstr ""
+
+#: scene/2d/collision_polygon_2d.cpp
+msgid "Invalid polygon. At least 2 points are needed in 'Segments' build mode."
+msgstr ""
+
 #: scene/2d/collision_shape_2d.cpp
 msgid ""
 "CollisionShape2D only serves to provide a collision shape to a "
@@ -12781,11 +12825,6 @@ msgid ""
 msgstr ""
 "GIProbes لا يدعم برنامج تشغيل الفيديو GLES2.\n"
 "استخدم BakedLightmap بدلاً من ذلك."
-
-#: scene/3d/interpolated_camera.cpp
-msgid ""
-"InterpolatedCamera has been deprecated and will be removed in Godot 4.0."
-msgstr ""
 
 #: scene/3d/light.cpp
 msgid "A SpotLight with an angle wider than 90 degrees cannot cast shadows."

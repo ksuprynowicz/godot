@@ -70,6 +70,10 @@ Rect2 CircleShape2D::get_rect() const {
 	return rect;
 }
 
+real_t CircleShape2D::get_enclosing_radius() const {
+	return radius;
+}
+
 void CircleShape2D::draw(const RID &p_to_rid, const Color &p_color) {
 
 	Vector<Vector2> points;
@@ -81,9 +85,11 @@ void CircleShape2D::draw(const RID &p_to_rid, const Color &p_color) {
 	Vector<Color> col;
 	col.push_back(p_color);
 	VisualServer::get_singleton()->canvas_item_add_polygon(p_to_rid, points, col);
-	VisualServer::get_singleton()->canvas_item_add_polyline(p_to_rid, points, col, 1.0, true);
-	// Draw the last segment as it's not drawn by `canvas_item_add_polyline()`.
-	VisualServer::get_singleton()->canvas_item_add_line(p_to_rid, points[points.size() - 1], points[0], p_color, 1.0, true);
+	if (is_collision_outline_enabled()) {
+		VisualServer::get_singleton()->canvas_item_add_polyline(p_to_rid, points, col, 1.0, true);
+		// Draw the last segment as it's not drawn by `canvas_item_add_polyline()`.
+		VisualServer::get_singleton()->canvas_item_add_line(p_to_rid, points[points.size() - 1], points[0], p_color, 1.0, true);
+	}
 }
 
 CircleShape2D::CircleShape2D() :

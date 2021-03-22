@@ -66,6 +66,8 @@
 #include "servers/arvr_server.h"
 #include "servers/audio_server.h"
 #include "servers/camera_server.h"
+#include "servers/navigation_2d_server.h"
+#include "servers/navigation_server.h"
 #include "servers/physics_2d_server.h"
 #include "servers/physics_server.h"
 #include "servers/register_server_types.h"
@@ -105,6 +107,8 @@ static CameraServer *camera_server = NULL;
 static ARVRServer *arvr_server = NULL;
 static PhysicsServer *physics_server = NULL;
 static Physics2DServer *physics_2d_server = NULL;
+static NavigationServer *navigation_server = NULL;
+static Navigation2DServer *navigation_2d_server = NULL;
 // We error out if setup2() doesn't turn this true
 static bool _start_success = false;
 
@@ -201,6 +205,19 @@ void finalize_physics() {
 
 	physics_2d_server->finish();
 	memdelete(physics_2d_server);
+}
+
+void initialize_navigation_server() {
+	ERR_FAIL_COND(navigation_server != NULL);
+	navigation_server = NavigationServerManager::new_default_server();
+	navigation_2d_server = memnew(Navigation2DServer);
+}
+
+void finalize_navigation_server() {
+	memdelete(navigation_server);
+	navigation_server = NULL;
+	memdelete(navigation_2d_server);
+	navigation_2d_server = NULL;
 }
 
 //#define DEBUG_INIT
@@ -983,8 +1000,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 	// Only flush stdout in debug builds by default, as spamming `print()` will
 	// decrease performance if this is enabled.
-	GLOBAL_DEF("application/run/flush_stdout_on_print", false);
-	GLOBAL_DEF("application/run/flush_stdout_on_print.debug", true);
+	GLOBAL_DEF_RST("application/run/flush_stdout_on_print", false);
+	GLOBAL_DEF_RST("application/run/flush_stdout_on_print.debug", true);
 
 	GLOBAL_DEF("logging/file_logging/enable_file_logging", false);
 	// Only file logging by default on desktop platforms as logs can't be
@@ -1032,6 +1049,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	if (quiet_stdout)
 		_print_line_enabled = false;
 
+	Logger::set_flush_stdout_on_print(ProjectSettings::get_singleton()->get("application/run/flush_stdout_on_print"));
+
 	OS::get_singleton()->set_cmdline(execpath, main_args);
 
 	GLOBAL_DEF("rendering/quality/driver/driver_name", "GLES3");
@@ -1043,7 +1062,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	GLOBAL_DEF("rendering/quality/driver/fallback_to_gles2", false);
 
 	// Assigning here, to be sure that it appears in docs
-	GLOBAL_DEF("rendering/quality/2d/use_nvidia_rect_flicker_workaround", false);
+	GLOBAL_DEF("rendering/2d/options/use_nvidia_rect_flicker_workaround", false);
 
 	GLOBAL_DEF("display/window/size/width", 1024);
 	ProjectSettings::get_singleton()->set_custom_property_info("display/window/size/width", PropertyInfo(Variant::INT, "display/window/size/width", PROPERTY_HINT_RANGE, "0,7680,or_greater")); // 8K resolution
@@ -1127,9 +1146,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		OS::get_singleton()->_allow_layered = false;
 	}
 
-	Engine::get_singleton()->_pixel_snap = GLOBAL_DEF("rendering/quality/2d/use_pixel_snap", false);
-	Engine::get_singleton()->_snap_2d_transforms = GLOBAL_DEF("rendering/quality/2d/use_transform_snap", false);
-	Engine::get_singleton()->_snap_2d_viewports = GLOBAL_DEF("rendering/quality/2d/use_camera_snap", false);
+	Engine::get_singleton()->_gpu_pixel_snap = GLOBAL_DEF_ALIAS("rendering/2d/snapping/use_gpu_pixel_snap", "rendering/quality/2d/use_pixel_snap", false);
+
 	OS::get_singleton()->_keep_screen_on = GLOBAL_DEF("display/window/energy_saving/keep_screen_on", true);
 	if (rtm == -1) {
 		rtm = GLOBAL_DEF("rendering/threads/thread_model", OS::RENDER_THREAD_SAFE);
@@ -1356,7 +1374,13 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 				ERR_PRINTS("Non-existing or invalid boot splash at '" + boot_logo_path + "'. Loading default splash.");
 		}
 
-		Color boot_bg_color = GLOBAL_DEF("application/boot_splash/bg_color", boot_splash_bg_color);
+#if defined(TOOLS_ENABLED) && !defined(NO_EDITOR_SPLASH)
+		const Color boot_bg_color =
+				GLOBAL_DEF("application/boot_splash/bg_color",
+						(editor || project_manager) ? boot_splash_editor_bg_color : boot_splash_bg_color);
+#else
+		const Color boot_bg_color = GLOBAL_DEF("application/boot_splash/bg_color", boot_splash_bg_color);
+#endif
 		if (boot_logo.is_valid()) {
 			OS::get_singleton()->_msec_splash = OS::get_singleton()->get_ticks_msec();
 			VisualServer::get_singleton()->set_boot_image(boot_logo, boot_bg_color, boot_logo_scale, boot_logo_filter);
@@ -1424,19 +1448,6 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 
 	register_scene_types();
 
-	GLOBAL_DEF("display/mouse_cursor/custom_image", String());
-	GLOBAL_DEF("display/mouse_cursor/custom_image_hotspot", Vector2());
-	GLOBAL_DEF("display/mouse_cursor/tooltip_position_offset", Point2(10, 10));
-	ProjectSettings::get_singleton()->set_custom_property_info("display/mouse_cursor/custom_image", PropertyInfo(Variant::STRING, "display/mouse_cursor/custom_image", PROPERTY_HINT_FILE, "*.png,*.webp"));
-
-	if (String(ProjectSettings::get_singleton()->get("display/mouse_cursor/custom_image")) != String()) {
-
-		Ref<Texture> cursor = ResourceLoader::load(ProjectSettings::get_singleton()->get("display/mouse_cursor/custom_image"));
-		if (cursor.is_valid()) {
-			Vector2 hotspot = ProjectSettings::get_singleton()->get("display/mouse_cursor/custom_image_hotspot");
-			Input::get_singleton()->set_custom_mouse_cursor(cursor, Input::CURSOR_ARROW, hotspot);
-		}
-	}
 #ifdef TOOLS_ENABLED
 	ClassDB::set_current_api(ClassDB::API_EDITOR);
 	EditorNode::register_editor_types();
@@ -1450,9 +1461,24 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 	register_platform_apis();
 	register_module_types();
 
+	GLOBAL_DEF("display/mouse_cursor/custom_image", String());
+	GLOBAL_DEF("display/mouse_cursor/custom_image_hotspot", Vector2());
+	GLOBAL_DEF("display/mouse_cursor/tooltip_position_offset", Point2(10, 10));
+	ProjectSettings::get_singleton()->set_custom_property_info("display/mouse_cursor/custom_image", PropertyInfo(Variant::STRING, "display/mouse_cursor/custom_image", PROPERTY_HINT_FILE, "*.png,*.webp"));
+
+	if (String(ProjectSettings::get_singleton()->get("display/mouse_cursor/custom_image")) != String()) {
+
+		Ref<Texture> cursor = ResourceLoader::load(ProjectSettings::get_singleton()->get("display/mouse_cursor/custom_image"));
+		if (cursor.is_valid()) {
+			Vector2 hotspot = ProjectSettings::get_singleton()->get("display/mouse_cursor/custom_image_hotspot");
+			Input::get_singleton()->set_custom_mouse_cursor(cursor, Input::CURSOR_ARROW, hotspot);
+		}
+	}
+
 	camera_server = CameraServer::create();
 
 	initialize_physics();
+	initialize_navigation_server();
 	register_server_singletons();
 
 	register_driver_types();
@@ -2107,6 +2133,8 @@ bool Main::iteration() {
 
 		message_queue->flush();
 
+		NavigationServer::get_singleton_mut()->step(frame_slice * time_scale);
+
 		PhysicsServer::get_singleton()->step(frame_slice * time_scale);
 
 		Physics2DServer::get_singleton()->end_sync();
@@ -2217,9 +2245,10 @@ void Main::force_redraw() {
  * so that the engine closes cleanly without leaking memory or crashing.
  * The order matters as some of those steps are linked with each other.
  */
-void Main::cleanup() {
-
-	ERR_FAIL_COND(!_start_success);
+void Main::cleanup(bool p_force) {
+	if (!p_force) {
+		ERR_FAIL_COND(!_start_success);
+	}
 
 	if (script_debugger) {
 		// Flush any remaining messages
@@ -2282,6 +2311,7 @@ void Main::cleanup() {
 
 	OS::get_singleton()->finalize();
 	finalize_physics();
+	finalize_navigation_server();
 
 	if (packed_data)
 		memdelete(packed_data);

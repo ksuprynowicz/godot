@@ -53,15 +53,16 @@
 # Hazar <duurkak@yandex.com>, 2020.
 # Mutlu ORAN <mutlu.oran66@gmail.com>, 2020.
 # Yusuf Osman YILMAZ <wolfkan4219@gmail.com>, 2020.
-# furkan atalar <fatalar55@gmail.com>, 2020.
+# furkan atalar <fatalar55@gmail.com>, 2020, 2021.
 # Suleyman Poyraz <zaryob.dev@gmail.com>, 2020.
 # Çağlar KOPARIR <ckoparir@gmail.com>, 2021.
+# Cem Eren Fukara <cefukara@hotmail.com>, 2021.
 msgid ""
 msgstr ""
 "Project-Id-Version: Godot Engine editor\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2021-02-05 23:44+0000\n"
-"Last-Translator: Oğuz Ersen <oguzersen@protonmail.com>\n"
+"PO-Revision-Date: 2021-03-16 10:40+0000\n"
+"Last-Translator: furkan atalar <fatalar55@gmail.com>\n"
 "Language-Team: Turkish <https://hosted.weblate.org/projects/godot-engine/"
 "godot/tr/>\n"
 "Language: tr\n"
@@ -69,7 +70,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.5-dev\n"
+"X-Generator: Weblate 4.5.2-dev\n"
 
 #: core/math/expression.cpp modules/gdscript/gdscript_functions.cpp
 #: modules/visual_script/visual_script_builtin_funcs.cpp
@@ -698,7 +699,7 @@ msgstr "Kopyalanacak izleri seç"
 #: editor/plugins/animation_player_editor_plugin.cpp
 #: editor/plugins/script_text_editor.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp editor/property_editor.cpp
-#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
+#: editor/scene_tree_dock.cpp scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Copy"
 msgstr "Kopyala"
 
@@ -1720,7 +1721,7 @@ msgstr "Dock Nod"
 
 #: editor/editor_feature_profile.cpp
 msgid "FileSystem Dock"
-msgstr "Dosya sistemi"
+msgstr "Dosya Sistemi"
 
 #: editor/editor_feature_profile.cpp
 msgid "Import Dock"
@@ -1903,8 +1904,8 @@ msgid "Open a File or Directory"
 msgstr "Bir Dosya ya da Dizin Aç"
 
 #: editor/editor_file_dialog.cpp editor/editor_node.cpp
-#: editor/editor_properties.cpp editor/inspector_dock.cpp
-#: editor/plugins/animation_player_editor_plugin.cpp
+#: editor/editor_properties.cpp editor/import_defaults_editor.cpp
+#: editor/inspector_dock.cpp editor/plugins/animation_player_editor_plugin.cpp
 #: editor/plugins/script_editor_plugin.cpp scene/gui/file_dialog.cpp
 msgid "Save"
 msgstr "Kaydet"
@@ -2038,7 +2039,7 @@ msgstr "Çevrimiçi Rehberler"
 
 #: editor/editor_help.cpp
 msgid "Properties"
-msgstr "Özellikler"
+msgstr "Özellikleri"
 
 #: editor/editor_help.cpp
 msgid "override:"
@@ -2050,7 +2051,7 @@ msgstr "varsayılan:"
 
 #: editor/editor_help.cpp
 msgid "Methods"
-msgstr "Yöntemler"
+msgstr "Metotlar"
 
 #: editor/editor_help.cpp
 msgid "Theme Properties"
@@ -2578,7 +2579,8 @@ msgstr ""
 "başarısız oldu."
 
 #: editor/editor_node.cpp
-msgid "Unable to find script field for addon plugin at: 'res://addons/%s'."
+#, fuzzy
+msgid "Unable to find script field for addon plugin at: '%s'."
 msgstr "Eklentideki betik alanı bulunamıyor: 'res://addons/%s'."
 
 #: editor/editor_node.cpp
@@ -3009,14 +3011,6 @@ msgid "Help"
 msgstr "Yardım"
 
 #: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
-#: editor/plugins/script_text_editor.cpp
-#: editor/plugins/shader_editor_plugin.cpp editor/plugins/text_editor.cpp
-#: editor/plugins/visual_shader_editor_plugin.cpp editor/project_manager.cpp
-#: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
-msgid "Search"
-msgstr "Ara"
-
-#: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
 #: editor/plugins/shader_editor_plugin.cpp
 msgid "Online Docs"
 msgstr "Çevrimiçi Belgeler"
@@ -3182,13 +3176,12 @@ msgid "Open & Run a Script"
 msgstr "Aç & Bir Betik Çalıştır"
 
 #: editor/editor_node.cpp
-#, fuzzy
 msgid ""
 "The following files are newer on disk.\n"
 "What action should be taken?"
 msgstr ""
 "Aşağıdaki dosyalar diskte daha yeni.\n"
-"Hangi eylem yapılsın?:"
+"Hangi eylem yapılsın?"
 
 #: editor/editor_node.cpp editor/plugins/script_editor_plugin.cpp
 #: editor/plugins/shader_editor_plugin.cpp
@@ -3412,7 +3405,7 @@ msgstr "Benzersiz Yap"
 #: editor/plugins/script_text_editor.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp
 #: editor/plugins/tile_map_editor_plugin.cpp editor/property_editor.cpp
-#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
+#: editor/scene_tree_dock.cpp scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Paste"
 msgstr "Yapıştır"
 
@@ -4117,6 +4110,18 @@ msgstr "`Post_import ()` yönteminde Node türevi bir nesne döndürdünüz mü?
 #: editor/import/resource_importer_scene.cpp
 msgid "Saving..."
 msgstr "Kaydediliyor..."
+
+#: editor/import_defaults_editor.cpp
+msgid "Select Importer"
+msgstr "İçe Aktarıcı'yı seçin"
+
+#: editor/import_defaults_editor.cpp
+msgid "Importer:"
+msgstr "İçe Aktar"
+
+#: editor/import_defaults_editor.cpp
+msgid "Reset to Defaults"
+msgstr "Varsayılanlara dön"
 
 #: editor/import_dock.cpp
 msgid "%d Files"
@@ -5085,8 +5090,8 @@ msgid "Got:"
 msgstr "Alınan:"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
-msgid "Failed sha256 hash check"
-msgstr "Başarısız sha256 hash sınaması"
+msgid "Failed SHA-256 hash check"
+msgstr "SHA-256 hash kontrolü başarısız oldu"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
 msgid "Asset Download Error:"
@@ -5189,7 +5194,6 @@ msgid "Sort:"
 msgstr "Sırala:"
 
 #: editor/plugins/asset_library_editor_plugin.cpp
-#: editor/project_settings_editor.cpp
 msgid "Category:"
 msgstr "Kategori:"
 
@@ -7009,6 +7013,14 @@ msgstr "Belgeleri Kapat"
 msgid "Run"
 msgstr "Çalıştır"
 
+#: editor/plugins/script_editor_plugin.cpp
+#: editor/plugins/script_text_editor.cpp
+#: editor/plugins/shader_editor_plugin.cpp editor/plugins/text_editor.cpp
+#: editor/plugins/visual_shader_editor_plugin.cpp editor/project_manager.cpp
+#: editor/project_settings_editor.cpp editor/settings_config_dialog.cpp
+msgid "Search"
+msgstr "Ara"
+
 #: editor/plugins/script_editor_plugin.cpp editor/script_editor_debugger.cpp
 msgid "Step Into"
 msgstr "İçeri Adımla"
@@ -7156,8 +7168,8 @@ msgstr "Hata ayıklama noktaları"
 msgid "Go To"
 msgstr "Şuna Git"
 
-#: editor/plugins/script_text_editor.cpp scene/gui/line_edit.cpp
-#: scene/gui/text_edit.cpp
+#: editor/plugins/script_text_editor.cpp editor/scene_tree_dock.cpp
+#: scene/gui/line_edit.cpp scene/gui/text_edit.cpp
 msgid "Cut"
 msgstr "Kes"
 
@@ -10064,9 +10076,8 @@ msgid "Projects"
 msgstr "Projeler"
 
 #: editor/project_manager.cpp
-#, fuzzy
 msgid "Loading, please wait..."
-msgstr "Aynalar alınıyor, lütfen bekleyin..."
+msgstr "Yükleniyor, lütfen bekleyin..."
 
 #: editor/project_manager.cpp
 msgid "Last Modified"
@@ -10438,6 +10449,11 @@ msgstr "Otomatik Yükle"
 msgid "Plugins"
 msgstr "Eklentiler"
 
+#: editor/project_settings_editor.cpp
+#, fuzzy
+msgid "Import Defaults"
+msgstr "Varsayılanları İçe Aktar"
+
 #: editor/property_editor.cpp
 msgid "Preset..."
 msgstr "Ön ayar..."
@@ -10687,6 +10703,14 @@ msgid "Instance Child Scene"
 msgstr "Çocuk Sahnesini Örnekle"
 
 #: editor/scene_tree_dock.cpp
+msgid "Can't paste root node into the same scene."
+msgstr "Kök düğüm aynı sahneye yapıştırılamıyor."
+
+#: editor/scene_tree_dock.cpp
+msgid "Paste Node(s)"
+msgstr "Düğümleri Yapıştır"
+
+#: editor/scene_tree_dock.cpp
 msgid "Detach Script"
 msgstr "Betiği Ayır"
 
@@ -10812,6 +10836,10 @@ msgstr "Geçerli sahneden miras alınan düğümler üzerinde işlem yapılamaz!
 #: editor/scene_tree_dock.cpp
 msgid "Attach Script"
 msgstr "Betik İliştir"
+
+#: editor/scene_tree_dock.cpp
+msgid "Cut Node(s)"
+msgstr "Düğümleri Kes(s)"
 
 #: editor/scene_tree_dock.cpp
 msgid "Remove Node(s)"
@@ -12464,6 +12492,14 @@ msgstr ""
 msgid "An empty CollisionPolygon2D has no effect on collision."
 msgstr "Boş bir CollisionPolygon2D'nin çarpışmaya hiçbir etkisi yoktur."
 
+#: scene/2d/collision_polygon_2d.cpp
+msgid "Invalid polygon. At least 3 points are needed in 'Solids' build mode."
+msgstr ""
+
+#: scene/2d/collision_polygon_2d.cpp
+msgid "Invalid polygon. At least 2 points are needed in 'Segments' build mode."
+msgstr ""
+
 #: scene/2d/collision_shape_2d.cpp
 msgid ""
 "CollisionShape2D only serves to provide a collision shape to a "
@@ -12782,13 +12818,6 @@ msgid ""
 msgstr ""
 "GIProbes GLES2 video sürücüsü tarafından desteklenmez.\n"
 "Bunun yerine bir BakedLightmap kullanın."
-
-#: scene/3d/interpolated_camera.cpp
-msgid ""
-"InterpolatedCamera has been deprecated and will be removed in Godot 4.0."
-msgstr ""
-"InterpolatedCamera kullanımdan kaldırılmıştır ve Godot 4.0'da "
-"kaldırılacaktır."
 
 #: scene/3d/light.cpp
 msgid "A SpotLight with an angle wider than 90 degrees cannot cast shadows."
@@ -13132,6 +13161,12 @@ msgstr "varyings yalnızca vertex işlevinde atanabilir."
 #: servers/visual/shader_language.cpp
 msgid "Constants cannot be modified."
 msgstr "Sabit değerler değiştirilemez."
+
+#~ msgid ""
+#~ "InterpolatedCamera has been deprecated and will be removed in Godot 4.0."
+#~ msgstr ""
+#~ "InterpolatedCamera kullanımdan kaldırılmıştır ve Godot 4.0'da "
+#~ "kaldırılacaktır."
 
 #~ msgid "No"
 #~ msgstr "Hayır"
@@ -14765,9 +14800,6 @@ msgstr "Sabit değerler değiştirilemez."
 
 #~ msgid "Use Default Light"
 #~ msgstr "Önyüklü Işık Kullan"
-
-#~ msgid "Use Default sRGB"
-#~ msgstr "Önyüklü sRGB'yi Kullan"
 
 #~ msgid "Default Light Normal:"
 #~ msgstr "Önyüklü Işığın Olağanı:"

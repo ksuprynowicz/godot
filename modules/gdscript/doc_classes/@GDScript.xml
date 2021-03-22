@@ -64,7 +64,7 @@
 			<argument index="0" name="s" type="float">
 			</argument>
 			<description>
-				Returns the arc cosine of [code]s[/code] in radians. Use to get the angle of cosine [code]s[/code].
+				Returns the arc cosine of [code]s[/code] in radians. Use to get the angle of cosine [code]s[/code]. [code]s[/code] must be between [code]-1.0[/code] and [code]1.0[/code] (inclusive), otherwise, [method acos] will return [constant NAN].
 				[codeblock]
 				# c is 0.523599 or 30 degrees if converted with rad2deg(s)
 				c = acos(0.866025)
@@ -77,7 +77,7 @@
 			<argument index="0" name="s" type="float">
 			</argument>
 			<description>
-				Returns the arc sine of [code]s[/code] in radians. Use to get the angle of sine [code]s[/code].
+				Returns the arc sine of [code]s[/code] in radians. Use to get the angle of sine [code]s[/code]. [code]s[/code] must be between [code]-1.0[/code] and [code]1.0[/code] (inclusive), otherwise, [method asin] will return [constant NAN].
 				[codeblock]
 				# s is 0.523599 or 30 degrees if converted with rad2deg(s)
 				s = asin(0.5)
@@ -1093,7 +1093,7 @@
 			<description>
 				Returns the result of smoothly interpolating the value of [code]s[/code] between [code]0[/code] and [code]1[/code], based on the where [code]s[/code] lies with respect to the edges [code]from[/code] and [code]to[/code].
 				The return value is [code]0[/code] if [code]s &lt;= from[/code], and [code]1[/code] if [code]s &gt;= to[/code]. If [code]s[/code] lies between [code]from[/code] and [code]to[/code], the returned value follows an S-shaped curve that maps [code]s[/code] between [code]0[/code] and [code]1[/code].
-				This S-shaped curve is the cubic Hermite interpolator, given by [code]f(s) = 3*s^2 - 2*s^3[/code].
+				This S-shaped curve is the cubic Hermite interpolator, given by [code]f(y) = 3*y^2 - 2*y^3[/code] where [code]y = (x-from) / (to-from)[/code].
 				[codeblock]
 				smoothstep(0, 2, -5.0) # Returns 0.0
 				smoothstep(0, 2, 0.5) # Returns 0.15625
