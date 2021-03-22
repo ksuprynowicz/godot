@@ -2594,10 +2594,11 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 					}
 				}
 			} else {
-				String existing;
+				String root_name(scene->get_name());
+				root_name =  root_name.camelcase_to_underscore();
+				String existing = root_name;
 				if (extensions.size()) {
-					String root_name(scene->get_name());
-					existing = root_name + "." + extensions.front()->get().to_lower();
+					existing = existing + "." + extensions.front()->get().to_lower();
 				}
 				file->set_current_path(existing);
 			}
