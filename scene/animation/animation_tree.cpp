@@ -460,6 +460,7 @@ AnimationNode::AnimationNode() {
 	state = NULL;
 	parent = NULL;
 	filter_enabled = false;
+	add_directly = false;
 }
 
 ////////////////////
