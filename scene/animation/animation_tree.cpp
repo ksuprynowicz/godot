@@ -965,21 +965,21 @@ void AnimationTree::_process_graph(float p_delta) {
 								continue;
 
 							if (!as.add_directly) {
-							        t->loc = t->loc.linear_interpolate(loc, blend);
-							        if (t->rot_blend_accum == 0) {
-								        t->rot = rot;
-								        t->rot_blend_accum = blend;
-							        } else {
-								       float rot_total = t->rot_blend_accum + blend;
-								        t->rot = rot.slerp(t->rot, t->rot_blend_accum / rot_total).normalized();
-								        t->rot_blend_accum = rot_total;
-							       }
+								t->loc = t->loc.linear_interpolate(loc, blend);
+								if (t->rot_blend_accum == 0) {
+									t->rot = rot;
+									t->rot_blend_accum = blend;
+								} else {
+									float rot_total = t->rot_blend_accum + blend;
+									t->rot = rot.slerp(t->rot, t->rot_blend_accum / rot_total).normalized();
+									t->rot_blend_accum = rot_total;
+								}
 								t->scale = t->scale.linear_interpolate(scale, blend);
 							} else {
 								t->loc += (loc)*blend;
 								t->scale = t->scale.linear_interpolate(scale, blend);
 								Quat q = Quat().slerp(rot.normalized(), blend).normalized();
-								t->rot = (t->rot*q).normalized();
+								t->rot = (t->rot * q).normalized();
 							}
 						}
 
