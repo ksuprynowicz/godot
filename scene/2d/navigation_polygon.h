@@ -32,7 +32,6 @@
 #define NAVIGATION_POLYGON_H
 
 #include "scene/2d/node_2d.h"
-#include "scene/resources/navigation_mesh.h"
 
 class NavigationPolygon : public Resource {
 
@@ -47,10 +46,6 @@ class NavigationPolygon : public Resource {
 
 	mutable Rect2 item_rect;
 	mutable bool rect_cache_dirty;
-
-	Mutex *navmesh_generation;
-	// Navigation mesh
-	Ref<NavigationMesh> navmesh;
 
 protected:
 	static void _bind_methods();
@@ -86,8 +81,6 @@ public:
 	Vector<int> get_polygon(int p_idx);
 	void clear_polygons();
 
-	Ref<NavigationMesh> get_mesh();
-
 	NavigationPolygon();
 };
 
@@ -98,7 +91,7 @@ class NavigationPolygonInstance : public Node2D {
 	GDCLASS(NavigationPolygonInstance, Node2D);
 
 	bool enabled;
-	RID region;
+	int nav_id;
 	Navigation2D *navigation;
 	Ref<NavigationPolygon> navpoly;
 
@@ -123,7 +116,6 @@ public:
 	String get_configuration_warning() const;
 
 	NavigationPolygonInstance();
-	~NavigationPolygonInstance();
 };
 
 #endif // NAVIGATIONPOLYGON_H

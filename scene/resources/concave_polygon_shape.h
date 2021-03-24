@@ -66,8 +66,7 @@ public:
 	void set_faces(const PoolVector<Vector3> &p_faces);
 	PoolVector<Vector3> get_faces() const;
 
-	virtual Vector<Vector3> get_debug_mesh_lines();
-	virtual real_t get_enclosing_radius() const;
+	Vector<Vector3> get_debug_mesh_lines();
 
 	ConcavePolygonShape();
 };

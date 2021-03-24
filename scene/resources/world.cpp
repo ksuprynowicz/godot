@@ -262,7 +262,6 @@ RID World::get_space() const {
 
 	return space;
 }
-
 RID World::get_scenario() const {
 
 	return scenario;

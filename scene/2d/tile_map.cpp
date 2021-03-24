@@ -35,7 +35,6 @@
 #include "core/method_bind_ext.gen.inc"
 #include "core/os/os.h"
 #include "scene/2d/area_2d.h"
-#include "servers/navigation_2d_server.h"
 #include "servers/physics_2d_server.h"
 
 int TileMap::_get_quadrant_size() const {
@@ -87,7 +86,7 @@ void TileMap::_notification(int p_what) {
 				if (navigation) {
 					for (Map<PosKey, Quadrant::NavPoly>::Element *F = q.navpoly_ids.front(); F; F = F->next()) {
 
-						Navigation2DServer::get_singleton()->region_set_map(F->get().region, RID());
+						navigation->navpoly_remove(F->get().id);
 					}
 					q.navpoly_ids.clear();
 				}
@@ -164,7 +163,7 @@ void TileMap::_update_quadrant_transform() {
 		if (navigation) {
 			for (Map<PosKey, Quadrant::NavPoly>::Element *F = q.navpoly_ids.front(); F; F = F->next()) {
 
-				Navigation2DServer::get_singleton()->region_set_transform(F->get().region, nav_rel * F->get().xform);
+				navigation->navpoly_set_transform(F->get().id, nav_rel * F->get().xform);
 			}
 		}
 
@@ -379,7 +378,7 @@ void TileMap::update_dirty_quadrants() {
 		if (navigation) {
 			for (Map<PosKey, Quadrant::NavPoly>::Element *E = q.navpoly_ids.front(); E; E = E->next()) {
 
-				Navigation2DServer::get_singleton()->region_set_map(E->get().region, RID());
+				navigation->navpoly_remove(E->get().id);
 			}
 			q.navpoly_ids.clear();
 		}
@@ -613,13 +612,10 @@ void TileMap::update_dirty_quadrants() {
 					xform.set_origin(offset.floor() + q.pos);
 					_fix_cell_transform(xform, c, npoly_ofs, s);
 
-					RID region = Navigation2DServer::get_singleton()->region_create();
-					Navigation2DServer::get_singleton()->region_set_map(region, navigation->get_rid());
-					Navigation2DServer::get_singleton()->region_set_transform(region, nav_rel * xform);
-					Navigation2DServer::get_singleton()->region_set_navpoly(region, navpoly);
+					int pid = navigation->navpoly_add(navpoly, nav_rel * xform);
 
 					Quadrant::NavPoly np;
-					np.region = region;
+					np.id = pid;
 					np.xform = xform;
 					q.navpoly_ids[E->key()] = np;
 
@@ -814,7 +810,7 @@ void TileMap::_erase_quadrant(Map<PosKey, Quadrant>::Element *Q) {
 	if (navigation) {
 		for (Map<PosKey, Quadrant::NavPoly>::Element *E = q.navpoly_ids.front(); E; E = E->next()) {
 
-			Navigation2DServer::get_singleton()->region_set_map(E->get().region, RID());
+			navigation->navpoly_remove(E->get().id);
 		}
 		q.navpoly_ids.clear();
 	}

@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  resource_importer_csv.h                                              */
+/*  navigation_mesh_editor_plugin.h                                      */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,30 +28,57 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef RESOURCEIMPORTERCSV_H
-#define RESOURCEIMPORTERCSV_H
+#ifndef NAVIGATION_MESH_GENERATOR_PLUGIN_H
+#define NAVIGATION_MESH_GENERATOR_PLUGIN_H
 
-#include "core/io/resource_importer.h"
+#include "editor/editor_node.h"
+#include "editor/editor_plugin.h"
+#include "navigation_mesh_generator.h"
 
-class ResourceImporterCSV : public ResourceImporter {
-	GDCLASS(ResourceImporterCSV, ResourceImporter);
+class NavigationMeshEditor : public Control {
+	friend class NavigationMeshEditorPlugin;
+
+	GDCLASS(NavigationMeshEditor, Control);
+
+	AcceptDialog *err_dialog;
+
+	HBoxContainer *bake_hbox;
+	ToolButton *button_bake;
+	ToolButton *button_reset;
+	Label *bake_info;
+
+	NavigationMeshInstance *node;
+
+	void _bake_pressed();
+	void _clear_pressed();
+
+protected:
+	void _node_removed(Node *p_node);
+	static void _bind_methods();
+	void _notification(int p_option);
 
 public:
-	virtual String get_importer_name() const;
-	virtual String get_visible_name() const;
-	virtual void get_recognized_extensions(List<String> *p_extensions) const;
-	virtual String get_save_extension() const;
-	virtual String get_resource_type() const;
-
-	virtual int get_preset_count() const;
-	virtual String get_preset_name(int p_idx) const;
-
-	virtual void get_import_options(List<ImportOption> *r_options, int p_preset = 0) const;
-	virtual bool get_option_visibility(const String &p_option, const Map<StringName, Variant> &p_options) const;
-
-	virtual Error import(const String &p_source_file, const String &p_save_path, const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files = NULL, Variant *r_metadata = NULL);
-
-	ResourceImporterCSV();
+	void edit(NavigationMeshInstance *p_nav_mesh_instance);
+	NavigationMeshEditor();
+	~NavigationMeshEditor();
 };
 
-#endif // RESOURCEIMPORTERCSV_H
+class NavigationMeshEditorPlugin : public EditorPlugin {
+
+	GDCLASS(NavigationMeshEditorPlugin, EditorPlugin);
+
+	NavigationMeshEditor *navigation_mesh_editor;
+	EditorNode *editor;
+
+public:
+	virtual String get_name() const { return "NavigationMesh"; }
+	bool has_main_screen() const { return false; }
+	virtual void edit(Object *p_object);
+	virtual bool handles(Object *p_object) const;
+	virtual void make_visible(bool p_visible);
+
+	NavigationMeshEditorPlugin(EditorNode *p_node);
+	~NavigationMeshEditorPlugin();
+};
+
+#endif // NAVIGATION_MESH_GENERATOR_PLUGIN_H

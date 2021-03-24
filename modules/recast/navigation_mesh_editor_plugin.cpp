@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2020 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2020 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -28,12 +28,10 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifdef TOOLS_ENABLED
 #include "navigation_mesh_editor_plugin.h"
 
 #include "core/io/marshalls.h"
 #include "core/io/resource_saver.h"
-#include "navigation_mesh_generator.h"
 #include "scene/3d/mesh_instance.h"
 #include "scene/gui/box_container.h"
 
@@ -59,14 +57,15 @@ void NavigationMeshEditor::_bake_pressed() {
 	button_bake->set_pressed(false);
 
 	ERR_FAIL_COND(!node);
-	if (!node->get_navigation_mesh().is_valid()) {
-		err_dialog->set_text(TTR("A NavigationMesh resource must be set or created for this node to work."));
+	const String conf_warning = node->get_configuration_warning();
+	if (!conf_warning.empty()) {
+		err_dialog->set_text(conf_warning);
 		err_dialog->popup_centered_minsize();
 		return;
 	}
 
-	NavigationMeshGenerator::get_singleton()->clear(node->get_navigation_mesh());
-	NavigationMeshGenerator::get_singleton()->bake(node->get_navigation_mesh(), node);
+	EditorNavigationMeshGenerator::get_singleton()->clear(node->get_navigation_mesh());
+	EditorNavigationMeshGenerator::get_singleton()->bake(node->get_navigation_mesh(), node);
 
 	node->update_gizmo();
 }
@@ -74,7 +73,7 @@ void NavigationMeshEditor::_bake_pressed() {
 void NavigationMeshEditor::_clear_pressed() {
 
 	if (node)
-		NavigationMeshGenerator::get_singleton()->clear(node->get_navigation_mesh());
+		EditorNavigationMeshGenerator::get_singleton()->clear(node->get_navigation_mesh());
 
 	button_bake->set_pressed(false);
 	bake_info->set_text("");
@@ -161,5 +160,3 @@ NavigationMeshEditorPlugin::NavigationMeshEditorPlugin(EditorNode *p_node) {
 
 NavigationMeshEditorPlugin::~NavigationMeshEditorPlugin() {
 }
-
-#endif

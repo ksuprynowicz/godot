@@ -1573,6 +1573,7 @@ void RasterizerStorageGLES3::texture_debug_usage(List<VS::TextureInfo> *r_info) 
 		if (!t)
 			continue;
 		VS::TextureInfo tinfo;
+		tinfo.texture = E->get();
 		tinfo.path = t->path;
 		tinfo.format = t->format;
 		tinfo.width = t->alloc_width;
@@ -8508,6 +8509,7 @@ void RasterizerStorageGLES3::initialize() {
 
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &config.max_texture_image_units);
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &config.max_texture_size);
+	glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &config.max_cubemap_texture_size);
 
 	config.use_rgba_2d_shadows = !config.framebuffer_float_supported;
 

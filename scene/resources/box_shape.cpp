@@ -48,10 +48,6 @@ Vector<Vector3> BoxShape::get_debug_mesh_lines() {
 	return lines;
 }
 
-real_t BoxShape::get_enclosing_radius() const {
-	return extents.length();
-}
-
 void BoxShape::_update_shape() {
 
 	PhysicsServer::get_singleton()->shape_set_data(get_shape(), extents);

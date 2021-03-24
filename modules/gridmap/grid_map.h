@@ -91,7 +91,7 @@ class GridMap : public Spatial {
 	struct Octant {
 
 		struct NavMesh {
-			RID region;
+			int id;
 			Transform xform;
 		};
 

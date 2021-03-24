@@ -41,7 +41,7 @@
 #include "scene/3d/light.h"
 #include "scene/3d/listener.h"
 #include "scene/3d/mesh_instance.h"
-#include "scene/3d/navigation_mesh_instance.h"
+#include "scene/3d/navigation_mesh.h"
 #include "scene/3d/particles.h"
 #include "scene/3d/physics_joint.h"
 #include "scene/3d/position_3d.h"
@@ -3056,7 +3056,7 @@ String CollisionObjectGizmoPlugin::get_name() const {
 }
 
 int CollisionObjectGizmoPlugin::get_priority() const {
-	return -1;
+	return -2;
 }
 
 void CollisionObjectGizmoPlugin::redraw(EditorSpatialGizmo *p_gizmo) {

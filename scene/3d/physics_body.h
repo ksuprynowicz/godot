@@ -49,6 +49,7 @@ class PhysicsBody : public CollisionObject {
 
 protected:
 	static void _bind_methods();
+	void _notification(int p_what);
 	PhysicsBody(PhysicsServer::BodyMode p_mode);
 
 public:
@@ -298,9 +299,6 @@ public:
 	};
 
 private:
-	Vector3 linear_velocity;
-	Vector3 angular_velocity;
-
 	uint16_t locked_axis;
 
 	float margin;
@@ -324,12 +322,7 @@ protected:
 	void _notification(int p_what);
 	static void _bind_methods();
 
-	virtual void _direct_state_changed(Object *p_state);
-
 public:
-	virtual Vector3 get_linear_velocity() const;
-	virtual Vector3 get_angular_velocity() const;
-
 	bool move_and_collide(const Vector3 &p_motion, bool p_infinite_inertia, Collision &r_collision, bool p_exclude_raycast_shapes = true, bool p_test_only = false);
 	bool test_move(const Transform &p_from, const Vector3 &p_motion, bool p_infinite_inertia);
 
