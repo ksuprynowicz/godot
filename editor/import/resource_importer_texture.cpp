@@ -518,14 +518,6 @@ Error ResourceImporterTexture::import(const String &p_source_file, const String 
 						image->convert(Image::FORMAT_RGBE9995);
 					}
 				}
-			} else {
-				can_bptc = false;
-			}
-		}
-
-		if (is_ldr && can_bptc) {
-			if (bptc_ldr == 0 || (bptc_ldr == 1 && !has_alpha)) {
-				can_bptc = false;
 			}
 		}
 
