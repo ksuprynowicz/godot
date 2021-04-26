@@ -85,6 +85,8 @@ void ARVRServer::_bind_methods() {
 
 	ADD_SIGNAL(MethodInfo("tracker_added", PropertyInfo(Variant::STRING, "tracker_name"), PropertyInfo(Variant::INT, "type"), PropertyInfo(Variant::INT, "id")));
 	ADD_SIGNAL(MethodInfo("tracker_removed", PropertyInfo(Variant::STRING, "tracker_name"), PropertyInfo(Variant::INT, "type"), PropertyInfo(Variant::INT, "id")));
+
+	ADD_SIGNAL(MethodInfo("processed"));
 };
 
 real_t ARVRServer::get_world_scale() const {
@@ -362,6 +364,8 @@ void ARVRServer::_process() {
 			interfaces.write[i]->process();
 		};
 	};
+
+	emit_signal("processed");
 };
 
 void ARVRServer::_mark_commit() {
