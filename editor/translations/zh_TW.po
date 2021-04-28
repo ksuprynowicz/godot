@@ -3610,6 +3610,11 @@ msgid "Status: Import of file failed. Please fix file and reimport manually."
 msgstr "狀態：檔案匯入失敗。請修正檔案並手動重新匯入。"
 
 #: editor/filesystem_dock.cpp
+msgid ""
+"Importing has been disabled for this file, so it can't be opened for editing."
+msgstr ""
+
+#: editor/filesystem_dock.cpp
 msgid "Cannot move/rename resources root."
 msgstr "無法移動或重新命名根資源。"
 
@@ -4005,6 +4010,10 @@ msgstr "匯入程式："
 #: editor/import_defaults_editor.cpp
 msgid "Reset to Defaults"
 msgstr "重設為預設"
+
+#: editor/import_dock.cpp
+msgid "Keep File (No Import)"
+msgstr ""
 
 #: editor/import_dock.cpp
 msgid "%d Files"
@@ -7422,6 +7431,11 @@ msgstr "視圖旋轉已鎖定"
 
 #: editor/plugins/spatial_editor_plugin.cpp
 msgid ""
+"To zoom further, change the camera's clipping planes (View -> Settings...)"
+msgstr ""
+
+#: editor/plugins/spatial_editor_plugin.cpp
+msgid ""
 "Note: The FPS value displayed is the editor's framerate.\n"
 "It cannot be used as a reliable indication of in-game performance."
 msgstr ""
@@ -10727,6 +10741,13 @@ msgstr "自所選節點取消附加腳本。"
 #: editor/scene_tree_dock.cpp
 msgid "Remote"
 msgstr "遠端"
+
+#: editor/scene_tree_dock.cpp
+msgid ""
+"If selected, the Remote scene tree dock will cause the project to stutter "
+"every time it updates.\n"
+"Switch back to the Local scene tree dock to improve performance."
+msgstr ""
 
 #: editor/scene_tree_dock.cpp
 msgid "Local"

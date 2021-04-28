@@ -179,12 +179,44 @@ public:
 		// in the case of DEFAULT, this is num commands.
 		// with rects, is number of command and rects.
 		// with lines, is number of lines
+		// with polys, is number of indices (actual rendered verts)
 		uint32_t num_commands;
 
 		// first vertex of this batch in the vertex lists
 		uint32_t first_vert;
 
-		BatchColor color;
+		// we can keep the batch structure small because we either need to store
+		// the color if a handled batch, or the parent item if a default batch, so
+		// we can reference the correct originating command
+		union {
+			BatchColor color;
+
+			// for default batches we will store the parent item
+			const RasterizerCanvas::Item *item;
+		};
+
+		uint32_t get_num_verts() const {
+			switch (type) {
+				default: {
+				} break;
+				case RasterizerStorageCommon::BT_RECT: {
+					return num_commands * 4;
+				} break;
+				case RasterizerStorageCommon::BT_LINE: {
+					return num_commands * 2;
+				} break;
+				case RasterizerStorageCommon::BT_LINE_AA: {
+					return num_commands * 2;
+				} break;
+				case RasterizerStorageCommon::BT_POLY: {
+					return num_commands;
+				} break;
+			}
+
+			// error condition
+			WARN_PRINT_ONCE("reading num_verts from incorrect batch type");
+			return 0;
+		}
 	};
 
 	struct BatchTex {
@@ -655,8 +687,11 @@ public:
 			RAST_DEBUG_ASSERT(batch);
 		}
 
-		if (p_blank)
+		if (p_blank) {
 			memset(batch, 0, sizeof(Batch));
+		} else {
+			batch->item = nullptr;
+		}
 
 		return batch;
 	}
@@ -857,6 +892,7 @@ PREAMBLE(void)::_prefill_default_batch(FillState &r_fill_state, int p_command_nu
 			r_fill_state.curr_batch->type = RasterizerStorageCommon::BT_DEFAULT;
 			r_fill_state.curr_batch->first_command = extra_command;
 			r_fill_state.curr_batch->num_commands = 1;
+			r_fill_state.curr_batch->item = &p_item;
 
 			// revert to the original transform mode
 			// e.g. go back to NONE if we were in hardware transform mode
@@ -882,6 +918,7 @@ PREAMBLE(void)::_prefill_default_batch(FillState &r_fill_state, int p_command_nu
 		r_fill_state.curr_batch->type = RasterizerStorageCommon::BT_DEFAULT;
 		r_fill_state.curr_batch->first_command = p_command_num;
 		r_fill_state.curr_batch->num_commands = 1;
+		r_fill_state.curr_batch->item = &p_item;
 	}
 }
 
@@ -993,6 +1030,33 @@ PREAMBLE(void)::batch_initialize() {
 	bdata.settings_use_single_rect_fallback = GLOBAL_GET("rendering/batching/options/single_rect_fallback");
 	bdata.settings_use_software_skinning = GLOBAL_GET("rendering/2d/options/use_software_skinning");
 	bdata.settings_ninepatch_mode = GLOBAL_GET("rendering/2d/options/ninepatch_mode");
+
+	// allow user to override the api usage techniques using project settings
+	int send_null_mode = GLOBAL_GET("rendering/2d/opengl/batching_send_null");
+	switch (send_null_mode) {
+		default: {
+			bdata.buffer_mode_batch_upload_send_null = true;
+		} break;
+		case 1: {
+			bdata.buffer_mode_batch_upload_send_null = false;
+		} break;
+		case 2: {
+			bdata.buffer_mode_batch_upload_send_null = true;
+		} break;
+	}
+
+	int stream_mode = GLOBAL_GET("rendering/2d/opengl/batching_stream");
+	switch (stream_mode) {
+		default: {
+			bdata.buffer_mode_batch_upload_flag_stream = false;
+		} break;
+		case 1: {
+			bdata.buffer_mode_batch_upload_flag_stream = false;
+		} break;
+		case 2: {
+			bdata.buffer_mode_batch_upload_flag_stream = true;
+		} break;
+	}
 
 	// alternatively only enable uv contract if pixel snap in use,
 	// but with this enable bool, it should not be necessary
@@ -1269,8 +1333,9 @@ PREAMBLE(bool)::_prefill_line(RasterizerCanvas::Item::CommandLine *p_line, FillS
 	// get the baked line color
 	Color col = p_line->color;
 
-	if (multiply_final_modulate)
+	if (multiply_final_modulate) {
 		col *= r_fill_state.final_modulate;
+	}
 
 	BatchColor bcol;
 	bcol.set(col);
@@ -1547,14 +1612,23 @@ bool C_PREAMBLE::_prefill_polygon(RasterizerCanvas::Item::CommandPolygon *p_poly
 	int num_inds = p_poly->indices.size();
 
 	// nothing to draw?
-	if (!num_inds)
+	if (!num_inds || !p_poly->points.size()) {
 		return false;
+	}
 
 	// we aren't using indices, so will transform verts more than once .. less efficient.
 	// could be done with a temporary vertex buffer
 	BatchVertex *bvs = bdata.vertices.request(num_inds);
 	if (!bvs) {
-		// run out of space in the vertex buffer .. finish this function and draw what we have so far
+		// run out of space in the vertex buffer
+		// check for special case where the batching buffer is simply not big enough to fit this primitive.
+		if (!bdata.vertices.size()) {
+			// can't draw, ignore the primitive, otherwise we would enter an infinite loop
+			WARN_PRINT_ONCE("poly has too many indices to draw, increase batch buffer size");
+			return false;
+		}
+
+		// .. finish this function and draw what we have so far
 		// return where we got to
 		r_command_start = command_num;
 		return true;
@@ -1594,10 +1668,11 @@ bool C_PREAMBLE::_prefill_polygon(RasterizerCanvas::Item::CommandPolygon *p_poly
 
 	// the modulate is always baked
 	Color modulate;
-	if (!use_large_verts && !use_modulate && multiply_final_modulate)
+	if (multiply_final_modulate) {
 		modulate = r_fill_state.final_modulate;
-	else
+	} else {
 		modulate = Color(1, 1, 1, 1);
+	}
 
 	int old_batch_tex_id = r_fill_state.batch_tex_id;
 	r_fill_state.batch_tex_id = _batch_find_or_create_tex(p_poly->texture, p_poly->normal_map, false, old_batch_tex_id);
@@ -1674,6 +1749,13 @@ bool C_PREAMBLE::_prefill_polygon(RasterizerCanvas::Item::CommandPolygon *p_poly
 			int ind = p_poly->indices[n];
 
 			RAST_DEV_DEBUG_ASSERT(ind < p_poly->points.size());
+
+			// recover at runtime from invalid polys (the editor may send invalid polys)
+			if ((unsigned int)ind >= (unsigned int)num_verts) {
+				// will recover as long as there is at least one vertex.
+				// if there are no verts, we will have quick rejected earlier in this function
+				ind = 0;
+			}
 
 			// this could be moved outside the loop
 			if (software_transform) {
@@ -1815,6 +1897,14 @@ PREAMBLE(bool)::_software_skin_poly(RasterizerCanvas::Item::CommandPolygon *p_po
 		int ind = p_poly->indices[n];
 
 		RAST_DEV_DEBUG_ASSERT(ind < num_verts);
+
+		// recover at runtime from invalid polys (the editor may send invalid polys)
+		if ((unsigned int)ind >= (unsigned int)num_verts) {
+			// will recover as long as there is at least one vertex.
+			// if there are no verts, we will have quick rejected earlier in this function
+			ind = 0;
+		}
+
 		const Point2 &pos = pTemps[ind];
 		bvs[n].pos.set(pos.x, pos.y);
 
@@ -1895,10 +1985,11 @@ bool C_PREAMBLE::_prefill_rect(RasterizerCanvas::Item::CommandRect *rect, FillSt
 
 	Color col = rect->modulate;
 
-	if (!use_large_verts) {
-		if (multiply_final_modulate) {
-			col *= r_fill_state.final_modulate;
-		}
+	// use_modulate and use_large_verts should have been checked in the calling prefill_item function.
+	// we don't want to apply the modulate on the CPU if it is stored in the vertex format, it will
+	// be applied in the shader
+	if (multiply_final_modulate) {
+		col *= r_fill_state.final_modulate;
 	}
 
 	// instead of doing all the texture preparation for EVERY rect,
@@ -2105,11 +2196,11 @@ bool C_PREAMBLE::_prefill_rect(RasterizerCanvas::Item::CommandRect *rect, FillSt
 
 			// apply to an x axis
 			// the x axis and y axis can be taken directly from the transform (no need to xform identity vectors)
-			Vector2 x_axis(tr.elements[0][0], tr.elements[1][0]);
+			Vector2 x_axis(tr.elements[0][0], tr.elements[0][1]);
 
 			// have to do a y axis to check for scaling flips
 			// this is hassle and extra slowness. We could only allow flips via the flags.
-			Vector2 y_axis(tr.elements[0][1], tr.elements[1][1]);
+			Vector2 y_axis(tr.elements[1][0], tr.elements[1][1]);
 
 			// has the x / y axis flipped due to scaling?
 			float cross = x_axis.cross(y_axis);
@@ -2162,19 +2253,15 @@ PREAMBLE(bool)::prefill_joined_item(FillState &r_fill_state, int &r_command_star
 	int command_count = p_item->commands.size();
 	RasterizerCanvas::Item::Command *const *commands = p_item->commands.ptr();
 
-	// checking the color for not being white makes it 92/90 times faster in the case where it is white
-	bool multiply_final_modulate = false;
-	if (!r_fill_state.is_single_item && (r_fill_state.final_modulate != Color(1, 1, 1, 1))) {
-		multiply_final_modulate = true;
+	// whether to multiply final modulate on the CPU, or pass it in the FVF and apply in the shader
+	bool multiply_final_modulate = true;
+
+	if (r_fill_state.is_single_item || bdata.use_modulate || bdata.use_large_verts) {
+		multiply_final_modulate = false;
 	}
 
 	// start batch is a dummy batch (tex id -1) .. could be made more efficient
 	if (!r_fill_state.curr_batch) {
-		// OLD METHOD, but left dangling zero length default batches
-		//		r_fill_state.curr_batch = _batch_request_new();
-		//		r_fill_state.curr_batch->type = RasterizerStorageCommon::BT_DEFAULT;
-		//		r_fill_state.curr_batch->first_command = r_command_start;
-		// should tex_id be set to -1? check this
 
 		// allocate dummy batch on the stack, it should always get replaced
 		// note that the rest of the structure is uninitialized, this should not matter
@@ -2429,15 +2516,14 @@ PREAMBLE(void)::flush_render_batches(RasterizerCanvas::Item *p_first_item, Raste
 	// send buffers to opengl
 	get_this()->_batch_upload_buffers();
 
-	RasterizerCanvas::Item::Command *const *commands = p_first_item->commands.ptr();
-
 #if defined(TOOLS_ENABLED) && defined(DEBUG_ENABLED)
 	if (bdata.diagnose_frame) {
+		RasterizerCanvas::Item::Command *const *commands = p_first_item->commands.ptr();
 		diagnose_batches(commands);
 	}
 #endif
 
-	get_this()->render_batches(commands, p_current_clip, r_reclip, p_material);
+	get_this()->render_batches(p_current_clip, r_reclip, p_material);
 
 	// if we overrode the fvf for lines, set it back to the joined item fvf
 	bdata.fvf = backup_fvf;
@@ -2536,15 +2622,14 @@ PREAMBLE(void)::_legacy_canvas_item_render_commands(RasterizerCanvas::Item *p_it
 
 	int command_count = p_item->commands.size();
 
-	RasterizerCanvas::Item::Command *const *commands = p_item->commands.ptr();
-
 	// legacy .. just create one massive batch and render everything as before
 	bdata.batches.reset();
 	Batch *batch = _batch_request_new();
 	batch->type = RasterizerStorageCommon::BT_DEFAULT;
 	batch->num_commands = command_count;
+	batch->item = p_item;
 
-	get_this()->render_batches(commands, p_current_clip, r_reclip, p_material);
+	get_this()->render_batches(p_current_clip, r_reclip, p_material);
 	bdata.reset_flush();
 }
 
@@ -2628,6 +2713,9 @@ PREAMBLE(void)::join_sorted_items() {
 			BItemRef *r = bdata.item_refs.request_with_grow();
 			r->item = ci;
 			r->final_modulate = _render_item_state.final_modulate;
+
+			// joined item references may introduce new flags
+			_render_item_state.joined_item->flags |= bdata.joined_item_batch_flags;
 		}
 
 	} // for s through sort items
@@ -2896,10 +2984,9 @@ void C_PREAMBLE::_translate_batches_to_larger_FVF(uint32_t p_sequence_batch_type
 						needs_new_batch = false;
 
 						// create the colored verts (only if not default)
-						//int first_vert = source_batch.first_quad * 4;
-						//int end_vert = 4 * (source_batch.first_quad + source_batch.num_commands);
 						int first_vert = source_batch.first_vert;
-						int end_vert = first_vert + (4 * source_batch.num_commands);
+						int num_verts = source_batch.get_num_verts();
+						int end_vert = first_vert + num_verts;
 
 						for (int v = first_vert; v < end_vert; v++) {
 							RAST_DEV_DEBUG_ASSERT(bdata.vertices.size());
@@ -2956,10 +3043,10 @@ void C_PREAMBLE::_translate_batches_to_larger_FVF(uint32_t p_sequence_batch_type
 
 			// create the colored verts (only if not default)
 			if (source_batch.type != RasterizerStorageCommon::BT_DEFAULT) {
-				//					int first_vert = source_batch.first_quad * 4;
-				//					int end_vert = 4 * (source_batch.first_quad + source_batch.num_commands);
+
 				int first_vert = source_batch.first_vert;
-				int end_vert = first_vert + (4 * source_batch.num_commands);
+				int num_verts = source_batch.get_num_verts();
+				int end_vert = first_vert + num_verts;
 
 				for (int v = first_vert; v < end_vert; v++) {
 					RAST_DEV_DEBUG_ASSERT(bdata.vertices.size());

@@ -1499,7 +1499,7 @@ void Variant::set_named(const StringName &p_index, const Variant &p_value, bool 
 #ifdef DEBUG_ENABLED
 			if (unlikely(!obj)) {
 				if (ScriptDebugger::get_singleton() && _get_obj().rc && !ObjectDB::get_instance(_get_obj().rc->instance_id)) {
-					WARN_PRINT("Attempted set on a deleted object.");
+					ERR_PRINT("Attempted set on a deleted object.");
 				}
 				break;
 			}
@@ -1667,7 +1667,7 @@ Variant Variant::get_named(const StringName &p_index, bool *r_valid) const {
 				if (r_valid)
 					*r_valid = false;
 				if (ScriptDebugger::get_singleton() && _get_obj().rc && !ObjectDB::get_instance(_get_obj().rc->instance_id)) {
-					WARN_PRINT("Attempted get on a deleted object.");
+					ERR_PRINT("Attempted get on a deleted object.");
 				}
 				return Variant();
 			}
@@ -2152,7 +2152,7 @@ void Variant::set(const Variant &p_index, const Variant &p_value, bool *r_valid)
 #ifdef DEBUG_ENABLED
 				valid = false;
 				if (ScriptDebugger::get_singleton() && _get_obj().rc && !ObjectDB::get_instance(_get_obj().rc->instance_id)) {
-					WARN_PRINT("Attempted set on a deleted object.");
+					ERR_PRINT("Attempted set on a deleted object.");
 				}
 #endif
 				return;
@@ -2522,7 +2522,7 @@ Variant Variant::get(const Variant &p_index, bool *r_valid) const {
 #ifdef DEBUG_ENABLED
 				valid = false;
 				if (ScriptDebugger::get_singleton() && _get_obj().rc && !ObjectDB::get_instance(_get_obj().rc->instance_id)) {
-					WARN_PRINT("Attempted get on a deleted object.");
+					ERR_PRINT("Attempted get on a deleted object.");
 				}
 #endif
 				return Variant();
@@ -2585,7 +2585,7 @@ bool Variant::in(const Variant &p_index, bool *r_valid) const {
 					*r_valid = false;
 				}
 				if (ScriptDebugger::get_singleton() && _get_obj().rc && !ObjectDB::get_instance(_get_obj().rc->instance_id)) {
-					WARN_PRINT("Attempted 'in' on a deleted object.");
+					ERR_PRINT("Attempted 'in' on a deleted object.");
 				}
 #endif
 				return false;
@@ -2848,7 +2848,7 @@ void Variant::get_property_list(List<PropertyInfo> *p_list) const {
 			if (unlikely(!obj)) {
 #ifdef DEBUG_ENABLED
 				if (ScriptDebugger::get_singleton() && _get_obj().rc && !ObjectDB::get_instance(_get_obj().rc->instance_id)) {
-					WARN_PRINT("Attempted get property list on a deleted object.");
+					ERR_PRINT("Attempted get property list on a deleted object.");
 				}
 #endif
 				return;
@@ -2926,7 +2926,7 @@ bool Variant::iter_init(Variant &r_iter, bool &valid) const {
 			if (unlikely(!obj)) {
 				valid = false;
 				if (ScriptDebugger::get_singleton() && _get_obj().rc && !ObjectDB::get_instance(_get_obj().rc->instance_id)) {
-					WARN_PRINT("Attempted iteration start on a deleted object.");
+					ERR_PRINT("Attempted iteration start on a deleted object.");
 				}
 				return false;
 			}
@@ -3093,7 +3093,7 @@ bool Variant::iter_next(Variant &r_iter, bool &valid) const {
 			if (unlikely(!obj)) {
 				valid = false;
 				if (ScriptDebugger::get_singleton() && _get_obj().rc && !ObjectDB::get_instance(_get_obj().rc->instance_id)) {
-					WARN_PRINT("Attempted iteration check next on a deleted object.");
+					ERR_PRINT("Attempted iteration check next on a deleted object.");
 				}
 				return false;
 			}
@@ -3251,7 +3251,7 @@ Variant Variant::iter_get(const Variant &r_iter, bool &r_valid) const {
 			if (unlikely(!obj)) {
 				r_valid = false;
 				if (ScriptDebugger::get_singleton() && _get_obj().rc && !ObjectDB::get_instance(_get_obj().rc->instance_id)) {
-					WARN_PRINT("Attempted iteration get next on a deleted object.");
+					ERR_PRINT("Attempted iteration get next on a deleted object.");
 				}
 				return Variant();
 			}

@@ -137,7 +137,11 @@ void SceneTreeDock::instance_scenes(const Vector<String> &p_files, Node *p_paren
 		parent = scene_tree->get_selected();
 	}
 
-	if (!parent || !edited_scene) {
+	if (!parent) {
+		parent = edited_scene;
+	}
+
+	if (!parent) {
 		if (p_files.size() == 1) {
 			accept->set_text(TTR("No parent to instance a child at."));
 		} else {
@@ -3149,6 +3153,7 @@ SceneTreeDock::SceneTreeDock(EditorNode *p_editor, Node *p_scene_root, EditorSel
 	edit_remote->set_h_size_flags(SIZE_EXPAND_FILL);
 	edit_remote->set_text(TTR("Remote"));
 	edit_remote->set_toggle_mode(true);
+	edit_remote->set_tooltip(TTR("If selected, the Remote scene tree dock will cause the project to stutter every time it updates.\nSwitch back to the Local scene tree dock to improve performance."));
 	edit_remote->connect("pressed", this, "_remote_tree_selected");
 
 	edit_local = memnew(ToolButton);

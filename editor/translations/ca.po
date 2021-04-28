@@ -3714,6 +3714,11 @@ msgid "Status: Import of file failed. Please fix file and reimport manually."
 msgstr "Estat: No s'ha pogut importar. Corregiu el fitxer i torneu a importar."
 
 #: editor/filesystem_dock.cpp
+msgid ""
+"Importing has been disabled for this file, so it can't be opened for editing."
+msgstr ""
+
+#: editor/filesystem_dock.cpp
 msgid "Cannot move/rename resources root."
 msgstr "No es pot moure/reanomenar l'arrel dels recursos."
 
@@ -4119,6 +4124,10 @@ msgstr "Importa"
 #, fuzzy
 msgid "Reset to Defaults"
 msgstr "Carrega Valors predeterminats"
+
+#: editor/import_dock.cpp
+msgid "Keep File (No Import)"
+msgstr ""
 
 #: editor/import_dock.cpp
 msgid "%d Files"
@@ -7682,6 +7691,11 @@ msgid "View Rotation Locked"
 msgstr "Rotació de la Vista Bloquejada"
 
 #: editor/plugins/spatial_editor_plugin.cpp
+msgid ""
+"To zoom further, change the camera's clipping planes (View -> Settings...)"
+msgstr ""
+
+#: editor/plugins/spatial_editor_plugin.cpp
 #, fuzzy
 msgid ""
 "Note: The FPS value displayed is the editor's framerate.\n"
@@ -11230,6 +11244,13 @@ msgstr "Reestableix un Script per al node Seleccionat."
 #: editor/scene_tree_dock.cpp
 msgid "Remote"
 msgstr "Remot"
+
+#: editor/scene_tree_dock.cpp
+msgid ""
+"If selected, the Remote scene tree dock will cause the project to stutter "
+"every time it updates.\n"
+"Switch back to the Local scene tree dock to improve performance."
+msgstr ""
 
 #: editor/scene_tree_dock.cpp
 msgid "Local"

@@ -8,9 +8,9 @@
 		[b]Note:[/b] In a boolean context, a Vector2 will evaluate to [code]false[/code] if it's equal to [code]Vector2(0, 0)[/code]. Otherwise, a Vector2 will always evaluate to [code]true[/code].
 	</description>
 	<tutorials>
-		<link title="Math tutorial index">https://docs.godotengine.org/en/3.2/tutorials/math/index.html</link>
-		<link title="Vector math">https://docs.godotengine.org/en/3.2/tutorials/math/vector_math.html</link>
-		<link title="Advanced vector math">https://docs.godotengine.org/en/3.2/tutorials/math/vectors_advanced.html</link>
+		<link title="Math tutorial index">https://docs.godotengine.org/en/3.3/tutorials/math/index.html</link>
+		<link title="Vector math">https://docs.godotengine.org/en/3.3/tutorials/math/vector_math.html</link>
+		<link title="Advanced vector math">https://docs.godotengine.org/en/3.3/tutorials/math/vectors_advanced.html</link>
 		<link title="3Blue1Brown Essence of Linear Algebra">https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab</link>
 		<link title="Matrix Transform Demo">https://godotengine.org/asset-library/asset/584</link>
 		<link title="All 2D Demos">https://github.com/godotengine/godot-demo-projects/tree/master/2d</link>
@@ -111,10 +111,10 @@
 			</argument>
 			<argument index="2" name="post_b" type="Vector2">
 			</argument>
-			<argument index="3" name="t" type="float">
+			<argument index="3" name="weight" type="float">
 			</argument>
 			<description>
-				Cubically interpolates between this vector and [code]b[/code] using [code]pre_a[/code] and [code]post_b[/code] as handles, and returns the result at position [code]t[/code]. [code]t[/code] is on the range of 0.0 to 1.0, representing the amount of interpolation.
+				Cubically interpolates between this vector and [code]b[/code] using [code]pre_a[/code] and [code]post_b[/code] as handles, and returns the result at position [code]weight[/code]. [code]weight[/code] is on the range of 0.0 to 1.0, representing the amount of interpolation.
 			</description>
 		</method>
 		<method name="direction_to">
@@ -198,12 +198,12 @@
 		<method name="linear_interpolate">
 			<return type="Vector2">
 			</return>
-			<argument index="0" name="b" type="Vector2">
+			<argument index="0" name="to" type="Vector2">
 			</argument>
-			<argument index="1" name="t" type="float">
+			<argument index="1" name="weight" type="float">
 			</argument>
 			<description>
-				Returns the result of the linear interpolation between this vector and [code]b[/code] by amount [code]t[/code]. [code]t[/code] is on the range of 0.0 to 1.0, representing the amount of interpolation.
+				Returns the result of the linear interpolation between this vector and [code]to[/code] by amount [code]weight[/code]. [code]weight[/code] is on the range of 0.0 to 1.0, representing the amount of interpolation.
 			</description>
 		</method>
 		<method name="move_toward">
@@ -286,12 +286,12 @@
 		<method name="slerp">
 			<return type="Vector2">
 			</return>
-			<argument index="0" name="b" type="Vector2">
+			<argument index="0" name="to" type="Vector2">
 			</argument>
-			<argument index="1" name="t" type="float">
+			<argument index="1" name="weight" type="float">
 			</argument>
 			<description>
-				Returns the result of spherical linear interpolation between this vector and [code]b[/code], by amount [code]t[/code]. [code]t[/code] is on the range of 0.0 to 1.0, representing the amount of interpolation.
+				Returns the result of spherical linear interpolation between this vector and [code]to[/code], by amount [code]weight[/code]. [code]weight[/code] is on the range of 0.0 to 1.0, representing the amount of interpolation.
 				[b]Note:[/b] Both vectors must be normalized.
 			</description>
 		</method>

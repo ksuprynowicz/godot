@@ -3984,6 +3984,11 @@ msgstr ""
 "сами."
 
 #: editor/filesystem_dock.cpp
+msgid ""
+"Importing has been disabled for this file, so it can't be opened for editing."
+msgstr ""
+
+#: editor/filesystem_dock.cpp
 msgid "Cannot move/rename resources root."
 msgstr "Не могу померити/преименовати  корен ресурса."
 
@@ -4429,6 +4434,10 @@ msgstr "Увоз"
 #, fuzzy
 msgid "Reset to Defaults"
 msgstr "Учитај уобичајено"
+
+#: editor/import_dock.cpp
+msgid "Keep File (No Import)"
+msgstr ""
 
 #: editor/import_dock.cpp
 #, fuzzy
@@ -8258,6 +8267,11 @@ msgstr "Брзина слободног погледа"
 #, fuzzy
 msgid "View Rotation Locked"
 msgstr "Прикажи информације"
+
+#: editor/plugins/spatial_editor_plugin.cpp
+msgid ""
+"To zoom further, change the camera's clipping planes (View -> Settings...)"
+msgstr ""
 
 #: editor/plugins/spatial_editor_plugin.cpp
 #, fuzzy
@@ -12242,6 +12256,13 @@ msgstr "Очисти скрипту за одабрани чвор."
 #: editor/scene_tree_dock.cpp
 msgid "Remote"
 msgstr "Удаљени уређај"
+
+#: editor/scene_tree_dock.cpp
+msgid ""
+"If selected, the Remote scene tree dock will cause the project to stutter "
+"every time it updates.\n"
+"Switch back to the Local scene tree dock to improve performance."
+msgstr ""
 
 #: editor/scene_tree_dock.cpp
 #, fuzzy

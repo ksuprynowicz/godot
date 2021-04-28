@@ -502,7 +502,7 @@ void RasterizerCanvasGLES3::_legacy_canvas_render_item(Item *p_ci, RenderItemSta
 	}
 }
 
-void RasterizerCanvasGLES3::render_batches(Item::Command *const *p_commands, Item *p_current_clip, bool &r_reclip, RasterizerStorageGLES3::Material *p_material) {
+void RasterizerCanvasGLES3::render_batches(Item *p_current_clip, bool &r_reclip, RasterizerStorageGLES3::Material *p_material) {
 	//	bdata.reset_flush();
 	//	return;
 
@@ -527,9 +527,12 @@ void RasterizerCanvasGLES3::render_batches(Item::Command *const *p_commands, Ite
 			default: {
 				int end_command = batch.first_command + batch.num_commands;
 
+				RAST_DEV_DEBUG_ASSERT(batch.item);
+				RasterizerCanvas::Item::Command *const *commands = batch.item->commands.ptr();
+
 				for (int i = batch.first_command; i < end_command; i++) {
 
-					Item::Command *c = p_commands[i];
+					Item::Command *c = commands[i];
 
 					switch (c->type) {
 
@@ -1490,7 +1493,11 @@ void RasterizerCanvasGLES3::render_joined_item(const BItemJoined &p_bij, RenderI
 		Light *light = r_ris.item_group_light;
 		bool light_used = false;
 		VS::CanvasLightMode mode = VS::CANVAS_LIGHT_MODE_ADD;
-		state.canvas_item_modulate = p_ci->final_modulate; // remove the canvas modulate
+
+		// we leave this set to 1, 1, 1, 1 if using software because the colors are baked into the vertices
+		if (p_bij.is_single_item()) {
+			state.canvas_item_modulate = p_ci->final_modulate; // remove the canvas modulate
+		}
 
 		while (light) {
 
@@ -1750,6 +1757,12 @@ bool RasterizerCanvasGLES3::try_join_item(Item *p_ci, RenderItemState &r_ris, bo
 
 		if (material_ptr) {
 			shader_ptr = material_ptr->shader;
+
+			// special case, if the user has made an error in the shader code
+			if (shader_ptr && !shader_ptr->valid) {
+				join = false;
+				r_batch_break = true;
+			}
 
 			if (shader_ptr && shader_ptr->mode != VS::SHADER_CANVAS_ITEM) {
 				shader_ptr = NULL; // not a canvas item shader, don't use.

@@ -3872,6 +3872,11 @@ msgstr ""
 "ইম্পোর্ট করুন।"
 
 #: editor/filesystem_dock.cpp
+msgid ""
+"Importing has been disabled for this file, so it can't be opened for editing."
+msgstr ""
+
+#: editor/filesystem_dock.cpp
 #, fuzzy
 msgid "Cannot move/rename resources root."
 msgstr "ফন্টের উৎস লোড/প্রসেস করা সম্ভব হচ্ছে না।"
@@ -4321,6 +4326,10 @@ msgstr "ইম্পোর্ট"
 #, fuzzy
 msgid "Reset to Defaults"
 msgstr "প্রাথমিক sRGB ব্যবহার করুন"
+
+#: editor/import_dock.cpp
+msgid "Keep File (No Import)"
+msgstr ""
 
 #: editor/import_dock.cpp
 #, fuzzy
@@ -8049,6 +8058,11 @@ msgstr "তথ্য দেখুন"
 
 #: editor/plugins/spatial_editor_plugin.cpp
 msgid ""
+"To zoom further, change the camera's clipping planes (View -> Settings...)"
+msgstr ""
+
+#: editor/plugins/spatial_editor_plugin.cpp
+msgid ""
 "Note: The FPS value displayed is the editor's framerate.\n"
 "It cannot be used as a reliable indication of in-game performance."
 msgstr ""
@@ -11563,6 +11577,13 @@ msgstr "নির্বাচিত নোড হতে একটি স্ক�
 #, fuzzy
 msgid "Remote"
 msgstr "অপসারণ করুন"
+
+#: editor/scene_tree_dock.cpp
+msgid ""
+"If selected, the Remote scene tree dock will cause the project to stutter "
+"every time it updates.\n"
+"Switch back to the Local scene tree dock to improve performance."
+msgstr ""
 
 #: editor/scene_tree_dock.cpp
 #, fuzzy

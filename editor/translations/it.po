@@ -29,8 +29,8 @@
 # Giuseppe Guerra <me@nyodev.xyz>, 2019.
 # RHC <rhc.throwaway@gmail.com>, 2019, 2020.
 # Antonio Giungato <antonio.giungato@gmail.com>, 2019, 2020.
-# Marco Galli <mrcgll98@gmail.com>, 2019, 2020.
-# MassiminoilTrace <omino.gis@gmail.com>, 2019, 2020.
+# Marco Galli <mrcgll98@gmail.com>, 2019, 2020, 2021.
+# MassiminoilTrace <omino.gis@gmail.com>, 2019, 2020, 2021.
 # MARCO BANFI <mbanfi@gmail.com>, 2019.
 # Marco <rodomar705@gmail.com>, 2019.
 # Davide Giuliano <davidegiuliano00@gmail.com>, 2019.
@@ -56,12 +56,13 @@
 # Federico Manzella <ferdiu.manzella@gmail.com>, 2020.
 # Ziv D <wizdavid@gmail.com>, 2020.
 # Riteo Siuga <lorenzocerqua@tutanota.com>, 2021.
+# Alessandro Mandelli <mandelli.alessandro@ngi.it>, 2021.
 msgid ""
 msgstr ""
 "Project-Id-Version: Godot Engine editor\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2021-03-10 22:14+0000\n"
-"Last-Translator: riccardo boffelli <riccardo.boffelli.96@gmail.com>\n"
+"PO-Revision-Date: 2021-04-16 07:52+0000\n"
+"Last-Translator: Marco Galli <mrcgll98@gmail.com>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/godot-engine/"
 "godot/it/>\n"
 "Language: it\n"
@@ -69,7 +70,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.5.2-dev\n"
+"X-Generator: Weblate 4.6-dev\n"
 
 #: core/math/expression.cpp modules/gdscript/gdscript_functions.cpp
 #: modules/visual_script/visual_script_builtin_funcs.cpp
@@ -391,9 +392,8 @@ msgid "Remove Anim Track"
 msgstr "Rimuovi una traccia d'animazione"
 
 #: editor/animation_track_editor.cpp
-#, fuzzy
 msgid "Create NEW track for %s and insert key?"
-msgstr "Creare una NUOVA traccia per %s e inserirci la chiave?"
+msgstr "Creare una NUOVA traccia per %s e inserire la chiave?"
 
 #: editor/animation_track_editor.cpp
 msgid "Create %d NEW tracks and insert keys?"
@@ -1159,7 +1159,7 @@ msgstr "Possiede"
 
 #: editor/dependency_editor.cpp
 msgid "Resources Without Explicit Ownership:"
-msgstr "Risorse non Possedute Esplicitamente:"
+msgstr "Risorse senza proprietario esplicito:"
 
 #: editor/dictionary_property_edit.cpp
 msgid "Change Dictionary Key"
@@ -1890,7 +1890,7 @@ msgstr "Aggiorna"
 
 #: editor/editor_file_dialog.cpp scene/gui/file_dialog.cpp
 msgid "All Recognized"
-msgstr "Tutti i risconosciuti"
+msgstr "Tutti i formati riconosciuti"
 
 #: editor/editor_file_dialog.cpp scene/gui/file_dialog.cpp
 msgid "All Files (*)"
@@ -2007,7 +2007,7 @@ msgstr "File:"
 
 #: editor/editor_file_system.cpp
 msgid "ScanSources"
-msgstr "Scansiona sorgenti"
+msgstr "Scansiona i sorgenti"
 
 #: editor/editor_file_system.cpp
 msgid ""
@@ -2064,7 +2064,7 @@ msgstr "Metodi"
 
 #: editor/editor_help.cpp
 msgid "Theme Properties"
-msgstr "Proprietà Tema"
+msgstr "Proprietà del tema"
 
 #: editor/editor_help.cpp
 msgid "Enumerations"
@@ -2076,7 +2076,7 @@ msgstr "Costanti"
 
 #: editor/editor_help.cpp
 msgid "Property Descriptions"
-msgstr "Descrizioni Proprietà"
+msgstr "Descrizioni delle proprietà"
 
 #: editor/editor_help.cpp
 msgid "(value)"
@@ -2092,7 +2092,7 @@ msgstr ""
 
 #: editor/editor_help.cpp
 msgid "Method Descriptions"
-msgstr "Descrizioni Metodo"
+msgstr "Descrizioni del metodo"
 
 #: editor/editor_help.cpp
 msgid ""
@@ -2379,8 +2379,8 @@ msgid ""
 "option and delete the Default layout."
 msgstr ""
 "Layout predefinito dell'editor sovrascritto.\n"
-"Per ripristinare il layout predefinito alle impostazioni di base, usa "
-"l'opzione elimina layout ed elimina il layout predefinito."
+"Per ripristinare il layout predefinito alle impostazioni di base, usare "
+"l'opzione elimina layout ed eliminare il layout predefinito."
 
 #: editor/editor_node.cpp
 msgid "Layout name not found!"
@@ -3746,6 +3746,11 @@ msgstr ""
 "reimportarlo manualmente."
 
 #: editor/filesystem_dock.cpp
+msgid ""
+"Importing has been disabled for this file, so it can't be opened for editing."
+msgstr ""
+
+#: editor/filesystem_dock.cpp
 msgid "Cannot move/rename resources root."
 msgstr "Impossibile spostare/rinominare risorse root."
 
@@ -4135,18 +4140,20 @@ msgid "Saving..."
 msgstr "Salvataggio..."
 
 #: editor/import_defaults_editor.cpp
-#, fuzzy
 msgid "Select Importer"
-msgstr "Modalità di selezione"
+msgstr "Seleziona Importatore"
 
 #: editor/import_defaults_editor.cpp
-#, fuzzy
 msgid "Importer:"
-msgstr "Importare"
+msgstr "Importatore:"
 
 #: editor/import_defaults_editor.cpp
 msgid "Reset to Defaults"
 msgstr "Ripristinare le impostazioni predefinite"
+
+#: editor/import_dock.cpp
+msgid "Keep File (No Import)"
+msgstr ""
 
 #: editor/import_dock.cpp
 msgid "%d Files"
@@ -7628,6 +7635,11 @@ msgstr "Rotazione Vista Bloccata"
 
 #: editor/plugins/spatial_editor_plugin.cpp
 msgid ""
+"To zoom further, change the camera's clipping planes (View -> Settings...)"
+msgstr ""
+
+#: editor/plugins/spatial_editor_plugin.cpp
+msgid ""
 "Note: The FPS value displayed is the editor's framerate.\n"
 "It cannot be used as a reliable indication of in-game performance."
 msgstr ""
@@ -11025,6 +11037,13 @@ msgstr "Rimuovi lo script per il nodo selezionato."
 #: editor/scene_tree_dock.cpp
 msgid "Remote"
 msgstr "Remoto"
+
+#: editor/scene_tree_dock.cpp
+msgid ""
+"If selected, the Remote scene tree dock will cause the project to stutter "
+"every time it updates.\n"
+"Switch back to the Local scene tree dock to improve performance."
+msgstr ""
 
 #: editor/scene_tree_dock.cpp
 msgid "Local"

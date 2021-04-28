@@ -8,8 +8,8 @@
 		For more information, read the "Matrices and transforms" documentation article.
 	</description>
 	<tutorials>
-		<link title="Math tutorial index">https://docs.godotengine.org/en/3.2/tutorials/math/index.html</link>
-		<link title="Matrices and transforms">https://docs.godotengine.org/en/3.2/tutorials/math/matrices_and_transforms.html</link>
+		<link title="Math tutorial index">https://docs.godotengine.org/en/3.3/tutorials/math/index.html</link>
+		<link title="Matrices and transforms">https://docs.godotengine.org/en/3.3/tutorials/math/matrices_and_transforms.html</link>
 		<link title="Matrix Transform Demo">https://godotengine.org/asset-library/asset/584</link>
 		<link title="2.5D Demo">https://godotengine.org/asset-library/asset/583</link>
 	</tutorials>
@@ -103,7 +103,7 @@
 			<argument index="1" name="weight" type="float">
 			</argument>
 			<description>
-				Returns a transform interpolated between this transform and another by a given weight (on the range of 0.0 to 1.0).
+				Returns a transform interpolated between this transform and another by a given [code]weight[/code] (on the range of 0.0 to 1.0).
 			</description>
 		</method>
 		<method name="inverse">

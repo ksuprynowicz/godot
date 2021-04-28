@@ -216,6 +216,17 @@ unsigned int ARVRInterfaceGDNative::get_external_texture_for_eye(ARVRInterface::
 	}
 }
 
+unsigned int ARVRInterfaceGDNative::get_external_depth_for_eye(ARVRInterface::Eyes p_eye) {
+
+	ERR_FAIL_COND_V(interface == NULL, 0);
+
+	if ((interface->version.major > 1) || ((interface->version.major) == 1 && (interface->version.minor >= 2))) {
+		return (unsigned int)interface->get_external_depth_for_eye(data, (godot_int)p_eye);
+	} else {
+		return 0;
+	}
+}
+
 void ARVRInterfaceGDNative::commit_for_eye(ARVRInterface::Eyes p_eye, RID p_render_target, const Rect2 &p_screen_rect) {
 
 	ERR_FAIL_COND(interface == NULL);
@@ -309,7 +320,8 @@ godot_int GDAPI godot_arvr_add_controller(char *p_device_name, godot_int p_hand,
 	InputDefault *input = (InputDefault *)Input::get_singleton();
 	ERR_FAIL_NULL_V(input, 0);
 
-	ARVRPositionalTracker *new_tracker = memnew(ARVRPositionalTracker);
+	Ref<ARVRPositionalTracker> new_tracker;
+	new_tracker.instance();
 	new_tracker->set_name(p_device_name);
 	new_tracker->set_type(ARVRServer::TRACKER_CONTROLLER);
 	if (p_hand == 1) {
@@ -348,8 +360,8 @@ void GDAPI godot_arvr_remove_controller(godot_int p_controller_id) {
 	InputDefault *input = (InputDefault *)Input::get_singleton();
 	ERR_FAIL_NULL(input);
 
-	ARVRPositionalTracker *remove_tracker = arvr_server->find_by_type_and_id(ARVRServer::TRACKER_CONTROLLER, p_controller_id);
-	if (remove_tracker != NULL) {
+	Ref<ARVRPositionalTracker> remove_tracker = arvr_server->find_by_type_and_id(ARVRServer::TRACKER_CONTROLLER, p_controller_id);
+	if (remove_tracker.is_valid()) {
 		// unset our joystick if applicable
 		int joyid = remove_tracker->get_joy_id();
 		if (joyid != -1) {
@@ -359,7 +371,7 @@ void GDAPI godot_arvr_remove_controller(godot_int p_controller_id) {
 
 		// remove our tracker from our server
 		arvr_server->remove_tracker(remove_tracker);
-		memdelete(remove_tracker);
+		remove_tracker.unref();
 	}
 }
 
@@ -367,8 +379,8 @@ void GDAPI godot_arvr_set_controller_transform(godot_int p_controller_id, godot_
 	ARVRServer *arvr_server = ARVRServer::get_singleton();
 	ERR_FAIL_NULL(arvr_server);
 
-	ARVRPositionalTracker *tracker = arvr_server->find_by_type_and_id(ARVRServer::TRACKER_CONTROLLER, p_controller_id);
-	if (tracker != NULL) {
+	Ref<ARVRPositionalTracker> tracker = arvr_server->find_by_type_and_id(ARVRServer::TRACKER_CONTROLLER, p_controller_id);
+	if (tracker.is_valid()) {
 		Transform *transform = (Transform *)p_transform;
 		if (p_tracks_orientation) {
 			tracker->set_orientation(transform->basis);
@@ -386,8 +398,8 @@ void GDAPI godot_arvr_set_controller_button(godot_int p_controller_id, godot_int
 	InputDefault *input = (InputDefault *)Input::get_singleton();
 	ERR_FAIL_NULL(input);
 
-	ARVRPositionalTracker *tracker = arvr_server->find_by_type_and_id(ARVRServer::TRACKER_CONTROLLER, p_controller_id);
-	if (tracker != NULL) {
+	Ref<ARVRPositionalTracker> tracker = arvr_server->find_by_type_and_id(ARVRServer::TRACKER_CONTROLLER, p_controller_id);
+	if (tracker.is_valid()) {
 		int joyid = tracker->get_joy_id();
 		if (joyid != -1) {
 			input->joy_button(joyid, p_button, p_is_pressed);
@@ -402,8 +414,8 @@ void GDAPI godot_arvr_set_controller_axis(godot_int p_controller_id, godot_int p
 	InputDefault *input = (InputDefault *)Input::get_singleton();
 	ERR_FAIL_NULL(input);
 
-	ARVRPositionalTracker *tracker = arvr_server->find_by_type_and_id(ARVRServer::TRACKER_CONTROLLER, p_controller_id);
-	if (tracker != NULL) {
+	Ref<ARVRPositionalTracker> tracker = arvr_server->find_by_type_and_id(ARVRServer::TRACKER_CONTROLLER, p_controller_id);
+	if (tracker.is_valid()) {
 		int joyid = tracker->get_joy_id();
 		if (joyid != -1) {
 			InputDefault::JoyAxis jx;
@@ -418,11 +430,28 @@ godot_real GDAPI godot_arvr_get_controller_rumble(godot_int p_controller_id) {
 	ARVRServer *arvr_server = ARVRServer::get_singleton();
 	ERR_FAIL_NULL_V(arvr_server, 0.0);
 
-	ARVRPositionalTracker *tracker = arvr_server->find_by_type_and_id(ARVRServer::TRACKER_CONTROLLER, p_controller_id);
-	if (tracker != NULL) {
+	Ref<ARVRPositionalTracker> tracker = arvr_server->find_by_type_and_id(ARVRServer::TRACKER_CONTROLLER, p_controller_id);
+	if (tracker.is_valid()) {
 		return tracker->get_rumble();
 	}
 
 	return 0.0;
+}
+
+void GDAPI godot_arvr_set_interface(godot_object *p_arvr_interface, const godot_arvr_interface_gdnative *p_gdn_interface) {
+	// If our major version is 0 or bigger then 10, we're likely looking at our constructor pointer from an older plugin
+	ERR_FAIL_COND_MSG((p_gdn_interface->version.major == 0) || (p_gdn_interface->version.major > 10), "GDNative ARVR interfaces build for Godot 3.0 are not supported.");
+
+	ARVRInterfaceGDNative *interface = (ARVRInterfaceGDNative *)p_arvr_interface;
+	interface->set_interface((const godot_arvr_interface_gdnative *)p_gdn_interface);
+}
+
+godot_int GDAPI godot_arvr_get_depthid(godot_rid *p_render_target) {
+	// We also need to access our depth texture for reprojection.
+	RID *render_target = (RID *)p_render_target;
+
+	uint32_t texid = VSG::storage->render_target_get_depth_texture_id(*render_target);
+
+	return texid;
 }
 }

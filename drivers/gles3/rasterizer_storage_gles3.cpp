@@ -5115,11 +5115,13 @@ void RasterizerStorageGLES3::update_dirty_multimeshes() {
 
 			glBindBuffer(GL_ARRAY_BUFFER, multimesh->buffer);
 			uint32_t buffer_size = multimesh->data.size() * sizeof(float);
-			if (config.should_orphan) {
-				glBufferData(GL_ARRAY_BUFFER, buffer_size, multimesh->data.ptr(), GL_DYNAMIC_DRAW);
-			} else {
-				glBufferSubData(GL_ARRAY_BUFFER, 0, buffer_size, multimesh->data.ptr());
-			}
+
+			// this could potentially have a project setting for API options as with 2d
+			// if (config.should_orphan) {
+			glBufferData(GL_ARRAY_BUFFER, buffer_size, multimesh->data.ptr(), GL_DYNAMIC_DRAW);
+			//	} else {
+			//	glBufferSubData(GL_ARRAY_BUFFER, 0, buffer_size, multimesh->data.ptr());
+			//	}
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		}
 
@@ -7207,6 +7209,8 @@ void RasterizerStorageGLES3::_render_target_clear(RenderTarget *rt) {
 		memdelete(t);
 
 		rt->external.fbo = 0;
+		rt->external.color = 0;
+		rt->external.depth = 0;
 	}
 
 	Texture *tex = texture_owner.get(rt->texture);
@@ -7292,8 +7296,14 @@ void RasterizerStorageGLES3::_render_target_allocate(RenderTarget *rt) {
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-				GL_TEXTURE_2D, rt->depth, 0);
+		if (rt->external.depth == 0) {
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+					GL_TEXTURE_2D, rt->depth, 0);
+		} else {
+			// Use our external depth texture instead.
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+					GL_TEXTURE_2D, rt->external.depth, 0);
+		}
 
 		glGenTextures(1, &rt->color);
 		glBindTexture(GL_TEXTURE_2D, rt->color);
@@ -7675,12 +7685,31 @@ RID RasterizerStorageGLES3::render_target_get_texture(RID p_render_target) const
 	}
 }
 
-void RasterizerStorageGLES3::render_target_set_external_texture(RID p_render_target, unsigned int p_texture_id) {
+uint32_t RasterizerStorageGLES3::render_target_get_depth_texture_id(RID p_render_target) const {
+
+	RenderTarget *rt = render_target_owner.getornull(p_render_target);
+	ERR_FAIL_COND_V(!rt, 0);
+
+	if (rt->external.depth == 0) {
+		return rt->depth;
+	} else {
+		return rt->external.depth;
+	}
+}
+
+void RasterizerStorageGLES3::render_target_set_external_texture(RID p_render_target, unsigned int p_texture_id, unsigned int p_depth_id) {
 	RenderTarget *rt = render_target_owner.getornull(p_render_target);
 	ERR_FAIL_COND(!rt);
 
 	if (p_texture_id == 0) {
 		if (rt->external.fbo != 0) {
+			// return to our original depth buffer
+			if (rt->external.depth != 0 && rt->fbo != 0) {
+				glBindFramebuffer(GL_FRAMEBUFFER, rt->fbo);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, rt->depth, 0);
+				glBindFramebuffer(GL_FRAMEBUFFER, RasterizerStorageGLES3::system_fbo);
+			}
+
 			// free this
 			glDeleteFramebuffers(1, &rt->external.fbo);
 
@@ -7695,6 +7724,8 @@ void RasterizerStorageGLES3::render_target_set_external_texture(RID p_render_tar
 			memdelete(t);
 
 			rt->external.fbo = 0;
+			rt->external.color = 0;
+			rt->external.depth = 0;
 		}
 	} else {
 		Texture *t;
@@ -7739,6 +7770,7 @@ void RasterizerStorageGLES3::render_target_set_external_texture(RID p_render_tar
 
 		// set our texture
 		t->tex_id = p_texture_id;
+		rt->external.color = p_texture_id;
 
 		// size shouldn't be different
 		t->width = rt->width;
@@ -7751,13 +7783,31 @@ void RasterizerStorageGLES3::render_target_set_external_texture(RID p_render_tar
 		// set our texture as the destination for our framebuffer
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, p_texture_id, 0);
 
-		// check status and unbind
+		// check status
 		GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-		glBindFramebuffer(GL_FRAMEBUFFER, RasterizerStorageGLES3::system_fbo);
-
 		if (status != GL_FRAMEBUFFER_COMPLETE) {
 			printf("framebuffer fail, status: %x\n", status);
 		}
+
+		// Copy our depth texture id,
+		// if it's 0 then we don't use it,
+		// else we use it instead of our normal depth buffer
+		rt->external.depth = p_depth_id;
+
+		if (rt->external.depth != 0 && rt->fbo != 0) {
+			// Use our external depth texture instead.
+			glBindFramebuffer(GL_FRAMEBUFFER, rt->fbo);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, rt->external.depth, 0);
+
+			// check status
+			GLenum status2 = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+			if (status2 != GL_FRAMEBUFFER_COMPLETE) {
+				printf("framebuffer fail, status: %x\n", status2);
+			}
+		}
+
+		// and unbind
+		glBindFramebuffer(GL_FRAMEBUFFER, RasterizerStorageGLES3::system_fbo);
 
 		ERR_FAIL_COND(status != GL_FRAMEBUFFER_COMPLETE);
 	}
@@ -8613,6 +8663,19 @@ void RasterizerStorageGLES3::initialize() {
 				config.use_depth_prepass = false;
 			}
 		}
+	}
+
+	int orphan_mode = GLOBAL_GET("rendering/2d/opengl/legacy_orphan_buffers");
+	switch (orphan_mode) {
+		default: {
+			config.should_orphan = true;
+		} break;
+		case 1: {
+			config.should_orphan = false;
+		} break;
+		case 2: {
+			config.should_orphan = true;
+		} break;
 	}
 }
 
