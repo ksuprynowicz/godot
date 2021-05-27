@@ -147,7 +147,7 @@ private:
 
 	int selected_bone = -1;
 
-	uint64_t version;
+	uint64_t version = 1;
 
 	void _update_process_order();
 
