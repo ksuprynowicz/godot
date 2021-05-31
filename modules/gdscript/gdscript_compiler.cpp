@@ -2273,6 +2273,7 @@ Error GDScriptCompiler::_parse_class_level(GDScript *p_script, const GDScriptPar
 
 				PropertyInfo prop_info = minfo.data_type;
 				prop_info.name = name;
+				prop_info.usage = 0;
 				PropertyInfo export_info = variable->export_info;
 
 				if (variable->exported) {
