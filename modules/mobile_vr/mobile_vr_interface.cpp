@@ -454,7 +454,7 @@ void MobileVRInterface::commit_for_eye(XRInterface::Eyes p_eye, RID p_render_tar
 	eye_center.y = 0.0;
 }
 
-Vector<BlitToScreen> MobileVRInterface::commit_views(RID p_render_target, const Rect2 &p_screen_rect) {
+Vector<BlitToScreen> MobileVRInterface::commit_views(const RID p_render_target, const Rect2 &p_screen_rect) {
 	_THREAD_SAFE_METHOD_
 
 	Vector<BlitToScreen> blit_to_screen;
