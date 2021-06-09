@@ -3240,6 +3240,16 @@ bool RenderingDeviceVulkan::texture_is_format_supported_for_usage(DataFormat p_f
 	return true;
 }
 
+// for now to get access to VkImage
+void *RenderingDeviceVulkan::texture_get_vulkan_image(const RID p_texture) {
+	_THREAD_SAFE_METHOD_
+
+	Texture *tex = texture_owner.getornull(p_texture);
+	ERR_FAIL_NULL_V(tex, nullptr);
+
+	return tex->image;
+}
+
 /********************/
 /**** ATTACHMENT ****/
 /********************/
@@ -6261,7 +6271,7 @@ Error RenderingDeviceVulkan::draw_list_begin_split(RID p_framebuffer, uint32_t p
 			VkCommandPoolCreateInfo cmd_pool_info;
 			cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 			cmd_pool_info.pNext = nullptr;
-			cmd_pool_info.queueFamilyIndex = context->get_graphics_queue();
+			cmd_pool_info.queueFamilyIndex = context->get_graphics_queue_family_index();
 			cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 			VkResult res = vkCreateCommandPool(device, &cmd_pool_info, nullptr, &split_draw_list_allocators.write[i].command_pool);
@@ -7913,7 +7923,7 @@ void RenderingDeviceVulkan::initialize(VulkanContext *p_context, bool p_local_de
 			VkCommandPoolCreateInfo cmd_pool_info;
 			cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 			cmd_pool_info.pNext = nullptr;
-			cmd_pool_info.queueFamilyIndex = p_context->get_graphics_queue();
+			cmd_pool_info.queueFamilyIndex = p_context->get_graphics_queue_family_index();
 			cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 			VkResult res = vkCreateCommandPool(device, &cmd_pool_info, nullptr, &frames[i].command_pool);
@@ -8317,4 +8327,24 @@ RenderingDeviceVulkan::~RenderingDeviceVulkan() {
 		finalize();
 		context->local_device_free(local_device);
 	}
+}
+
+void *RenderingDeviceVulkan::get_vulkan_device() {
+	return context->get_device();
+}
+
+void *RenderingDeviceVulkan::get_vulkan_physical_device() {
+	return context->get_physical_device();
+}
+
+void *RenderingDeviceVulkan::get_vulkan_instance() {
+	return context->get_instance();
+}
+
+void *RenderingDeviceVulkan::get_vulkan_queue() {
+	return context->get_graphics_queue();
+}
+
+uint32_t RenderingDeviceVulkan::get_vulkan_queue_family_index() {
+	return context->get_graphics_queue_family_index();
 }
