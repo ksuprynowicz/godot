@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  register_types.h                                                     */
+/*  register_types.cpp                                                   */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,10 +28,21 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef SVG_REGISTER_TYPES_H
-#define SVG_REGISTER_TYPES_H
+#include "register_types.h"
+#include "image_loader_thorvg.h"
 
-void register_svg_types();
-void unregister_svg_types();
+static ImageLoaderThorVG *image_loader_thorvg = nullptr;
 
-#endif // SVG_REGISTER_TYPES_H
+void register_thorvg_types() {
+	tvg::CanvasEngine tvgEngine = tvg::CanvasEngine::Sw;
+	uint32_t threads = std::thread::hardware_concurrency();
+	if (tvg::Initializer::init(tvgEngine, threads) != tvg::Result::Success) {
+		return;
+	}
+	image_loader_thorvg = memnew(ImageLoaderThorVG);
+	ImageLoader::add_image_format_loader(image_loader_thorvg);
+}
+
+void unregister_thorvg_types() {
+	tvg::Initializer::term(tvg::CanvasEngine::Sw);
+}
