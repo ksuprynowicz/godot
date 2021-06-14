@@ -1,3 +1,4 @@
+
 # Third party libraries
 
 Please keep categories (`##` level) listed alphabetically and matching their
@@ -641,6 +642,20 @@ comments and a patch is provided in the squish/ folder.
 Files extracted from upstream source:
 
 - `tinyexr.{cc,h}`
+
+
+## thorvg
+
+- Upstream: https://github.com/Samsung/thorvg.git
+- Version: v0.3.1 (44fe571030e8ab561379817e7a933f36f726ef1a, 2021)
+- License: MIT
+
+Files extracted from upstream source:
+
+- `inc`
+- `src`
+- `LICENSE`
+- `AUTHORS`
 
 
 ## vhacd
