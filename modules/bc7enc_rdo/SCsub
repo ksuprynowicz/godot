@@ -19,9 +19,13 @@ thirdparty_sources = [
 
 thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
 env_bc7e.Prepend(CPPPATH=[thirdparty_dir])
-
+env_bc7e.Append(CCFLAGS=["-msse2"])
+env_bc7e.Append(CCFLAGS=["-msse4.1"])
+env_bc7e.Append(CCFLAGS=["-mavx"])
+env_bc7e.Append(CCFLAGS=["-mavx2"])
+env_bc7e.Append(CCFLAGS=["-mfma"])
+env_bc7e.Append(CPPDEFINES=["SIMDE_X86_SSE2_ENABLE_NATIVE_ALIASES", "SIMDE_X86_SSE4_1_ENABLE_NATIVE_ALIASES", "SIMDE_X86_AVX_ENABLE_NATIVE_ALIASES", "SIMDE_X86_AVX2_ENABLE_NATIVE_ALIASES"])
 env_thirdparty = env_bc7e.Clone()
-
 env_thirdparty.disable_warnings()
 env_thirdparty.add_source_files(env.modules_sources, thirdparty_sources)
 

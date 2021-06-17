@@ -32,9 +32,10 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "image_compress_bc7e.h"
 #include "core/io/image.h"
+#include "image_compress_bc7e.h"
 // zlib symbols required
+#include "thirdparty/simde-no-tests/simde-common.h"
 #include "thirdparty/tinyexr/tinyexr.h"
 
 void register_bc7enc_rdo_types() {

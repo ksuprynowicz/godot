@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  bc7e.h                                                               */
+/*  bc7enc_rdo.h                                                         */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -65,7 +65,9 @@ struct color_quad_u8 {
 	}
 
 	inline uint8_t operator[](uint32_t i) const {
-		ERR_FAIL_INDEX_V(i, 4, 0);
+		if (i >= 4) {
+			return 0;
+		}
 		return m_c[i];
 	}
 
