@@ -137,7 +137,6 @@ void ResourceImporterLayeredTexture::get_import_options(List<ImportOption> *r_op
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "compress/mode", PROPERTY_HINT_ENUM, "Lossless (PNG),Lossy (WebP),Video RAM (S3TC/ETC/BPTC),Uncompressed,Basis Universal", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_UPDATE_ALL_IF_MODIFIED), 1));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, "compress/lossy_quality", PROPERTY_HINT_RANGE, "0,1,0.01"), 0.7));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "compress/hdr_compression", PROPERTY_HINT_ENUM, "Disabled,Opaque Only,Always"), 1));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "compress/bptc_ldr", PROPERTY_HINT_ENUM, "Disabled,Enabled,RGBA Only"), 0));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "compress/channel_pack", PROPERTY_HINT_ENUM, "sRGB Friendly,Optimized"), 0));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "mipmaps/generate"), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "mipmaps/limit", PROPERTY_HINT_RANGE, "-1,256"), -1));
@@ -287,7 +286,6 @@ Error ResourceImporterLayeredTexture::import(const String &p_source_file, const 
 	int compress_mode = p_options["compress/mode"];
 	float lossy = p_options["compress/lossy_quality"];
 	int hdr_compression = p_options["compress/hdr_compression"];
-	int bptc_ldr = p_options["compress/bptc_ldr"];
 	bool mipmaps = p_options["mipmaps/generate"];
 	//bool mipmap_limit = p_options["mipmaps/limit"];
 
@@ -390,7 +388,6 @@ Error ResourceImporterLayeredTexture::import(const String &p_source_file, const 
 
 		bool ok_on_pc = false;
 		bool is_hdr = (image->get_format() >= Image::FORMAT_RF && image->get_format() <= Image::FORMAT_RGBE9995);
-		bool is_ldr = (image->get_format() >= Image::FORMAT_L8 && image->get_format() <= Image::FORMAT_RGB565);
 		bool can_bptc = ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_bptc");
 		bool can_s3tc = ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_s3tc");
 
@@ -430,12 +427,6 @@ Error ResourceImporterLayeredTexture::import(const String &p_source_file, const 
 					}
 				}
 			} else {
-				can_bptc = false;
-			}
-		}
-
-		if (is_ldr && can_bptc) {
-			if (bptc_ldr == 0 || (bptc_ldr == 1 && !(used_channels == Image::USED_CHANNELS_LA || used_channels == Image::USED_CHANNELS_RGBA))) {
 				can_bptc = false;
 			}
 		}

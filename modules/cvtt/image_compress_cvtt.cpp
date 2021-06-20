@@ -75,6 +75,8 @@ static void _digest_row_task(const CVTTCompressionJobParams &p_job_params, const
 
 	cvtt::PixelBlockU8 input_blocks_ldr[cvtt::NumParallelBlocks];
 	cvtt::PixelBlockF16 input_blocks_hdr[cvtt::NumParallelBlocks];
+	cvtt::BC7EncodingPlan plan;
+	cvtt::Kernels::ConfigureBC7EncodingPlanFromQuality(plan, 0);
 
 	for (int x_start = 0; x_start < w; x_start += 4 * cvtt::NumParallelBlocks) {
 		int x_end = x_start + 4 * cvtt::NumParallelBlocks;
@@ -116,7 +118,7 @@ static void _digest_row_task(const CVTTCompressionJobParams &p_job_params, const
 				cvtt::Kernels::EncodeBC6HU(output_blocks, input_blocks_hdr, p_job_params.options);
 			}
 		} else {
-			cvtt::Kernels::EncodeBC7(output_blocks, input_blocks_ldr, p_job_params.options);
+			cvtt::Kernels::EncodeBC7(output_blocks, input_blocks_ldr, p_job_params.options, plan);
 		}
 
 		unsigned int num_real_blocks = ((w - x_start) + 3) / 4;
@@ -141,6 +143,7 @@ void image_compress_cvtt(Image *p_image, float p_lossy_quality, Image::UsedChann
 	if (p_image->get_format() >= Image::FORMAT_BPTC_RGBA) {
 		return; //do not compress, already compressed
 	}
+	uint32_t start_t = OS::get_singleton()->get_ticks_msec();
 
 	int w = p_image->get_width();
 	int h = p_image->get_height();
@@ -216,11 +219,13 @@ void image_compress_cvtt(Image *p_image, float p_lossy_quality, Image::UsedChann
 	job_queue.job_params.options = options;
 	job_queue.job_params.bytes_per_pixel = is_hdr ? 6 : 4;
 
-#ifdef NO_THREADS
 	int num_job_threads = 0;
-#else
-	int num_job_threads = OS::get_singleton()->can_use_threads() ? (OS::get_singleton()->get_processor_count() - 1) : 0;
-#endif
+	// Amdahl's law (Wikipedia)
+	// If a program needs 20 hours to complete using a single thread, but a one-hour portion of the program cannot be parallelized,
+	// therefore only the remaining 19 hours (p = 0.95) of execution time can be parallelized, then regardless of how many threads are devoted
+	// to a parallelized execution of this program, the minimum execution time cannot be less than one hour.
+	//
+	// The number of executions with different inputs can be increased while the latency is the same.
 
 	Vector<CVTTCompressionRowTask> tasks;
 
@@ -279,7 +284,14 @@ void image_compress_cvtt(Image *p_image, float p_lossy_quality, Image::UsedChann
 		}
 	}
 
-	p_image->create(p_image->get_width(), p_image->get_height(), p_image->has_mipmaps(), target_format, data);
+	Ref<Image> ref_image = p_image->duplicate();
+	if (target_format == Image::FORMAT_BPTC_RGBA) {
+		p_image->create(p_image->get_width(), p_image->get_height(), p_image->has_mipmaps(), target_format, data);
+		Dictionary rgba_metrics = ref_image->compute_image_metrics(p_image, false);
+		print_line(vformat("RGBA\tMax error: %.0f RMSE: %.2f PSNR %.2f dB", rgba_metrics["max"], rgba_metrics["root_mean_squared"], rgba_metrics["peak_snr"]));
+	}
+	uint32_t end_t = OS::get_singleton()->get_ticks_msec();
+	print_line(vformat("CVTT %dx%d total time: %.2f secs", p_image->get_width(), p_image->get_height(), (double)(end_t - start_t) / 1000.f));
 }
 
 void image_decompress_cvtt(Image *p_image) {
@@ -388,6 +400,5 @@ void image_decompress_cvtt(Image *p_image) {
 		w >>= 1;
 		h >>= 1;
 	}
-
 	p_image->create(p_image->get_width(), p_image->get_height(), p_image->has_mipmaps(), target_format, data);
 }

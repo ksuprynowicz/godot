@@ -88,6 +88,7 @@ def get_flags():
 def configure(env):
     ## Build type
 
+    env.Prepend(CCFLAGS=["-march=nocona"])
     if env["target"] == "release":
         if env["optimize"] == "speed":  # optimize for speed (default)
             env.Prepend(CCFLAGS=["-O3"])

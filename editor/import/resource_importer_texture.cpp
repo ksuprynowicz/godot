@@ -167,14 +167,6 @@ bool ResourceImporterTexture::get_option_visibility(const String &p_option, cons
 	} else if (p_option == "mipmaps/limit") {
 		return p_options["mipmaps/generate"];
 
-	} else if (p_option == "compress/bptc_ldr") {
-		int compress_mode = int(p_options["compress/mode"]);
-		if (compress_mode < COMPRESS_VRAM_COMPRESSED) {
-			return false;
-		}
-		if (!ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_bptc")) {
-			return false;
-		}
 	}
 
 	return true;
@@ -198,7 +190,6 @@ void ResourceImporterTexture::get_import_options(List<ImportOption> *r_options, 
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "compress/mode", PROPERTY_HINT_ENUM, "Lossless,Lossy,VRAM Compressed,VRAM Uncompressed,Basis Universal", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_UPDATE_ALL_IF_MODIFIED), p_preset == PRESET_3D ? 2 : 0));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, "compress/lossy_quality", PROPERTY_HINT_RANGE, "0,1,0.01"), 0.7));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "compress/hdr_compression", PROPERTY_HINT_ENUM, "Disabled,Opaque Only,Always"), 1));
-	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "compress/bptc_ldr", PROPERTY_HINT_ENUM, "Disabled,Enabled,RGBA Only"), 0));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "compress/normal_map", PROPERTY_HINT_ENUM, "Detect,Enable,Disabled"), 0));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "compress/channel_pack", PROPERTY_HINT_ENUM, "sRGB Friendly,Optimized"), 0));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "compress/streamed"), false));
@@ -403,7 +394,6 @@ Error ResourceImporterTexture::import(const String &p_source_file, const String 
 	int normal = p_options["compress/normal_map"];
 	float scale = p_options["svg/scale"];
 	int hdr_compression = p_options["compress/hdr_compression"];
-	int bptc_ldr = p_options["compress/bptc_ldr"];
 	int roughness = p_options["roughness/mode"];
 	String normal_map = p_options["roughness/src_normal"];
 
@@ -485,7 +475,6 @@ Error ResourceImporterTexture::import(const String &p_source_file, const String 
 
 		bool ok_on_pc = false;
 		bool is_hdr = (image->get_format() >= Image::FORMAT_RF && image->get_format() <= Image::FORMAT_RGBE9995);
-		bool is_ldr = (image->get_format() >= Image::FORMAT_L8 && image->get_format() <= Image::FORMAT_RGB565);
 		bool can_bptc = ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_bptc");
 		bool can_s3tc = ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_s3tc");
 
@@ -519,14 +508,6 @@ Error ResourceImporterTexture::import(const String &p_source_file, const String 
 						image->convert(Image::FORMAT_RGBE9995);
 					}
 				}
-			} else {
-				can_bptc = false;
-			}
-		}
-
-		if (is_ldr && can_bptc) {
-			if (bptc_ldr == 0 || (bptc_ldr == 1 && !has_alpha)) {
-				can_bptc = false;
 			}
 		}
 
