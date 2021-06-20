@@ -32,12 +32,15 @@
 
 #ifdef TOOLS_ENABLED
 
-#include "image_compress_cvtt.h"
+#include "core/io/image.h"
+#include "image_compress_bc7e.h"
+// zlib symbols required
+#include "thirdparty/tinyexr/tinyexr.h"
 
-void register_cvtt_types() {
-	Image::_image_decompress_bptc = image_decompress_cvtt;
+void register_bc7enc_rdo_types() {
+	Image::set_compress_bptc_func(image_compress_bc7e);
 }
 
-void unregister_cvtt_types() {}
+void unregister_bc7enc_rdo_types() {}
 
 #endif

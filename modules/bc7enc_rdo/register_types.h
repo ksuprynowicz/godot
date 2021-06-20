@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  register_types.cpp                                                   */
+/*  register_types.h                                                     */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,16 +28,14 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "register_types.h"
+#ifndef BC7E_REGISTER_TYPES_H
+#define BC7E_REGISTER_TYPES_H
 
 #ifdef TOOLS_ENABLED
 
-#include "image_compress_cvtt.h"
+void register_bc7enc_rdo_types();
+void unregister_bc7enc_rdo_types();
 
-void register_cvtt_types() {
-	Image::_image_decompress_bptc = image_decompress_cvtt;
-}
+#endif // TOOLS_ENABLED
 
-void unregister_cvtt_types() {}
-
-#endif
+#endif // BC7E_REGISTER_TYPES_H
