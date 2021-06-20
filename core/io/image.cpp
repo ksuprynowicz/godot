@@ -30,12 +30,14 @@
 
 #include "image.h"
 
+#include "core/error/error_list.h"
 #include "core/error/error_macros.h"
 #include "core/io/image_loader.h"
 #include "core/io/resource_loader.h"
 #include "core/math/math_funcs.h"
 #include "core/string/print_string.h"
 #include "core/templates/hash_map.h"
+#include "core/variant/dictionary.h"
 
 #include <stdio.h>
 
@@ -3146,6 +3148,8 @@ void Image::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("rgbe_to_srgb"), &Image::rgbe_to_srgb);
 	ClassDB::bind_method(D_METHOD("bump_map_to_normal_map", "bump_scale"), &Image::bump_map_to_normal_map, DEFVAL(1.0));
 
+	ClassDB::bind_method(D_METHOD("compute_image_metrics"), &Image::compute_image_metrics);
+
 	ClassDB::bind_method(D_METHOD("blit_rect", "src", "src_rect", "dst"), &Image::blit_rect);
 	ClassDB::bind_method(D_METHOD("blit_rect_mask", "src", "mask", "src_rect", "dst"), &Image::blit_rect_mask);
 	ClassDB::bind_method(D_METHOD("blend_rect", "src", "src_rect", "dst"), &Image::blend_rect);
@@ -3634,4 +3638,117 @@ Ref<Resource> Image::duplicate(bool p_subresources) const {
 
 void Image::set_as_black() {
 	memset(data.ptrw(), 0, data.size());
+}
+
+Dictionary Image::compute_image_metrics(const Ref<Image> p_image, bool p_luma_metric) {
+	// https://github.com/richgel999/bc7enc_rdo/blob/master/LICENSE
+	//
+	// This is free and unencumbered software released into the public domain.
+	// Anyone is free to copy, modify, publish, use, compile, sell, or distribute this
+	// software, either in source code form or as a compiled binary, for any purpose,
+	// commercial or non - commercial, and by any means.
+	// In jurisdictions that recognize copyright laws, the author or authors of this
+	// software dedicate any and all copyright interest in the software to the public
+	// domain.We make this dedication for the benefit of the public at large and to
+	// the detriment of our heirs and successors.We intend this dedication to be an
+	// overt act of relinquishment in perpetuity of all present and future rights to
+	// this software under copyright law.
+	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+	// AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+	// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+	// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+	ERR_FAIL_NULL_V(p_image, Dictionary());
+	Error err = OK;
+	Ref<Image> compared_image = duplicate(true);
+	if (compared_image->is_compressed()) {
+		err = compared_image->decompress();
+	}
+	ERR_FAIL_COND_V(err != OK, Dictionary());
+	Ref<Image> source_image = p_image->duplicate(true);
+	if (source_image->is_compressed()) {
+		err = source_image->decompress();
+	}
+	ERR_FAIL_COND_V(err != OK, Dictionary());
+	double image_metric_max, image_metric_mean, image_metric_mean_squared, image_metric_root_mean_squared, image_metric_peak_snr = 0.0;
+	const bool average_component_error = true;
+
+	const uint32_t width = MIN(compared_image->get_width(), source_image->get_width());
+	const uint32_t height = MIN(compared_image->get_height(), source_image->get_height());
+
+	// Histogram approach originally due to Charles Bloom.
+	double hist[256];
+	memset(hist, 0, sizeof(hist));
+
+	for (uint32_t y = 0; y < height; y++) {
+		for (uint32_t x = 0; x < width; x++) {
+			const Color color_a = compared_image->get_pixel(x, y);
+
+			const Color color_b = source_image->get_pixel(x, y);
+
+			if (!p_luma_metric) {
+				ERR_FAIL_COND_V_MSG(color_a.r > 1.0f, Dictionary(), "Can't compare float colors.");
+				ERR_FAIL_COND_V_MSG(color_b.r > 1.0f, Dictionary(), "Can't compare float colors.");
+				hist[Math::abs(color_a.get_r8() - color_b.get_r8())]++;
+				ERR_FAIL_COND_V_MSG(color_a.g > 1.0f, Dictionary(), "Can't compare float colors.");
+				ERR_FAIL_COND_V_MSG(color_b.g > 1.0f, Dictionary(), "Can't compare float colors.");
+				hist[Math::abs(color_a.get_g8() - color_b.get_g8())]++;
+				ERR_FAIL_COND_V_MSG(color_a.b > 1.0f, Dictionary(), "Can't compare float colors.");
+				ERR_FAIL_COND_V_MSG(color_b.b > 1.0f, Dictionary(), "Can't compare float colors.");
+				hist[Math::abs(color_a.get_b8() - color_b.get_b8())]++;
+				ERR_FAIL_COND_V_MSG(color_a.a > 1.0f, Dictionary(), "Can't compare float colors.");
+				ERR_FAIL_COND_V_MSG(color_b.a > 1.0f, Dictionary(), "Can't compare float colors.");
+				hist[Math::abs(color_a.get_a8() - color_b.get_a8())]++;
+			} else {
+				ERR_FAIL_COND_V_MSG(color_a.r > 1.0f, Dictionary(), "Can't compare float colors.");
+				ERR_FAIL_COND_V_MSG(color_b.r > 1.0f, Dictionary(), "Can't compare float colors.");
+				// REC709 weightings
+				int luma_a = (13938U * color_a.get_r8() + 46869U * color_a.get_g8() + 4729U * color_a.get_b8() + 32768U) >> 16U;
+				int luma_b = (13938U * color_b.get_r8() + 46869U * color_b.get_g8() + 4729U * color_b.get_b8() + 32768U) >> 16U;
+				hist[Math::abs(luma_a - luma_b)]++;
+			}
+		}
+	}
+
+	image_metric_max = 0;
+	double sum = 0.0f, sum2 = 0.0f;
+	for (uint32_t i = 0; i < 256; i++) {
+		if (!hist[i]) {
+			continue;
+		}
+
+		image_metric_max = MAX(image_metric_max, i);
+
+		double x = i * hist[i];
+
+		sum += x;
+		sum2 += i * x;
+	}
+
+	// See http://richg42.blogspot.com/2016/09/how-to-compute-psnr-from-old-berkeley.html
+	double total_values = width * height;
+
+	if (average_component_error) {
+		total_values *= 4;
+	}
+
+	image_metric_mean = CLAMP(sum / total_values, 0.0f, 255.0f);
+	image_metric_mean_squared = CLAMP(sum2 / total_values, 0.0f, 255.0f * 255.0f);
+
+	image_metric_root_mean_squared = sqrt(image_metric_mean_squared);
+
+	if (!image_metric_root_mean_squared) {
+		image_metric_peak_snr = 1e+10f;
+	} else {
+		image_metric_peak_snr = CLAMP(log10(255.0f / image_metric_root_mean_squared) * 20.0f, 0.0f, 500.0f);
+	}
+
+	Dictionary result;
+	result["max"] = image_metric_max;
+	result["mean"] = image_metric_mean;
+	result["mean_squared"] = image_metric_mean_squared;
+	result["root_mean_squared"] = image_metric_root_mean_squared;
+	result["peak_snr"] = image_metric_peak_snr;
+	return result;
 }
