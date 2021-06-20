@@ -383,6 +383,7 @@ public:
 	void convert_rg_to_ra_rgba8();
 	void convert_ra_rgba8_to_rg();
 
+public:
 	Image(const uint8_t *p_mem_png_jpg, int p_len = -1);
 	Image(const char **p_xpm);
 
@@ -408,6 +409,8 @@ public:
 		mipmaps = p_image->mipmaps;
 		data = p_image->data;
 	}
+
+	Dictionary compute_image_metrics(const Ref<Image> p_compared_image, bool p_luma_metric = true);
 };
 
 VARIANT_ENUM_CAST(Image::Format)
