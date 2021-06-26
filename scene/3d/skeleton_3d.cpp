@@ -1094,6 +1094,16 @@ void Skeleton3D::execute_modifications(float p_delta, int p_execution_mode) {
 
 #endif // _3D_DISABLED
 
+void Skeleton3D::set_selected_bone(int p_bone) {
+	selected_bone = p_bone;
+	update_gizmo();
+	return;
+}
+
+int Skeleton3D::get_selected_bone() const {
+	return selected_bone;
+}
+
 void Skeleton3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_bone", "name"), &Skeleton3D::add_bone);
 	ClassDB::bind_method(D_METHOD("find_bone", "name"), &Skeleton3D::find_bone);
