@@ -1657,7 +1657,6 @@ int Skeleton3DGizmoPlugin::get_priority() const {
 	return -1;
 }
 
-
 void Skeleton3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	Skeleton3D *skel = Object::cast_to<Skeleton3D>(p_gizmo->get_spatial_node());
 
