@@ -32,6 +32,7 @@
 
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
+#include "core/error/error_macros.h"
 #include "core/object/message_queue.h"
 #include "core/variant/type_info.h"
 #include "scene/3d/physics_body_3d.h"
@@ -912,6 +913,7 @@ void Skeleton3D::force_update_all_bone_transforms() {
 }
 
 void Skeleton3D::force_update_bone_children_transforms(int p_bone_idx) {
+	ERR_FAIL_INDEX(p_bone_idx, bones.size());
 	Bone *bonesptr = bones.ptrw();
 	List<int> bones_to_process = List<int>();
 	bones_to_process.push_back(p_bone_idx);
@@ -1012,8 +1014,10 @@ Transform3D Skeleton3D::world_transform_to_global_pose(Transform3D p_world_trans
 }
 
 Transform3D Skeleton3D::global_pose_to_local_pose(int p_bone_idx, Transform3D p_global_pose) {
+	ERR_FAIL_INDEX_V(p_bone_idx, bones.size(), p_global_pose);
 	if (bones[p_bone_idx].parent >= 0) {
 		int parent_bone_idx = bones[p_bone_idx].parent;
+		ERR_FAIL_INDEX_V(parent_bone_idx, bones.size(), p_global_pose);
 		Transform3D conversion_transform = (bones[parent_bone_idx].pose_global * bones[p_bone_idx].rest);
 		return conversion_transform.affine_inverse() * p_global_pose;
 	} else {
@@ -1023,6 +1027,7 @@ Transform3D Skeleton3D::global_pose_to_local_pose(int p_bone_idx, Transform3D p_
 }
 
 Transform3D Skeleton3D::local_pose_to_global_pose(int p_bone_idx, Transform3D p_local_pose) {
+	ERR_FAIL_INDEX_V(p_bone_idx, bones.size(), p_local_pose);
 	if (bones[p_bone_idx].parent >= 0) {
 		int parent_bone_idx = bones[p_bone_idx].parent;
 		Transform3D conversion_transform = (bones[parent_bone_idx].pose_global * bones[p_bone_idx].rest);
