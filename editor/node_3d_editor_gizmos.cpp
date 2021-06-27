@@ -1657,17 +1657,13 @@ int Skeleton3DGizmoPlugin::get_priority() const {
 	return -1;
 }
 
+
 void Skeleton3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	Skeleton3D *skel = Object::cast_to<Skeleton3D>(p_gizmo->get_spatial_node());
 
 	p_gizmo->clear();
 
-	Ref<Material> material;
-	if (p_gizmo->is_selected()) {
-		material = selected_mat;
-	} else {
-		material = get_material("skeleton_material", p_gizmo);
-	}
+	Ref<Material> material = get_material("skeleton_material", p_gizmo);
 
 	Ref<SurfaceTool> surface_tool(memnew(SurfaceTool));
 
@@ -1688,14 +1684,15 @@ void Skeleton3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 
 	weights.write[0] = 1;
 
-	Color bone_color;
 	AABB aabb;
 
-	Color bonecolor = Color(1.0, 0.4, 0.4, 0.3);
-	Color rootcolor = Color(0.4, 1.0, 0.4, 0.1);
+	Color bone_color = Color(1.0, 0.4, 0.4, 0.3);
+	Color root_color = Color(0.4, 1.0, 0.4, 0.1);
 
-	for (int i_bone = 0; i_bone < skel->get_bone_count(); i_bone++) {
-		int i = skel->get_process_order(i_bone);
+	Vector<int> bones_to_process = skel->get_parentless_bones();
+	while (bones_to_process.size() > 0) {
+		int current_bone_idx = bones_to_process[0];
+		bones_to_process.erase(current_bone_idx);
 
 		Vector<int> child_bones_vector = skel->get_bone_children(current_bone_idx);
 		int child_bones_size = child_bones_vector.size();
@@ -1732,11 +1729,11 @@ void Skeleton3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 				bones.write[0] = current_bone_idx;
 				surface_tool->set_bones(bones);
 				surface_tool->set_weights(weights);
-				surface_tool->set_color(rootcolor);
+				surface_tool->set_color(root_color);
 				surface_tool->add_vertex(v0 - grests[current_bone_idx].basis[j].normalized() * dist * 0.05);
 				surface_tool->set_bones(bones);
 				surface_tool->set_weights(weights);
-				surface_tool->set_color(rootcolor);
+				surface_tool->set_color(root_color);
 				surface_tool->add_vertex(v0 + grests[current_bone_idx].basis[j].normalized() * dist * 0.05);
 
 				if (j == closest) {
@@ -1796,34 +1793,6 @@ void Skeleton3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 
 			// Add the bone's children to the list of bones to be processed
 			bones_to_process.push_back(child_bones_vector[i]);
-		}
-
-		Color axis_color[3];
-		axis_color[0] = Color(1, 0, 0);
-		axis_color[1] = Color(0, 1, 0);
-		axis_color[2] = Color(0, 0, 1);
-		for (int j = 0; j < 3; j++) {
-			if (p_gizmo->is_selected()) {
-				bones.write[0] = i;
-				surface_tool->set_bones(bones);
-				surface_tool->set_weights(weights);
-				surface_tool->set_color(axis_color[j]);
-				surface_tool->add_vertex(grests[i].origin);
-				surface_tool->set_bones(bones);
-				surface_tool->set_weights(weights);
-				surface_tool->set_color(axis_color[j]);
-				surface_tool->add_vertex(grests[i].origin + (grests[i].basis.inverse())[j].normalized() * bone_axis_length);
-			} else {
-				bones.write[0] = i;
-				surface_tool->set_bones(bones);
-				surface_tool->set_weights(weights);
-				surface_tool->set_color(axis_color[j]);
-				surface_tool->add_vertex(grests[i].origin - (grests[i].basis.inverse())[j].normalized() * bone_axis_length * 0.5);
-				surface_tool->set_bones(bones);
-				surface_tool->set_weights(weights);
-				surface_tool->set_color(axis_color[j]);
-				surface_tool->add_vertex(grests[i].origin + (grests[i].basis.inverse())[j].normalized() * bone_axis_length * 0.5);
-			}
 		}
 	}
 
