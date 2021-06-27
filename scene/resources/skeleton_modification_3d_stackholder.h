@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  collision_polygon_3d_editor_plugin.h                                 */
+/*  skeleton_modification_3d_stackholder.h                               */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,88 +28,32 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef COLLISION_POLYGON_EDITOR_PLUGIN_H
-#define COLLISION_POLYGON_EDITOR_PLUGIN_H
+#include "scene/3d/skeleton_3d.h"
+#include "scene/resources/skeleton_modification_3d.h"
 
-#include "editor/editor_node.h"
-#include "editor/editor_plugin.h"
-#include "scene/3d/collision_polygon_3d.h"
-#include "scene/3d/immediate_geometry_3d.h"
-#include "scene/3d/mesh_instance_3d.h"
+#ifndef SKELETONMODIFICATION3DSTACKHOLDER_H
+#define SKELETONMODIFICATION3DSTACKHOLDER_H
 
-class CanvasItemEditor;
-
-class CollisionPolygon3DEditor : public HBoxContainer {
-	GDCLASS(CollisionPolygon3DEditor, HBoxContainer);
-
-	UndoRedo *undo_redo;
-	enum Mode {
-		MODE_CREATE,
-		MODE_EDIT,
-
-	};
-
-	Mode mode;
-
-	Button *button_create;
-	Button *button_edit;
-
-	Ref<StandardMaterial3D> line_material;
-	Ref<StandardMaterial3D> handle_material;
-
-	EditorNode *editor;
-	Panel *panel;
-	Node3D *node;
-	ImmediateGeometry3D *imgeom;
-	MeshInstance3D *pointsm;
-	Ref<ArrayMesh> m;
-
-	MenuButton *options;
-
-	int edited_point;
-	Vector2 edited_point_pos;
-	Vector<Vector2> pre_move_edit;
-	Vector<Vector2> wip;
-	bool wip_active;
-	bool snap_ignore;
-
-	float prev_depth;
-
-	void _wip_close();
-	void _polygon_draw();
-	void _menu_option(int p_option);
-
-	float _get_depth();
+class SkeletonModification3DStackHolder : public SkeletonModification3D {
+	GDCLASS(SkeletonModification3DStackHolder, SkeletonModification3D);
 
 protected:
-	void _notification(int p_what);
-	void _node_removed(Node *p_node);
 	static void _bind_methods();
+	bool _get(const StringName &p_path, Variant &r_ret) const;
+	bool _set(const StringName &p_path, const Variant &p_value);
+	void _get_property_list(List<PropertyInfo> *p_list) const;
 
 public:
-	virtual bool forward_spatial_gui_input(int p_index, Camera3D *p_camera, const Ref<InputEvent> &p_event);
-	void edit(Node *p_collision_polygon);
-	CollisionPolygon3DEditor(EditorNode *p_editor);
-	~CollisionPolygon3DEditor();
+	Ref<SkeletonModificationStack3D> held_modification_stack;
+
+	void _execute(float p_delta) override;
+	void _setup_modification(SkeletonModificationStack3D *p_stack) override;
+
+	void set_held_modification_stack(Ref<SkeletonModificationStack3D> p_held_stack);
+	Ref<SkeletonModificationStack3D> get_held_modification_stack() const;
+
+	SkeletonModification3DStackHolder();
+	~SkeletonModification3DStackHolder();
 };
 
-class Polygon3DEditorPlugin : public EditorPlugin {
-	GDCLASS(Polygon3DEditorPlugin, EditorPlugin);
-
-	CollisionPolygon3DEditor *collision_polygon_editor;
-	EditorNode *editor;
-
-public:
-	virtual bool forward_spatial_gui_input(int p_index, Camera3D *p_camera, const Ref<InputEvent> &p_event) override { return collision_polygon_editor->forward_spatial_gui_input(p_index, p_camera, p_event); }
-
-	virtual String get_name() const override { return "Polygon3DEditor"; }
-	bool has_main_screen() const override { return false; }
-	virtual void edit(Object *p_object) override;
-	virtual bool handles(Object *p_object) const override;
-	virtual void make_visible(bool p_visible) override;
-
-	Polygon3DEditorPlugin(EditorNode *p_node);
-	~Polygon3DEditorPlugin();
-};
-
-#endif // COLLISION_POLYGON_EDITOR_PLUGIN_H
+#endif //SKELETONMODIFICATION3DSTACKHOLDER_H
