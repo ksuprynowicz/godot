@@ -50,9 +50,9 @@ void EditorDebuggerServerWebSocket::poll() {
 
 Error EditorDebuggerServerWebSocket::start() {
 	int remote_port = (int)EditorSettings::get_singleton()->get("network/debug/remote_port");
-	Vector<String> protocols;
-	protocols.push_back("binary"); // compatibility with EMSCRIPTEN TCP-to-WebSocket layer.
-	return server->listen(remote_port, protocols);
+	Vector<String> new_protocols;
+	new_protocols.push_back("binary"); // compatibility with EMSCRIPTEN TCP-to-WebSocket layer.
+	return server->listen(remote_port, new_protocols);
 }
 
 void EditorDebuggerServerWebSocket::stop() {
