@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+import glob
+
+Import("env")
+Import("env_modules")
+
+env_thorvg = env_modules.Clone()
+env_thorvg.Append(CPPDEFINES=[("THORVG_SW_RASTER_SUPPORT")])
+env_thorvg.Append(CPPDEFINES=[("THORVG_SVG_LOADER_SUPPORT")])
+
+thirdparty_obj = []
+thirdparty_sources = []
+thirdparty_dir = "#thirdparty/thorvg/"
+thor_src = [
+    "src/lib/tvgBezier.cpp",
+    "src/lib/tvgCanvas.cpp",
+    "src/lib/tvgFill.cpp",
+    "src/lib/tvgGlCanvas.cpp",
+    "src/lib/tvgInitializer.cpp",
+    "src/lib/tvgLinearGradient.cpp",
+    "src/lib/tvgLoaderMgr.cpp",
+    "src/lib/tvgPaint.cpp",
+    "src/lib/tvgPicture.cpp",
+    "src/lib/tvgRadialGradient.cpp",
+    "src/lib/tvgRender.cpp",
+    "src/lib/tvgScene.cpp",
+    "src/lib/tvgShape.cpp",
+    "src/lib/tvgSwCanvas.cpp",
+    "src/lib/tvgTaskScheduler.cpp",
+    "src/loaders/raw/tvgRawLoader.cpp",
+    "src/loaders/svg/tvgXmlParser.cpp",
+    "src/loaders/svg/tvgSvgUtil.cpp",
+    "src/loaders/svg/tvgSvgSceneBuilder.cpp",
+    "src/loaders/svg/tvgSvgPath.cpp",
+    "src/loaders/svg/tvgSvgLoader.cpp",
+    "src/lib/sw_engine/tvgSwFill.cpp",
+    "src/lib/sw_engine/tvgSwImage.cpp",
+    "src/lib/sw_engine/tvgSwMath.cpp",
+    "src/lib/sw_engine/tvgSwMemPool.cpp",
+    "src/lib/sw_engine/tvgSwRaster.cpp",
+    "src/lib/sw_engine/tvgSwRenderer.cpp",
+    "src/lib/sw_engine/tvgSwRle.cpp",
+    "src/lib/sw_engine/tvgSwShape.cpp",
+    "src/lib/sw_engine/tvgSwStroke.cpp",
+]
+thirdparty_sources = [thirdparty_dir + file for file in thor_src]
+env_thorvg.Prepend(CPPPATH=["."])
+env_thorvg.Prepend(CPPPATH=["#thirdparty/thorvg/src/lib/"])
+env_thorvg.Prepend(CPPPATH=["#thirdparty/thorvg/src/lib/sw_engine/"])
+env_thorvg.Prepend(CPPPATH=["#thirdparty/thorvg/src/loaders/raw/"])
+env_thorvg.Prepend(CPPPATH=["#thirdparty/thorvg/src/loaders/svg/"])
+env_thorvg.Prepend(CPPPATH=["#thirdparty/thorvg/inc/"])
+
+# Godot source files
+
+module_obj = []
+
+env_thorvg.add_source_files(module_obj, "*.cpp")
+env_thorvg.disable_warnings()
+env_thorvg.add_source_files(module_obj, thirdparty_sources)
+env.modules_sources += module_obj
+
+# Needed to force rebuilding the module files when the thirdparty library is updated.
+env.Depends(module_obj, thirdparty_obj)

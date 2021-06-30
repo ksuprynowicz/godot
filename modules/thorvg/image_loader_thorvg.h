@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  register_types.cpp                                                   */
+/*  image_loader_thorvg.h                                                */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,17 +28,28 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "register_types.h"
+#ifndef RESOURCE_IMPORTER_THORVG
+#define RESOURCE_IMPORTER_THORVG
 
-#include "image_loader_svg.h"
+#include "core/error/error_macros.h"
+#include "core/io/image_loader.h"
+#include "core/string/ustring.h"
 
-static ImageLoaderSVG *image_loader_svg = nullptr;
+#include "core/templates/local_vector.h"
+#include "thirdparty/thorvg/inc/thorvg.h"
+#include <stdint.h>
+#include <iostream>
+#include <memory>
+#include <sstream>
 
-void register_svg_types() {
-	image_loader_svg = memnew(ImageLoaderSVG);
-	ImageLoader::add_image_format_loader(image_loader_svg);
-}
+class ImageLoaderThorVG : public ImageFormatLoader {
+public:
+	static void create_image_from_string(Ref<Image> p_image, String p_string, float p_scale, bool upsample, bool p_convert_color);
+	virtual Error load_image(Ref<Image> p_image, FileAccess *p_fileaccess,
+			bool p_force_linear, float p_scale) override;
+	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
 
-void unregister_svg_types() {
-	memdelete(image_loader_svg);
-}
+public:
+	virtual ~ImageLoaderThorVG() {}
+};
+#endif // RESOURCE_IMPORTER_THORVG
