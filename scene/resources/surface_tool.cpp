@@ -29,6 +29,7 @@
 /*************************************************************************/
 
 #include "surface_tool.h"
+#include "vulkan/vulkan_core.h"
 
 #define _VERTEX_SNAP 0.0001
 #define EQ_VERTEX_DIST 0.00001
@@ -38,6 +39,7 @@ SurfaceTool::SimplifyFunc SurfaceTool::simplify_func = nullptr;
 SurfaceTool::SimplifyWithAttribFunc SurfaceTool::simplify_with_attrib_func = nullptr;
 SurfaceTool::SimplifyScaleFunc SurfaceTool::simplify_scale_func = nullptr;
 SurfaceTool::SimplifySloppyFunc SurfaceTool::simplify_sloppy_func = nullptr;
+SurfaceTool::ProcessGeometry SurfaceTool::process_geometry_func = nullptr;
 
 bool SurfaceTool::Vertex::operator==(const Vertex &p_vertex) const {
 	if (vertex != p_vertex.vertex) {
