@@ -37,8 +37,8 @@
 #include "editor_settings.h"
 
 #include "modules/modules_enabled.gen.h"
-#ifdef MODULE_SVG_ENABLED
-#include "modules/svg/image_loader_svg.h"
+#ifdef MODULE_THORVG_ENABLED
+#include "modules/thorvg/image_loader_thorvg.h"
 #endif
 
 static Ref<StyleBoxTexture> make_stylebox(Ref<Texture2D> p_texture, float p_left, float p_top, float p_right, float p_bottom, float p_margin_left = -1, float p_margin_top = -1, float p_margin_right = -1, float p_margin_bottom = -1, bool p_draw_center = true) {
@@ -108,7 +108,7 @@ static Ref<Texture2D> flip_icon(Ref<Texture2D> p_texture, bool p_flip_y = false,
 	return texture;
 }
 
-#ifdef MODULE_SVG_ENABLED
+#ifdef MODULE_THORVG_ENABLED
 static Ref<ImageTexture> editor_generate_icon(int p_index, bool p_convert_color, float p_scale = EDSCALE, float p_saturation = 1.0) {
 	Ref<ImageTexture> icon = memnew(ImageTexture);
 	Ref<Image> img = memnew(Image);
@@ -117,7 +117,7 @@ static Ref<ImageTexture> editor_generate_icon(int p_index, bool p_convert_color,
 	// Generating upsampled icons is slower, and the benefit is hardly visible
 	// with integer editor scales.
 	const bool upsample = !Math::is_equal_approx(Math::round(p_scale), p_scale);
-	ImageLoaderSVG::create_image_from_string(img, editor_icons_sources[p_index], p_scale, upsample, p_convert_color);
+	ImageLoaderThorVG::create_image_from_string(img, editor_icons_sources[p_index], p_scale, upsample, p_convert_color);
 
 	if (p_saturation != 1.0) {
 		img->adjust_bcs(1.0, 1.0, p_saturation);
@@ -133,7 +133,7 @@ static Ref<ImageTexture> editor_generate_icon(int p_index, bool p_convert_color,
 #endif
 
 void editor_register_and_generate_icons(Ref<Theme> p_theme, bool p_dark_theme = true, int p_thumb_size = 32, bool p_only_thumbs = false, float p_icon_saturation = 1.0) {
-#ifdef MODULE_SVG_ENABLED
+#if defined(MODULE_THORVG_ENABLED)
 	// The default icon theme is designed to be used for a dark theme.
 	// This dictionary stores color codes to convert to other colors
 	// for better readability on a light theme.
@@ -241,7 +241,7 @@ void editor_register_and_generate_icons(Ref<Theme> p_theme, bool p_dark_theme = 
 	dark_icon_color_dictionary[Color::html("#45ff8b")] = success_color;
 	dark_icon_color_dictionary[Color::html("#dbab09")] = warning_color;
 
-	ImageLoaderSVG::set_convert_colors(&dark_icon_color_dictionary);
+	// ImageLoaderSVG::set_convert_colors(&dark_icon_color_dictionary);
 
 	// Generate icons.
 	if (!p_only_thumbs) {
@@ -282,7 +282,7 @@ void editor_register_and_generate_icons(Ref<Theme> p_theme, bool p_dark_theme = 
 		}
 	}
 
-	ImageLoaderSVG::set_convert_colors(nullptr);
+	// ImageLoaderLunaSVG::set_convert_colors(nullptr);
 #else
 	WARN_PRINT("SVG support disabled, editor icons won't be rendered.");
 #endif
