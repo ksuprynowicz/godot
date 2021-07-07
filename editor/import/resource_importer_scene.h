@@ -144,6 +144,20 @@ private:
 	Quaternion _point_parent_to_child_align_vectors(Vector3 a, Vector3 b);
 
 public:
+	struct BakeResetRestBone {
+		Transform3D rest_local_before;
+		Transform3D rest_local_after;
+		Quaternion rest_delta;
+		Vector3 loc;
+		Vector<int> children;
+	};
+
+private:
+	void _bake_reset_fix_skeleton(Skeleton3D *p_skeleton, Map<StringName, ResourceImporterScene::BakeResetRestBone> &r_rest_bones);
+	void _bake_reset_align_animations(AnimationPlayer *p_ap, const Map<StringName, BakeResetRestBone> &p_rest_bones);
+	void _bake_reset_fetch_reset_animation(AnimationPlayer *p_ap, Map<StringName, BakeResetRestBone> &p_rest_bones);
+
+public:
 	static ResourceImporterScene *get_singleton() { return singleton; }
 
 	const Set<Ref<EditorSceneImporter>> &get_importers() const { return importers; }
