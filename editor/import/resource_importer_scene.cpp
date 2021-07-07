@@ -32,6 +32,9 @@
 
 #include "core/error/error_macros.h"
 #include "core/io/resource_saver.h"
+#include "core/math/quaternion.h"
+#include "core/math/transform_3d.h"
+#include "core/math/vector3.h"
 #include "editor/editor_node.h"
 #include "editor/import/scene_import_settings.h"
 #include "editor/import/scene_importer_mesh_node_3d.h"
@@ -40,6 +43,7 @@
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/navigation_region_3d.h"
 #include "scene/3d/physics_body_3d.h"
+#include "scene/3d/skeleton_3d.h"
 #include "scene/3d/vehicle_body_3d.h"
 #include "scene/animation/animation_player.h"
 #include "scene/resources/animation.h"
@@ -1061,6 +1065,7 @@ void ResourceImporterScene::get_import_options(List<ImportOption> *r_options, in
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "skins/use_named_skins"), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "animation/import"), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "animation/point_parent_bone_to_children"), true));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "animation/bake_reset_animation"), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, "animation/fps", PROPERTY_HINT_RANGE, "1,120,1"), 15));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::STRING, "import_script/path", PROPERTY_HINT_FILE, script_ext_hint), ""));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::DICTIONARY, "_subresources", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NOEDITOR), Dictionary()));
@@ -1443,6 +1448,18 @@ Error ResourceImporterScene::import(const String &p_source_file, const String &p
 				queue.pop_front();
 			}
 			_point_parent_to_child_fix_meshes(r_rest_bones, r_meshes);
+	{
+		bool use_bake_reset_animation = p_options["animation/bake_reset_animation"];
+		Map<StringName, BakeResetRestBone> r_rest_bones;
+		Vector<Node3D *> r_meshes;
+		if (use_bake_reset_animation) {
+			List<Node *> queue;
+			queue.push_back(scene);
+			while (!queue.is_empty()) {
+				List<Node *>::Element *E = queue.front();
+				Node *node = E->get();
+				AnimationPlayer *ap = Object::cast_to<AnimationPlayer>(node);
+				_bake_reset_fetch_reset_animation(ap, r_rest_bones);
 
 			////////////////////////////////////////
 			queue.clear();
@@ -1452,6 +1469,56 @@ Error ResourceImporterScene::import(const String &p_source_file, const String &p
 				Node *node = E->get();
 				AnimationPlayer *ap = Object::cast_to<AnimationPlayer>(node);
 				_point_parent_to_child_align_animations(ap, r_rest_bones);
+
+				int child_count = node->get_child_count();
+				for (int i = 0; i < child_count; i++) {
+					queue.push_back(node->get_child(i));
+				}
+				queue.pop_front();
+			}
+		}
+	}
+				int child_count = node->get_child_count();
+				for (int i = 0; i < child_count; i++) {
+					queue.push_back(node->get_child(i));
+				}
+				queue.pop_front();
+			}
+
+			queue.push_back(scene);
+			while (!queue.is_empty()) {
+				List<Node *>::Element *E = queue.front();
+				Node *node = E->get();
+				EditorSceneImporterMeshNode3D *editor_mesh_3d = cast_to<EditorSceneImporterMeshNode3D>(node);
+				MeshInstance3D *mesh_3d = cast_to<MeshInstance3D>(node);
+				if (cast_to<Skeleton3D>(node)) {
+					Skeleton3D *skeleton = Object::cast_to<Skeleton3D>(node);
+					_bake_reset_fix_skeleton(skeleton, r_rest_bones);
+				}
+				if (editor_mesh_3d) {
+					NodePath path = editor_mesh_3d->get_skeleton_path();
+					if (!path.is_empty() && editor_mesh_3d->get_node_or_null(path) && Object::cast_to<Skeleton3D>(editor_mesh_3d->get_node_or_null(path))) {
+						r_meshes.push_back(editor_mesh_3d);
+					}
+				} else if (mesh_3d) {
+					NodePath path = mesh_3d->get_skeleton_path();
+					if (!path.is_empty() && mesh_3d->get_node_or_null(path) && Object::cast_to<Skeleton3D>(mesh_3d->get_node_or_null(path))) {
+						r_meshes.push_back(mesh_3d);
+					}
+				}
+				int child_count = node->get_child_count();
+				for (int i = 0; i < child_count; i++) {
+					queue.push_back(node->get_child(i));
+				}
+				queue.pop_front();
+			}
+
+			queue.push_back(scene);
+			while (!queue.is_empty()) {
+				List<Node *>::Element *E = queue.front();
+				Node *node = E->get();
+				AnimationPlayer *ap = Object::cast_to<AnimationPlayer>(node);
+				_bake_reset_align_animations(ap, r_rest_bones);
 
 				int child_count = node->get_child_count();
 				for (int i = 0; i < child_count; i++) {
@@ -1772,6 +1839,143 @@ void ResourceImporterScene::_point_parent_to_child_align_animations(AnimationPla
 			}
 			a->remove_track(track);
 		}
+	}
+}
+
+ResourceImporterScene *ResourceImporterScene::singleton = NULL;
+
+void ResourceImporterScene::_bake_reset_align_animations(AnimationPlayer *p_ap, const Map<StringName, BakeResetRestBone> &p_rest_bones) {
+	ERR_FAIL_NULL(p_ap);
+	List<StringName> anim_names;
+	p_ap->get_animation_list(&anim_names);
+	for (List<StringName>::Element *anim_i = anim_names.front(); anim_i; anim_i = anim_i->next()) {
+		Ref<Animation> a = p_ap->get_animation(anim_i->get());
+		if (a->get_name() == "RESET") {
+			continue;
+		}
+		for (Map<StringName, BakeResetRestBone>::Element *rest_bone_i = p_rest_bones.front(); rest_bone_i; rest_bone_i = rest_bone_i->next()) {
+			int track = a->find_track(NodePath(rest_bone_i->key()));
+			if (track == -1) {
+				continue;
+			}
+			int new_track = a->add_track(Animation::TYPE_TRANSFORM3D);
+			a->track_set_path(new_track, NodePath(rest_bone_i->key()));
+			for (int key_i = 0; key_i < a->track_get_key_count(track); key_i++) {
+				Vector3 loc;
+				Quaternion rot;
+				Vector3 scale;
+				Error err = a->transform_track_get_key(track, key_i, &loc, &rot, &scale);
+				ERR_CONTINUE(err);
+				real_t time = a->track_get_key_time(track, key_i);
+				rot.normalize();
+				BakeResetRestBone rest_bone = rest_bone_i->get();
+				loc = loc - rest_bone.loc;
+				rot = rest_bone.rest_delta.normalized().inverse() * rot;
+				scale = Vector3(1, 1, 1) - rest_bone.rest_delta.inverse().xform(Vector3(1, 1, 1) - scale);
+				a->transform_track_insert_key(new_track, time, loc, rot, scale);
+			}
+			a->remove_track(track);
+		}
+	}
+}
+
+void ResourceImporterScene::_bake_reset_fetch_reset_animation(AnimationPlayer *p_ap, Map<StringName, BakeResetRestBone> &p_rest_bones) {
+	ERR_FAIL_NULL(p_ap);
+	List<StringName> anim_names;
+	p_ap->get_animation_list(&anim_names);
+	Node *root = p_ap->get_parent();
+	ERR_FAIL_NULL(root);
+	for (List<StringName>::Element *anim_i = anim_names.front(); anim_i; anim_i = anim_i->next()) {
+		Ref<Animation> a = p_ap->get_animation(anim_i->get());
+		if (a->get_name() != "RESET") {
+			continue;
+		}
+		float time = 0.0f;
+		for (int32_t track = 0; track < a->get_track_count(); track++) {
+			NodePath path = a->track_get_path(track);
+			String string_path = path;
+			string_path = string_path.get_slice(":", 0);
+			String bone_name = string_path.get_slice(":", 0);
+			Skeleton3D *skeleton = cast_to<Skeleton3D>(root->get_node(string_path));
+			if (!skeleton) {
+				continue;
+			}
+			for (int key_i = 0; key_i < a->track_get_key_count(track); key_i++) {
+				Vector3 loc;
+				Quaternion rot;
+				Vector3 scale;
+				Error err = a->transform_track_get_key(track, key_i, &loc, &rot, &scale);
+				ERR_CONTINUE(err);
+				time = a->track_get_key_time(track, key_i);
+				rot.normalize();
+				Basis rot_basis = rot;
+				rot_basis.scale(scale);
+				BakeResetRestBone rest_bone;
+				rest_bone.rest_delta = rot_basis;
+				rest_bone.loc = loc;
+				p_rest_bones[StringName(path)] = rest_bone;
+				break;
+			}
+		}
+
+		for (int32_t track = 0; track < a->get_track_count(); track++) {
+			NodePath path = a->track_get_path(track);
+			String string_path = path;
+			string_path = string_path.get_slice(":", 0);
+			String bone_name = string_path.get_slice(":", 0);
+			Skeleton3D *skeleton = cast_to<Skeleton3D>(root->get_node(string_path));
+			if (!skeleton) {
+				continue;
+			}
+			for (int key_i = 0; key_i < a->track_get_key_count(track); key_i++) {
+				Vector3 loc;
+				Quaternion rot;
+				Vector3 scale;
+				Error err = a->transform_track_get_key(track, key_i, &loc, &rot, &scale);
+				ERR_CONTINUE(err);
+				a->track_remove_key(track, key_i);
+				a->transform_track_insert_key(track, time, Vector3(), Quaternion(), Vector3(1, 1, 1));
+			}
+		}
+	}
+}
+
+void ResourceImporterScene::_bake_reset_fix_skeleton(Skeleton3D *p_skeleton, Map<StringName, ResourceImporterScene::BakeResetRestBone> &r_rest_bones) {
+	int bone_count = p_skeleton->get_bone_count();
+
+	//First iterate through all the bones and create a RestBone
+	for (int j = 0; j < bone_count; j++) {
+		StringName final_path = String(p_skeleton->get_owner()->get_path_to(p_skeleton)) + String(":") + p_skeleton->get_bone_name(j);
+		BakeResetRestBone &rest_bone = r_rest_bones[final_path];
+		rest_bone.rest_local_before = p_skeleton->get_bone_rest(j);
+		rest_bone.rest_local_after = rest_bone.rest_local_before;
+	}
+	for (int i = 0; i < bone_count; i++) {
+		int parent_bone = p_skeleton->get_bone_parent(i);
+		String path = p_skeleton->get_owner()->get_path_to(p_skeleton);
+		StringName final_path = String(path) + String(":") + p_skeleton->get_bone_name(parent_bone);
+		if (parent_bone >= 0) {
+			r_rest_bones[path].children.push_back(i);
+		}
+	}
+
+	//When we apply transform to a bone, we also have to move all of its children in the opposite direction
+	for (int i = 0; i < bone_count; i++) {
+		StringName final_path = String(p_skeleton->get_owner()->get_path_to(p_skeleton)) + String(":") + p_skeleton->get_bone_name(i);
+		r_rest_bones[final_path].rest_local_after = r_rest_bones[final_path].rest_local_after * Transform3D(r_rest_bones[final_path].rest_delta, r_rest_bones[final_path].loc);
+		//Iterate through the children and move in the opposite direction.
+		for (int j = 0; j < r_rest_bones[final_path].children.size(); j++) {
+			int child_index = r_rest_bones[final_path].children[j];
+			StringName children_path = String(p_skeleton->get_name()) + String(":") + p_skeleton->get_bone_name(child_index);
+			r_rest_bones[children_path].rest_local_after = Transform3D(r_rest_bones[final_path].rest_delta, r_rest_bones[final_path].loc).affine_inverse() * r_rest_bones[children_path].rest_local_after;
+		}
+	}
+
+	for (int i = 0; i < bone_count; i++) {
+		StringName final_path = String(p_skeleton->get_owner()->get_path_to(p_skeleton)) + String(":") + p_skeleton->get_bone_name(i);
+		ERR_CONTINUE(!r_rest_bones.has(final_path));
+		Transform3D rest_transform = r_rest_bones[final_path].rest_local_after;
+		p_skeleton->set_bone_rest(i, rest_transform);
 	}
 }
 
