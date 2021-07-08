@@ -1065,6 +1065,7 @@ void ResourceImporterScene::get_import_options(List<ImportOption> *r_options, in
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "animation/import"), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "animation/point_parent_bone_to_children"), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, "animation/fps", PROPERTY_HINT_RANGE, "1,120,1"), 15));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "animation/bake_reset_animation"), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::STRING, "import_script/path", PROPERTY_HINT_FILE, script_ext_hint), ""));
 
 	r_options->push_back(ImportOption(PropertyInfo(Variant::DICTIONARY, "_subresources", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NOEDITOR), Dictionary()));
@@ -1414,6 +1415,11 @@ Error ResourceImporterScene::import(const String &p_source_file, const String &p
 
 	_pre_fix_node(scene, scene, collision_map);
 	_post_fix_node(scene, scene, collision_map, scanned_meshes, node_data, material_data, animation_data, fps);
+	bool use_bake_reset_animation = p_options["animation/bake_reset_animation"];
+	if (use_bake_reset_animation) {
+		BakeReset bake_reset;
+		bake_reset._bake_reset_animation(scene);
+	}
 
 	bool use_point_parent_bone_to_children = p_options["animation/point_parent_bone_to_children"];
 	if (use_point_parent_bone_to_children) {
