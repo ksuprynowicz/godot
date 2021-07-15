@@ -572,8 +572,8 @@ ObjectID Node3DEditorViewport::_select_ray(const Point2 &p_pos, bool p_append, b
 }
 
 void Node3DEditorViewport::_find_items_at_pos(const Point2 &p_pos, bool &r_includes_current, Vector<_RayResult> &results, bool p_alt_select, bool p_include_locked_nodes) {
-	Vector3 ray = _get_ray(p_pos);
-	Vector3 pos = _get_ray_pos(p_pos);
+	Vector3 ray =  get_ray(p_pos);
+	Vector3 pos = get_ray_pos(p_pos);
 
 	Vector<ObjectID> instances = RenderingServer::get_singleton()->instances_cull_ray(pos, ray, get_tree()->get_root()->get_world_3d()->get_scenario());
 	Set<Ref<EditorNode3DGizmo>> found_gizmos;
