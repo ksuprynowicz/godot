@@ -733,7 +733,69 @@ void Skeleton3DEditor::create_editors() {
 
 	options->get_popup()->connect("id_pressed", callable_mp(this, &Skeleton3DEditor::_on_click_option));
 
-	const Color section_color = get_theme_color(SNAME("prop_subsection"), SNAME("Editor"));
+	Vector<Variant> button_binds;
+	button_binds.resize(1);
+
+	tool_button[TOOL_MODE_BONE_SELECT] = memnew(Button);
+	Node3DEditor::get_singleton()->add_control_to_menu_panel(tool_button[TOOL_MODE_BONE_SELECT]);
+	tool_button[TOOL_MODE_BONE_SELECT]->set_tooltip(TTR("Transform Bone Mode"));
+	tool_button[TOOL_MODE_BONE_SELECT]->set_toggle_mode(true);
+	tool_button[TOOL_MODE_BONE_SELECT]->set_flat(true);
+	button_binds.write[0] = MENU_TOOL_BONE_SELECT;
+	tool_button[TOOL_MODE_BONE_SELECT]->connect("pressed", callable_mp(this, &Skeleton3DEditor::_menu_tool_item_pressed), button_binds);
+
+	tool_button[TOOL_MODE_BONE_MOVE] = memnew(Button);
+	Node3DEditor::get_singleton()->add_control_to_menu_panel(tool_button[TOOL_MODE_BONE_MOVE]);
+	tool_button[TOOL_MODE_BONE_MOVE]->set_tooltip(TTR("Move Bone Mode"));
+	tool_button[TOOL_MODE_BONE_MOVE]->set_toggle_mode(true);
+	tool_button[TOOL_MODE_BONE_MOVE]->set_flat(true);
+	button_binds.write[0] = MENU_TOOL_BONE_MOVE;
+	tool_button[TOOL_MODE_BONE_MOVE]->connect("pressed", callable_mp(this, &Skeleton3DEditor::_menu_tool_item_pressed), button_binds);
+
+	tool_button[TOOL_MODE_BONE_ROTATE] = memnew(Button);
+	Node3DEditor::get_singleton()->add_control_to_menu_panel(tool_button[TOOL_MODE_BONE_ROTATE]);
+	tool_button[TOOL_MODE_BONE_ROTATE]->set_tooltip(TTR("Rotate Bone Mode"));
+	tool_button[TOOL_MODE_BONE_ROTATE]->set_toggle_mode(true);
+	tool_button[TOOL_MODE_BONE_ROTATE]->set_flat(true);
+	button_binds.write[0] = MENU_TOOL_BONE_ROTATE;
+	tool_button[TOOL_MODE_BONE_ROTATE]->connect("pressed", callable_mp(this, &Skeleton3DEditor::_menu_tool_item_pressed), button_binds);
+
+	tool_button[TOOL_MODE_BONE_SCALE] = memnew(Button);
+	Node3DEditor::get_singleton()->add_control_to_menu_panel(tool_button[TOOL_MODE_BONE_SCALE]);
+	tool_button[TOOL_MODE_BONE_SCALE]->set_tooltip(TTR("Scale Bone Mode"));
+	tool_button[TOOL_MODE_BONE_SCALE]->set_toggle_mode(true);
+	tool_button[TOOL_MODE_BONE_SCALE]->set_flat(true);
+	button_binds.write[0] = MENU_TOOL_BONE_SCALE;
+	tool_button[TOOL_MODE_BONE_SCALE]->connect("pressed", callable_mp(this, &Skeleton3DEditor::_menu_tool_item_pressed), button_binds);
+
+	tool_button[TOOL_MODE_BONE_NONE] = memnew(Button);
+	button_binds.write[0] = MENU_TOOL_BONE_NONE;
+	tool_button[TOOL_MODE_BONE_NONE]->connect("pressed", callable_mp(this, &Skeleton3DEditor::_menu_tool_item_pressed), button_binds);
+	Node3DEditor::get_singleton()->connect("change_tool_mode", callable_mp(this, &Skeleton3DEditor::_menu_tool_item_pressed), button_binds);
+
+	tool_mode = TOOL_MODE_BONE_NONE;
+
+	Node3DEditor::get_singleton()->add_control_to_menu_panel(separators[1]);
+
+	rest_mode_button = memnew(Button);
+	Node3DEditor::get_singleton()->add_control_to_menu_panel(rest_mode_button);
+	rest_mode_button->set_tooltip(TTR("Rest Mode\nNote: Bone poses are disabled during Rest Mode."));
+	rest_mode_button->set_toggle_mode(true);
+	rest_mode_button->set_flat(true);
+	rest_mode_button->connect("toggled", callable_mp(this, &Skeleton3DEditor::rest_mode_toggled));
+
+	rest_mode = false;
+
+	set_keyable(AnimationPlayerEditor::singleton->get_track_editor()->has_keying());
+
+	if (skeleton) {
+		skeleton->add_child(pointsm);
+		pointsm->set_skeleton_path(NodePath(""));
+		skeleton->connect("pose_updated", callable_mp(this, &Skeleton3DEditor::_draw_handles));
+		skeleton->set_selected_bone(-1);
+	}
+
+	const Color section_color = get_theme_color("prop_subsection", "Editor");
 
 	EditorInspectorSection *bones_section = memnew(EditorInspectorSection);
 	bones_section->setup("bones", "Bones", skeleton, section_color, true);
