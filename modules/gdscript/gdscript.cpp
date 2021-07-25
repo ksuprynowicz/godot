@@ -1647,10 +1647,10 @@ void GDScriptLanguage::init() {
 	for (StringName &n : class_list) {
 		String s = String(n);
 		if (s.begins_with("_")) {
-			n = s.substr(1, s.length());
+			s = s.substr(1, s.length());
 		}
 
-		if (globals.has(n)) {
+		if (globals.has(s)) {
 			continue;
 		}
 		Ref<GDScriptNativeClass> nc = memnew(GDScriptNativeClass(n));
