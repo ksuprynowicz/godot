@@ -214,6 +214,9 @@
 		<member name="screen_space_aa" type="int" setter="set_screen_space_aa" getter="get_screen_space_aa" enum="Viewport.ScreenSpaceAA" default="0">
 			Sets the screen-space antialiasing method used. Screen-space antialiasing works by selectively blurring edges in a post-process shader. It differs from MSAA which takes multiple coverage samples while rendering objects. Screen-space AA methods are typically faster than MSAA and will smooth out specular aliasing, but tend to make scenes appear blurry.
 		</member>
+		<member name="amd_fsr_quality" type="int" setter="set_amd_fsr_quality" getter="get_amd_fsr_quality" enum="Viewport.AMDFSRQuality" default="0">
+			Sets the AMD FidelityFX FSR quality. AMD FidelityFX Super Resolution is an upscaling technology that produces high quality images at fast framerates.
+		</member>
 		<member name="sdf_oversize" type="int" setter="set_sdf_oversize" getter="get_sdf_oversize" enum="Viewport.SDFOversize" default="1">
 		</member>
 		<member name="sdf_scale" type="int" setter="set_sdf_scale" getter="get_sdf_scale" enum="Viewport.SDFScale" default="1">
@@ -321,6 +324,21 @@
 		</constant>
 		<constant name="SCREEN_SPACE_AA_MAX" value="2" enum="ScreenSpaceAA">
 			Represents the size of the [enum ScreenSpaceAA] enum.
+		</constant>
+		<constant name="AMD_FSR_QUALITY_DISABLED" value="0" enum="AMDFSRQuality">
+			Do not perform any upscaling and does not apply any render scaling
+		</constant>
+		<constant name="AMD_FSR_QUALITY_PERFORMANCE" value="1" enum="AMDFSRQuality">
+			Renders the viewport at 50% resolution and then upscales it to 100%
+		</constant>
+		<constant name="AMD_FSR_QUALITY_BALANCED" value="2" enum="AMDFSRQuality">
+			Renders the viewport at 59% resolution and then upscales it to 100%
+		</constant>
+		<constant name="AMD_FSR_QUALITY_QUALITY" value="3" enum="AMDFSRQuality">
+			Renders the viewport at 67% resolution and then upscales it to 100%
+		</constant>
+		<constant name="AMD_FSR_QUALITY_ULTRA_QUALITY" value="4" enum="AMDFSRQuality">
+			Renders the viewport at 77% resolution and then upscales it to 100%
 		</constant>
 		<constant name="RENDER_INFO_OBJECTS_IN_FRAME" value="0" enum="RenderInfo">
 			Amount of objects in frame.

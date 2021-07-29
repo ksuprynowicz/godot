@@ -445,6 +445,7 @@ private:
 
 	struct RenderBuffers {
 		RenderBufferData *data = nullptr;
+		int internal_width = 0, internal_height = 0;
 		int width = 0, height = 0;
 		RS::ViewportMSAA msaa = RS::VIEWPORT_MSAA_DISABLED;
 		RS::ViewportScreenSpaceAA screen_space_aa = RS::VIEWPORT_SCREEN_SPACE_AA_DISABLED;
@@ -455,9 +456,11 @@ private:
 
 		uint64_t auto_exposure_version = 1;
 
-		RID texture; //main texture for rendering to, must be filled after done rendering
+		RID internal_texture; //main texture for rendering to, must be filled after done rendering
+		RID texture; //upscaled version of main texture (This uses the same resource as internal_texture if there is no upscaling)
 		RID depth_texture; //main depth texture
 		RID texture_fb; // framebuffer for the main texture, ONLY USED FOR MOBILE RENDERER POST EFFECTS, DO NOT USE FOR RENDERING 3D!!!
+		RID upscale_texture; //used when upscaling internal_texture (This uses the same resource as internal_texture if there is no upscaling)
 
 		RendererSceneGIRD::SDFGI *sdfgi = nullptr;
 		VolumetricFog *volumetric_fog = nullptr;
@@ -1184,7 +1187,7 @@ public:
 	virtual RD::DataFormat _render_buffers_get_color_format();
 	virtual bool _render_buffers_can_be_storage();
 	virtual RID render_buffers_create() override;
-	virtual void render_buffers_configure(RID p_render_buffers, RID p_render_target, int p_width, int p_height, RS::ViewportMSAA p_msaa, RS::ViewportScreenSpaceAA p_screen_space_aa, bool p_use_debanding, uint32_t p_view_count) override;
+	virtual void render_buffers_configure(RID p_render_buffers, RID p_render_target, int p_internal_width, int p_internal_height, int p_width, int p_height, RS::ViewportMSAA p_msaa, RenderingServer::ViewportScreenSpaceAA p_screen_space_aa, bool p_use_debanding, uint32_t p_view_count) override;
 	virtual void gi_set_use_half_resolution(bool p_enable) override;
 
 	RID render_buffers_get_ao_texture(RID p_render_buffers);
