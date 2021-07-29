@@ -33,6 +33,7 @@
 
 #include "core/math/camera_matrix.h"
 #include "servers/rendering/renderer_rd/pipeline_cache_rd.h"
+#include "servers/rendering/renderer_rd/shaders/amd_fsr.glsl.gen.h"
 #include "servers/rendering/renderer_rd/shaders/blur_raster.glsl.gen.h"
 #include "servers/rendering/renderer_rd/shaders/bokeh_dof.glsl.gen.h"
 #include "servers/rendering/renderer_rd/shaders/bokeh_dof_raster.glsl.gen.h"
@@ -69,6 +70,40 @@
 class EffectsRD {
 private:
 	bool prefer_raster_effects;
+	enum AMDFSRMode {
+		AMD_FSR_MODE_NORMAL,
+		AMD_FSR_MODE_FALLBACK,
+
+		AMD_FSR_MODE_MAX
+	};
+
+	enum AMDFSRPass {
+		AMD_FSR_PASS_EASU = 0,
+		AMD_FSR_PASS_RCAS = 1
+	};
+
+	struct AMDFSRVector4 {
+		unsigned int x;
+		unsigned int y;
+		unsigned int z;
+		unsigned int w;
+	};
+
+	struct AMDFSRPushConstant {
+		AMDFSRVector4 EasuConst0;
+		AMDFSRVector4 EasuConst1;
+		AMDFSRVector4 EasuConst2;
+		AMDFSRVector4 EasuConst3;
+		AMDFSRVector4 RcasConst0;
+		AMDFSRVector4 Pass;
+	};
+
+	struct AMDFSR {
+		AMDFSRPushConstant push_constant;
+		AmdFsrShaderRD shader;
+		RID shader_version;
+		RID pipelines[AMD_FSR_MODE_MAX];
+	} AMD_FSR;
 
 	enum FSRUpscalePass {
 		FSR_UPSCALE_PASS_EASU = 0,

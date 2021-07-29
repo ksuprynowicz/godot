@@ -1472,7 +1472,7 @@ RID RendererSceneRenderRD::render_buffers_create() {
 void RendererSceneRenderRD::_allocate_blur_textures(RenderBuffers *rb) {
 	ERR_FAIL_COND(!rb->blur[0].texture.is_null());
 
-	uint32_t mipmaps_required = Image::get_image_required_mipmaps(rb->width, rb->height, Image::FORMAT_RGBAH);
+	uint32_t mipmaps_required = Image::get_image_required_mipmaps(rb->internal_width, rb->internal_height, Image::FORMAT_RGBAH);
 
 	// TODO make sure texture_create_shared_from_slice works for multiview
 
@@ -1637,8 +1637,8 @@ void RendererSceneRenderRD::_allocate_depth_backbuffer_textures(RenderBuffers *r
 void RendererSceneRenderRD::_allocate_luminance_textures(RenderBuffers *rb) {
 	ERR_FAIL_COND(!rb->luminance.current.is_null());
 
-	int w = rb->width;
-	int h = rb->height;
+	int w = rb->internal_width;
+	int h = rb->internal_height;
 
 	while (true) {
 		w = MAX(w / 8, 1);
@@ -2654,8 +2654,8 @@ void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p
 			tf.texture_type = RD::TEXTURE_TYPE_2D_ARRAY;
 		}
 		tf.format = _render_buffers_get_color_format();
-		tf.width = rb->internal_width; // If set to rb->width, msaa won't crash
-		tf.height = rb->internal_height; // If set to rb->width, msaa won't crash
+		tf.width = rb->internal_width;
+		tf.height = rb->internal_height;
 		tf.array_layers = rb->view_count; // create a layer for every view
 		tf.usage_bits = RD::TEXTURE_USAGE_SAMPLING_BIT | (_render_buffers_can_be_storage() ? RD::TEXTURE_USAGE_STORAGE_BIT : 0) | RD::TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
 		if (rb->msaa != RS::VIEWPORT_MSAA_DISABLED) {
@@ -3540,7 +3540,7 @@ void RendererSceneRenderRD::_update_volumetric_fog(RID p_render_buffers, RID p_e
 	ERR_FAIL_COND(!rb);
 	RendererSceneEnvironmentRD *env = environment_owner.getornull(p_environment);
 
-	float ratio = float(rb->width) / float((rb->width + rb->height) / 2);
+	float ratio = float(rb->internal_width) / float((rb->internal_width + rb->internal_height) / 2);
 	uint32_t target_width = uint32_t(float(volumetric_fog_size) * ratio);
 	uint32_t target_height = uint32_t(float(volumetric_fog_size) / ratio);
 
@@ -3843,14 +3843,14 @@ void RendererSceneRenderRD::_update_volumetric_fog(RID p_render_buffers, RID p_e
 		uint32_t cluster_size = rb->cluster_builder->get_cluster_size();
 		params.cluster_shift = get_shift_from_power_of_2(cluster_size);
 
-		uint32_t cluster_screen_width = (rb->width - 1) / cluster_size + 1;
-		uint32_t cluster_screen_height = (rb->height - 1) / cluster_size + 1;
+		uint32_t cluster_screen_width = (rb->internal_width - 1) / cluster_size + 1;
+		uint32_t cluster_screen_height = (rb->internal_height - 1) / cluster_size + 1;
 		params.cluster_type_size = cluster_screen_width * cluster_screen_height * (32 + 32);
 		params.cluster_width = cluster_screen_width;
 		params.max_cluster_element_count_div_32 = max_cluster_elements / 32;
 
-		params.screen_size[0] = rb->width;
-		params.screen_size[1] = rb->height;
+		params.screen_size[0] = rb->internal_width;
+		params.screen_size[1] = rb->internal_height;
 	}
 
 	/*	Vector2 dssize = directional_shadow_get_size();
@@ -4263,7 +4263,17 @@ void RendererSceneRenderRD::_debug_draw_cluster(RID p_render_buffers) {
 				default: {
 				}
 			}
-			current_cluster_builder->debug(elem_type);
+			if (current_cluster_builder != nullptr) {
+				current_cluster_builder->debug(elem_type);
+			}
+		}
+
+		RENDER_TIMESTAMP("Tonemap");
+
+		_render_buffers_post_process_and_tonemap(&render_data);
+		_render_buffers_debug_draw(p_render_buffers, p_shadow_atlas, p_occluder_debug_tex);
+		if (debug_draw == RS::VIEWPORT_DEBUG_DRAW_SDFGI && rb != nullptr && rb->sdfgi != nullptr) {
+			rb->sdfgi->debug_draw(render_data.cam_projection, render_data.cam_transform, rb->internal_width, rb->internal_height, rb->render_target, rb->internal_texture);
 		}
 	}
 }

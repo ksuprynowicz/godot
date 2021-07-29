@@ -34,6 +34,11 @@
 #include "core/math/math_defs.h"
 #include "core/os/os.h"
 
+#define A_CPU
+
+#include "servers/rendering/renderer_rd/shaders/ffx_a.h"
+#include "servers/rendering/renderer_rd/shaders/ffx_fsr1.h"
+
 #include "servers/rendering/renderer_rd/renderer_compositor_rd.h"
 #include "thirdparty/misc/cubemap_coeffs.h"
 
@@ -2578,6 +2583,11 @@ EffectsRD::~EffectsRD() {
 	RD::get_singleton()->free(index_buffer); //array gets freed as dependency
 	RD::get_singleton()->free(filter.coefficient_buffer);
 
+	RD::get_singleton()->free(ssao.mirror_sampler);
+	RD::get_singleton()->free(ssao.gather_constants_buffer);
+	RD::get_singleton()->free(ssao.importance_map_load_counter);
+
+	AMD_FSR.shader.version_free(AMD_FSR.shader_version);
 	if (prefer_raster_effects) {
 		blur_raster.shader.version_free(blur_raster.shader_version);
 		bokeh.raster_shader.version_free(blur_raster.shader_version);
