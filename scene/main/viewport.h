@@ -114,6 +114,15 @@ public:
 		SCREEN_SPACE_AA_MAX
 	};
 
+	enum AMDFSRQuality {
+		AMD_FSR_QUALITY_DISABLED,
+		AMD_FSR_QUALITY_PERFORMANCE,
+		AMD_FSR_QUALITY_BALANCED,
+		AMD_FSR_QUALITY_QUALITY,
+		AMD_FSR_QUALITY_ULTRA_QUALITY,
+		AMD_FSR_QUALITY_MAX
+	};
+
 	enum RenderInfo {
 		RENDER_INFO_OBJECTS_IN_FRAME,
 		RENDER_INFO_PRIMITIVES_IN_FRAME,
@@ -282,6 +291,7 @@ private:
 
 	MSAA msaa = MSAA_DISABLED;
 	ScreenSpaceAA screen_space_aa = SCREEN_SPACE_AA_DISABLED;
+	AMDFSRQuality amd_fsr_quality = AMD_FSR_QUALITY_DISABLED;
 	bool use_debanding = false;
 	float lod_threshold = 1.0;
 	bool use_occlusion_culling = false;
@@ -496,6 +506,9 @@ public:
 	void set_screen_space_aa(ScreenSpaceAA p_screen_space_aa);
 	ScreenSpaceAA get_screen_space_aa() const;
 
+	void set_amd_fsr_quality(AMDFSRQuality p_amd_fsr_quality);
+	AMDFSRQuality get_amd_fsr_quality() const;
+
 	void set_use_debanding(bool p_use_debanding);
 	bool is_using_debanding() const;
 
@@ -705,6 +718,7 @@ VARIANT_ENUM_CAST(SubViewport::UpdateMode);
 VARIANT_ENUM_CAST(Viewport::ShadowAtlasQuadrantSubdiv);
 VARIANT_ENUM_CAST(Viewport::MSAA);
 VARIANT_ENUM_CAST(Viewport::ScreenSpaceAA);
+VARIANT_ENUM_CAST(Viewport::AMDFSRQuality);
 VARIANT_ENUM_CAST(Viewport::DebugDraw);
 VARIANT_ENUM_CAST(Viewport::SDFScale);
 VARIANT_ENUM_CAST(Viewport::SDFOversize);
