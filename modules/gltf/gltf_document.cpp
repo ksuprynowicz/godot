@@ -3008,16 +3008,18 @@ Error GLTFDocument::_parse_images(Ref<GLTFState> state, const String &p_base_pat
 		} else if (mimetype == "image/jpeg") { // Loader buffer as JPEG.
 			ERR_FAIL_COND_V(Image::_jpg_mem_loader_func == nullptr, ERR_UNAVAILABLE);
 			img = Image::_jpg_mem_loader_func(data_ptr, data_size);
-		} else {
+		}
+
+		if (img.is_null()) {
 			// We can land here if we got an URI with base64-encoded data with application/* MIME type,
 			// and the optional mimeType property was not defined to tell us how to handle this data (or was invalid).
 			// So let's try PNG first, then JPEG.
 			ERR_FAIL_COND_V(Image::_png_mem_loader_func == nullptr, ERR_UNAVAILABLE);
 			img = Image::_png_mem_loader_func(data_ptr, data_size);
-			if (img.is_null()) {
-				ERR_FAIL_COND_V(Image::_jpg_mem_loader_func == nullptr, ERR_UNAVAILABLE);
-				img = Image::_jpg_mem_loader_func(data_ptr, data_size);
-			}
+		}
+		if (img.is_null()) {
+			ERR_FAIL_COND_V(Image::_jpg_mem_loader_func == nullptr, ERR_UNAVAILABLE);
+			img = Image::_jpg_mem_loader_func(data_ptr, data_size);
 		}
 
 		if (img.is_null()) {
