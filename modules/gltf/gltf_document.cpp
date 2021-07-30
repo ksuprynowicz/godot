@@ -3519,13 +3519,14 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> state) {
 				material->set_cull_mode(BaseMaterial3D::CULL_DISABLED);
 			}
 		}
-
 		if (d.has("alphaMode")) {
 			const String &am = d["alphaMode"];
-			if (am == "BLEND") {
-				material->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA_DEPTH_PRE_PASS);
-			} else if (am == "MASK") {
+			if (am == "BLEND" || am == "MASK") {
 				material->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA_SCISSOR);
+				material->set_alpha_antialiasing(BaseMaterial3D::ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE_AND_TO_ONE);
+				material->set_depth_draw_mode(BaseMaterial3D::DEPTH_DRAW_ALWAYS);
+			}
+			if (am == "MASK") {
 				if (d.has("alphaCutoff")) {
 					material->set_alpha_scissor_threshold(d["alphaCutoff"]);
 				} else {
