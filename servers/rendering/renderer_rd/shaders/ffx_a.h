@@ -110,7 +110,8 @@
 #ifdef A_CPU
  // Supporting user defined overrides.
  #ifndef A_RESTRICT
-  #define A_RESTRICT __restrict
+  //#define A_RESTRICT __restrict Godot for some platforms do not like this
+  #define A_RESTRICT
  #endif
 //------------------------------------------------------------------------------------------------------------------------------
  #ifndef A_STATIC

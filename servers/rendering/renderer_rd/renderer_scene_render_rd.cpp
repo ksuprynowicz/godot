@@ -2637,8 +2637,8 @@ void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p
 			tf.texture_type = RD::TEXTURE_TYPE_2D_ARRAY;
 		}
 		tf.format = _render_buffers_get_color_format();
-		tf.width = rb->internal_width;
-		tf.height = rb->internal_height;
+		tf.width = rb->internal_width; // If set to rb->width, msaa won't crash
+		tf.height = rb->internal_height; // If set to rb->width, msaa won't crash
 		tf.array_layers = rb->view_count; // create a layer for every view
 		tf.usage_bits = RD::TEXTURE_USAGE_SAMPLING_BIT | (_render_buffers_can_be_storage() ? RD::TEXTURE_USAGE_STORAGE_BIT : 0) | RD::TEXTURE_USAGE_COLOR_ATTACHMENT_BIT;
 		if (rb->msaa != RS::VIEWPORT_MSAA_DISABLED) {
@@ -2648,7 +2648,7 @@ void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p
 
 		rb->internal_texture = RD::get_singleton()->texture_create(tf, RD::TextureView());
 
-		if (p_internal_width != p_width || p_internal_height != p_height) {
+		if ((p_internal_width != p_width || p_internal_height != p_height)) {
 			tf.width = rb->width;
 			tf.height = rb->height;
 			rb->texture = RD::get_singleton()->texture_create(tf, RD::TextureView());

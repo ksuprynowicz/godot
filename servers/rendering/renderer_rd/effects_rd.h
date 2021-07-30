@@ -89,11 +89,10 @@ private:
 	};
 
 	struct AMDFSRPushConstant {
-		AMDFSRVector4 EasuConst0;
-		AMDFSRVector4 EasuConst1;
-		AMDFSRVector4 EasuConst2;
-		AMDFSRVector4 EasuConst3;
-		AMDFSRVector4 RcasConst0;
+		AMDFSRVector4 Const0;
+		AMDFSRVector4 Const1;
+		AMDFSRVector4 Const2;
+		AMDFSRVector4 Const3;
 		AMDFSRVector4 Pass;
 	};
 
