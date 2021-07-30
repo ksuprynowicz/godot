@@ -245,9 +245,6 @@ RID EffectsRD::_get_compute_uniform_set_from_image_pair(RID p_texture1, RID p_te
 void EffectsRD::amd_fsr(RID p_source_rd_texture, RID p_secondary_texture, RID p_destination_texture, const Size2i &p_internal_size, const Size2i &p_size, float p_sharpness) {
 	memset(&AMD_FSR.push_constant, 0, sizeof(AMDFSRPushConstant));
 
-	FsrEasuCon(reinterpret_cast<AU1*>(&AMD_FSR.push_constant.EasuConst0), reinterpret_cast<AU1*>(&AMD_FSR.push_constant.EasuConst1), reinterpret_cast<AU1*>(&AMD_FSR.push_constant.EasuConst2), reinterpret_cast<AU1*>(&AMD_FSR.push_constant.EasuConst3), static_cast<AF1>(p_internal_size.x), static_cast<AF1>(p_internal_size.y), static_cast<AF1>(p_internal_size.x), static_cast<AF1>(p_internal_size.y), static_cast<AF1>(p_size.x), static_cast<AF1>(p_size.y));
-	FsrRcasCon(reinterpret_cast<AU1*>(&AMD_FSR.push_constant.RcasConst0), static_cast<AF1>(p_sharpness));
-
 	int dispatch_x = (p_size.x + 15) / 16;
 	int dispatch_y = (p_size.y + 15) / 16;
 
@@ -257,23 +254,27 @@ void EffectsRD::amd_fsr(RID p_source_rd_texture, RID p_secondary_texture, RID p_
 	RD::get_singleton()->compute_list_bind_compute_pipeline(compute_list, AMD_FSR.pipelines[fsr_mode]);
 
 	//FSR Easc
+	FsrEasuCon(reinterpret_cast<AU1*>(&AMD_FSR.push_constant.Const0), reinterpret_cast<AU1*>(&AMD_FSR.push_constant.Const1), reinterpret_cast<AU1*>(&AMD_FSR.push_constant.Const2), reinterpret_cast<AU1*>(&AMD_FSR.push_constant.Const3), static_cast<AF1>(p_internal_size.x), static_cast<AF1>(p_internal_size.y), static_cast<AF1>(p_internal_size.x), static_cast<AF1>(p_internal_size.y), static_cast<AF1>(p_size.x), static_cast<AF1>(p_size.y));
+	
 	AMD_FSR.push_constant.Pass.x = AMD_FSR_PASS_EASU;
 	RD::get_singleton()->compute_list_bind_uniform_set(compute_list, _get_compute_uniform_set_from_texture(p_source_rd_texture), 0);
-	RD::get_singleton()->compute_list_bind_uniform_set(compute_list, _get_compute_uniform_set_from_texture(p_secondary_texture), 1);
+	RD::get_singleton()->compute_list_bind_uniform_set(compute_list, _get_uniform_set_from_image(p_secondary_texture), 1);
 
 	RD::get_singleton()->compute_list_set_push_constant(compute_list, &AMD_FSR.push_constant, sizeof(AMDFSRPushConstant));
 
-	RD::get_singleton()->compute_list_dispatch_threads(compute_list, dispatch_x, dispatch_y, 1);
+	RD::get_singleton()->compute_list_dispatch(compute_list, dispatch_x, dispatch_y, 1);
 	RD::get_singleton()->compute_list_add_barrier(compute_list);
 
 	//FSR Rcas
+	FsrRcasCon(reinterpret_cast<AU1*>(&AMD_FSR.push_constant.Const0), static_cast<AF1>(p_sharpness));
+
 	AMD_FSR.push_constant.Pass.x = AMD_FSR_PASS_RCAS;
-	//RD::get_singleton()->compute_list_bind_uniform_set(compute_list, _get_compute_uniform_set_from_texture(p_secondary_texture), 0);
-	//RD::get_singleton()->compute_list_bind_uniform_set(compute_list, _get_uniform_set_from_texture(p_destination_texture), 1);
+	RD::get_singleton()->compute_list_bind_uniform_set(compute_list, _get_compute_uniform_set_from_texture(p_secondary_texture), 0);
+	RD::get_singleton()->compute_list_bind_uniform_set(compute_list, _get_uniform_set_from_image(p_destination_texture), 1);
 
-	//RD::get_singleton()->compute_list_set_push_constant(compute_list, &AMD_FSR.push_constant, sizeof(AMDFSRPushConstant));
+	RD::get_singleton()->compute_list_set_push_constant(compute_list, &AMD_FSR.push_constant, sizeof(AMDFSRPushConstant));
 
-	//RD::get_singleton()->compute_list_dispatch_threads(compute_list, dispatch_x, dispatch_y, 1);
+	RD::get_singleton()->compute_list_dispatch(compute_list, dispatch_x, dispatch_y, 1);
 
 	RD::get_singleton()->compute_list_end(compute_list);
 }
