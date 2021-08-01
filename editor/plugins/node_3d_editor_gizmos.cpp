@@ -2073,6 +2073,7 @@ void Position3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 
 /////
 
+/*
 Skeleton3DGizmoPlugin::Skeleton3DGizmoPlugin() {
 	Color gizmo_color = EDITOR_DEF("editors/3d_gizmos/gizmo_colors/skeleton", Color(1, 0.8, 0.4));
 	create_material("skeleton_material", gizmo_color);
@@ -2224,6 +2225,7 @@ void Skeleton3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	Ref<ArrayMesh> m = surface_tool->commit();
 	p_gizmo->add_mesh(m, Ref<Material>(), Transform3D(), skel->register_skin(Ref<Skin>()));
 }
+*/
 
 ////
 
