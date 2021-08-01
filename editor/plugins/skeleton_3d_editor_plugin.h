@@ -33,6 +33,9 @@
 
 #include "editor/editor_node.h"
 #include "editor/editor_plugin.h"
+#include "node_3d_editor_plugin.h"
+#include "scene/3d/camera_3d.h"
+#include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/skeleton_3d.h"
 
 class EditorInspectorPluginSkeleton;
@@ -122,6 +125,10 @@ class Skeleton3DEditor : public VBoxContainer {
 	friend class Skeleton3DEditorPlugin;
 
 	enum Menu {
+		MENU_OPTION_INIT_POSE,
+		MENU_OPTION_INSERT_KEYS,
+		MENU_OPTION_INSERT_KEYS_EXISTED,
+		MENU_OPTION_POSE_TO_REST,
 		MENU_OPTION_CREATE_PHYSICAL_SKELETON
 	};
 
@@ -140,13 +147,28 @@ class Skeleton3DEditor : public VBoxContainer {
 	BoneTransformEditor *pose_editor = nullptr;
 	BoneTransformEditor *custom_pose_editor = nullptr;
 
+	VSeparator *separator;
 	MenuButton *options = nullptr;
+	Button *edit_mode_button;
+	Button *rest_mode_button;
+
+	bool edit_mode = false;
+	bool rest_mode = false;
+
 	EditorFileDialog *file_dialog = nullptr;
 
 	UndoRedo *undo_redo = nullptr;
 
+	bool keyable;
+
+	static Skeleton3DEditor *singleton;
+
 	void _on_click_option(int p_option);
 	void _file_selected(const String &p_file);
+	// void _menu_tool_item_pressed(int p_option);
+	TreeItem *_find(TreeItem *p_node, const NodePath &p_path);
+	void edit_mode_toggled(const bool pressed);
+	void rest_mode_toggled(const bool pressed);
 
 	EditorFileDialog *file_export_lib = nullptr;
 
@@ -155,6 +177,10 @@ class Skeleton3DEditor : public VBoxContainer {
 
 	void create_editors();
 
+	void init_pose();
+	void insert_keys(bool p_all_bones);
+	void pose_to_rest();
+
 	void create_physical_skeleton();
 	PhysicalBone3D *create_physical_bone(int bone_id, int bone_child_id, const Vector<BoneInfo> &bones_infos);
 
@@ -162,15 +188,39 @@ class Skeleton3DEditor : public VBoxContainer {
 	bool can_drop_data_fw(const Point2 &p_point, const Variant &p_data, Control *p_from) const;
 	void drop_data_fw(const Point2 &p_point, const Variant &p_data, Control *p_from);
 
+	Ref<ShaderMaterial> handle_material;
+	Ref<Shader> handle_shader;
+	MeshInstance3D *pointsm;
+	Ref<ArrayMesh> am;
+	void _hide_handles();
+	void _draw_handles();
+
+	Transform3D original_local;
+	Transform3D original_global;
+	Transform3D original_to_local;
+
+	void _update_sub_gizmo();
+
 protected:
 	void _notification(int p_what);
 	void _node_removed(Node *p_node);
 	static void _bind_methods();
 
 public:
+	static Skeleton3DEditor *get_singleton() { return singleton; }
+
+	void select_bone(int p_idx);
+
+	virtual bool forward_spatial_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event);
 	void move_skeleton_bone(NodePath p_skeleton_path, int32_t p_selected_boneidx, int32_t p_target_boneidx);
 
+	void set_keyable(const bool p_keyable);
+
 	Skeleton3D *get_skeleton() const { return skeleton; };
+
+	bool is_edit_mode() const { return edit_mode; }
+	bool is_rest_mode() const { return rest_mode; }
+	void set_rest_mode_toggled(const bool pressed, const bool destructing = false);
 
 	void _joint_tree_selection_changed();
 	void _joint_tree_rmb_select(const Vector2 &p_pos);
@@ -186,22 +236,67 @@ class EditorInspectorPluginSkeleton : public EditorInspectorPlugin {
 
 	friend class Skeleton3DEditorPlugin;
 
+	Skeleton3DEditor *skel_editor;
 	EditorNode *editor;
+	UndoRedo *undo_redo;
+
+	void set_rest_mode_toggled(const bool p_pressed);
+
+protected:
+	static void _bind_methods();
 
 public:
+	virtual bool forward_spatial_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) {
+		return skel_editor->forward_spatial_gui_input(p_camera, p_event);
+	};
 	virtual bool can_handle(Object *p_object) override;
 	virtual void parse_begin(Object *p_object) override;
+	UndoRedo *get_undo_redo() { return undo_redo; }
 };
 
 class Skeleton3DEditorPlugin : public EditorPlugin {
 	GDCLASS(Skeleton3DEditorPlugin, EditorPlugin);
 
+	EditorInspectorPluginSkeleton *skeleton_plugin;
 	EditorNode *editor;
 
 public:
-	Skeleton3DEditorPlugin(EditorNode *p_node);
+	virtual bool forward_spatial_gui_input(Camera3D *p_camera, const Ref<InputEvent> &p_event) override {
+		return skeleton_plugin->forward_spatial_gui_input(p_camera, p_event);
+	}
+	bool has_main_screen() const override { return false; }
+	virtual bool handles(Object *p_object) const override;
 
 	virtual String get_name() const override { return "Skeleton3D"; }
+
+	Skeleton3DEditorPlugin(EditorNode *p_node);
 };
+
+
+class Skeleton3DGizmoPlugin : public EditorNode3DGizmoPlugin {
+	GDCLASS(Skeleton3DGizmoPlugin, EditorNode3DGizmoPlugin);
+
+    Color skeleton_color = Color(1, 0.8, 0.4);
+    Color selected_bone_color = Color(1, 0, 0);
+    float bone_axis_length = 0.015;
+    Ref<ShaderMaterial> selected_mat;
+    Ref<Shader> selected_sh;
+
+public:
+	bool has_gizmo(Node3D *p_spatial) override;
+	String get_gizmo_name() const override;
+	int get_priority() const override;
+
+	int subgizmos_intersect_ray(const EditorNode3DGizmo *p_gizmo, Camera3D *p_camera, const Vector2 &p_point) const override;
+	// Vector<int> subgizmos_intersect_frustum(const EditorNode3DGizmo *p_gizmo, const Camera3D *p_camera, const Vector<Plane> &p_frustum) const override;
+	Transform3D get_subgizmo_transform(const EditorNode3DGizmo *p_gizmo, int p_id) const override;
+	void set_subgizmo_transform(const EditorNode3DGizmo *p_gizmo, int p_id, Transform3D p_transform) const override;
+	// void commit_subgizmos(const EditorNode3DGizmo *p_gizmo, const Vector<int> &p_ids, const Vector<Transform3D> &p_restore, bool p_cancel = false) const override;
+
+	void redraw(EditorNode3DGizmo *p_gizmo) override;
+
+	Skeleton3DGizmoPlugin();
+};
+
 
 #endif // SKELETON_3D_EDITOR_PLUGIN_H
