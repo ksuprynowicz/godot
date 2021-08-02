@@ -6591,13 +6591,15 @@ Error GLTFDocument::_serialize_file(Ref<GLTFState> state, const String p_path) {
 			json += " ";
 		}
 		CharString cs = json.utf8();
-		const uint32_t text_chunk_length = cs.length();
+		uint32_t text_chunk_length = cs.length();
+		text_chunk_length = (text_chunk_length + 4 - 1) / 4 * 4;
 
-		const uint32_t text_chunk_type = 0x4E4F534A; //JSON
+		uint32_t text_chunk_type = 0x4E4F534A; //JSON
 		int32_t binary_data_length = 0;
 		if (state->buffers.size()) {
 			binary_data_length = state->buffers[0].size();
 		}
+		binary_data_length = (binary_data_length + 4 - 1) / 4 * 4;
 		const int32_t binary_chunk_length = binary_data_length;
 		const int32_t binary_chunk_type = 0x004E4942; //BIN
 
