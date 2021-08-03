@@ -248,7 +248,7 @@ void EffectsRD::amd_fsr(RID p_source_rd_texture, RID p_secondary_texture, RID p_
 	int dispatch_x = (p_size.x + 15) / 16;
 	int dispatch_y = (p_size.y + 15) / 16;
 
-	AMDFSRMode fsr_mode = AMD_FSR_MODE_NORMAL; // FINISH
+	AMDFSRMode fsr_mode = AMD_FSR_MODE_FALLBACK; // FINISH
 
 	RD::ComputeListID compute_list = RD::get_singleton()->compute_list_begin();
 	RD::get_singleton()->compute_list_bind_compute_pipeline(compute_list, AMD_FSR.pipelines[fsr_mode]);

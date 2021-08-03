@@ -2692,7 +2692,8 @@ void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p
 		rb->texture_fb = RD::get_singleton()->framebuffer_create(fb, RenderingDevice::INVALID_ID, rb->view_count);
 	}
 
-	rb->data->configure(rb->internal_texture, rb->depth_texture, p_width, p_height, p_msaa, p_view_count);
+	//rb->data->configure(rb->internal_texture, rb->depth_texture, p_width, p_height, p_msaa, p_view_count);
+	rb->data->configure(rb->internal_texture, rb->depth_texture, p_internal_width, p_internal_height, p_msaa, p_view_count);
 
 	if (is_clustered_enabled()) {
 		rb->cluster_builder->setup(Size2i(p_width, p_height), max_cluster_elements, rb->depth_texture, storage->sampler_rd_get_default(RS::CANVAS_ITEM_TEXTURE_FILTER_NEAREST, RS::CANVAS_ITEM_TEXTURE_REPEAT_DISABLED), rb->internal_texture);

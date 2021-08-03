@@ -548,7 +548,7 @@ void RendererViewport::draw_viewports() {
 			// override our size, make sure it matches our required size and is created as a stereo target
 			vp->size = xr_interface->get_render_targetsize();
 			uint32_t view_count = xr_interface->get_view_count();
-			RSG::storage->render_target_set_size(vp->render_target, vp->size.x, vp->size.y, view_count);
+			RSG::storage->render_target_set_size(vp->render_target, vp->internal_size.x, vp->internal_size.y, view_count);
 
 			// check for an external texture destination (disabled for now, not yet supported)
 			// RSG::storage->render_target_set_external_texture(vp->render_target, xr_interface->get_external_texture_for_eye(leftOrMono));
@@ -711,10 +711,8 @@ void RendererViewport::viewport_set_size(RID p_viewport, int p_width, int p_heig
 	viewport->size = Size2(p_width, p_height);
 	viewport->internal_size = Size2(render_width, render_height);
 
-	//print_line(vformat("Viewport %f quality: %f", p_viewport.get_id(), viewport->quality_mode));
-
 	uint32_t view_count = viewport->get_view_count();
-	RSG::storage->render_target_set_size(viewport->render_target, p_width, p_height, view_count);
+	RSG::storage->render_target_set_size(viewport->render_target, render_width, render_height, view_count);
 	if (viewport->render_buffers.is_valid()) {
 		if (render_width == 0 || render_height == 0) {
 			RSG::scene->free(viewport->render_buffers);
