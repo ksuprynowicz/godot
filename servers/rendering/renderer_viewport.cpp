@@ -800,6 +800,14 @@ void RendererViewport::viewport_set_fsr_upscale_mipmap_bias(RID p_viewport, floa
 	}
 }
 
+void RendererViewport::viewport_set_fsr_upscale_sharpness(RID p_viewport, float p_sharpness) {
+	Viewport *viewport = viewport_owner.getornull(p_viewport);
+	ERR_FAIL_COND(!viewport);
+
+	viewport->fsr_upscale_sharpness = p_sharpness;
+	RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, viewport->size.width, viewport->size.height, viewport->fsr_upscale_sharpness, viewport->msaa, viewport->screen_space_aa, viewport->use_debanding, viewport->get_view_count());
+}
+
 void RendererViewport::viewport_set_clear_mode(RID p_viewport, RS::ViewportClearMode p_clear_mode) {
 	Viewport *viewport = viewport_owner.getornull(p_viewport);
 	ERR_FAIL_COND(!viewport);
