@@ -2838,7 +2838,6 @@ void Viewport::set_fsr_upscale_quality(FSRUpscaleQuality p_fsr_upscale_quality) 
 		return;
 	}
 	fsr_upscale_quality = p_fsr_upscale_quality;
-	RS::ViewportFSRUpscaleQualityMode mode = RS::ViewportFSRUpscaleQualityMode(p_fsr_upscale_quality);
 	RS::get_singleton()->viewport_set_fsr_upscale_quality(viewport, RS::ViewportFSRUpscaleQualityMode(p_fsr_upscale_quality));
 }
 
@@ -3644,7 +3643,7 @@ void Viewport::_bind_methods() {
 	ADD_GROUP("Rendering", "");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "msaa", PROPERTY_HINT_ENUM, String::utf8("Disabled (Fastest),2× (Fast),4× (Average),8× (Slow),16× (Slower)")), "set_msaa", "get_msaa");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "screen_space_aa", PROPERTY_HINT_ENUM, "Disabled (Fastest),FXAA (Fast)"), "set_screen_space_aa", "get_screen_space_aa");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fsr_upscale_quality", PROPERTY_HINT_ENUM, "Disabled (Slowest),Performance (Fastest),Balanced (Faster),Quality (Medium),Ultra Quality (Slower)"), "set_fsr_upscale_quality", "get_fsr_upscale_quality");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fsr_upscale_quality", PROPERTY_HINT_ENUM, "Disabled (Slowest),Performance (Fastest),Balanced (Fast),Quality (Medium),Ultra Quality (Slow)"), "set_fsr_upscale_quality", "get_fsr_upscale_quality");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fsr_upscale_sharpness", PROPERTY_HINT_RANGE, "0,2,0.1"), "set_fsr_upscale_sharpness", "get_fsr_upscale_sharpness");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_debanding"), "set_use_debanding", "is_using_debanding");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_occlusion_culling"), "set_use_occlusion_culling", "is_using_occlusion_culling");
