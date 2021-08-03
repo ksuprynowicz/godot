@@ -1389,7 +1389,7 @@ RID RendererSceneRenderRD::render_buffers_create() {
 void RendererSceneRenderRD::_allocate_blur_textures(RenderBuffers *rb) {
 	ERR_FAIL_COND(!rb->blur[0].texture.is_null());
 
-	uint32_t mipmaps_required = Image::get_image_required_mipmaps(rb->internal_width, rb->internal_height, Image::FORMAT_RGBAH);
+	uint32_t mipmaps_required = Image::get_image_required_mipmaps(rb->width, rb->height, Image::FORMAT_RGBAH);
 
 	// TODO make sure texture_create_shared_from_slice works for multiview
 
@@ -1407,6 +1407,10 @@ void RendererSceneRenderRD::_allocate_blur_textures(RenderBuffers *rb) {
 	}
 	tf.mipmaps = mipmaps_required;
 
+	rb->sss_texture = RD::get_singleton()->texture_create(tf, RD::TextureView());
+
+	tf.width = rb->width;
+	tf.height = rb->height;
 	rb->blur[0].texture = RD::get_singleton()->texture_create(tf, RD::TextureView());
 	//the second one is smaller (only used for separatable part of blur)
 	tf.width >>= 1;
@@ -1416,8 +1420,8 @@ void RendererSceneRenderRD::_allocate_blur_textures(RenderBuffers *rb) {
 
 	// FINISH blur
 
-	int base_width = rb->internal_width;
-	int base_height = rb->internal_height;
+	int base_width = rb->width;
+	int base_height = rb->height;
 
 	for (uint32_t i = 0; i < mipmaps_required; i++) {
 		RenderBuffers::Blur::Mipmap mm;
@@ -1550,8 +1554,8 @@ void RendererSceneRenderRD::_allocate_depth_backbuffer_textures(RenderBuffers *r
 void RendererSceneRenderRD::_allocate_luminance_textures(RenderBuffers *rb) {
 	ERR_FAIL_COND(!rb->luminance.current.is_null());
 
-	int w = rb->internal_width;
-	int h = rb->internal_height;
+	int w = rb->width;
+	int h = rb->height;
 
 	while (true) {
 		w = MAX(w / 8, 1);
@@ -1638,6 +1642,11 @@ void RendererSceneRenderRD::_free_render_buffer_data(RenderBuffers *rb) {
 	if (rb->depth_back_texture.is_valid()) {
 		RD::get_singleton()->free(rb->depth_back_texture);
 		rb->depth_back_texture = RID();
+	}
+
+	if (rb->sss_texture.is_valid()) {
+		RD::get_singleton()->free(rb->sss_texture);
+		rb->sss_texture = RID();
 	}
 
 	for (int i = 0; i < 2; i++) {
@@ -1740,7 +1749,7 @@ void RendererSceneRenderRD::_process_sss(RID p_render_buffers, const CameraMatri
 		_allocate_blur_textures(rb);
 	}
 
-	storage->get_effects()->sub_surface_scattering(rb->texture, rb->blur[0].mipmaps[0].texture, rb->depth_texture, p_camera, Size2i(rb->width, rb->height), sss_scale, sss_depth_scale, sss_quality);
+	storage->get_effects()->sub_surface_scattering(rb->internal_texture, rb->sss_texture, rb->depth_texture, p_camera, Size2i(rb->internal_width, rb->internal_height), sss_scale, sss_depth_scale, sss_quality);
 }
 
 void RendererSceneRenderRD::_process_ssr(RID p_render_buffers, RID p_dest_framebuffer, RID p_normal_buffer, RID p_specular_buffer, RID p_metallic, const Color &p_metallic_mask, RID p_environment, const CameraMatrix &p_projection, bool p_use_additive) {
@@ -1778,8 +1787,8 @@ void RendererSceneRenderRD::_process_ssr(RID p_render_buffers, RID p_dest_frameb
 	if (ssr_roughness_quality != RS::ENV_SSR_ROUGNESS_QUALITY_DISABLED && !rb->ssr.blur_radius[0].is_valid()) {
 		RD::TextureFormat tf;
 		tf.format = RD::DATA_FORMAT_R8_UNORM;
-		tf.width = rb->width / 2;
-		tf.height = rb->height / 2;
+		tf.width = rb->internal_width / 2;
+		tf.height = rb->internal_height / 2;
 		tf.texture_type = RD::TEXTURE_TYPE_2D;
 		tf.usage_bits = RD::TEXTURE_USAGE_STORAGE_BIT | RD::TEXTURE_USAGE_SAMPLING_BIT;
 
@@ -1791,8 +1800,8 @@ void RendererSceneRenderRD::_process_ssr(RID p_render_buffers, RID p_dest_frameb
 		_allocate_blur_textures(rb);
 	}
 
-	storage->get_effects()->screen_space_reflection(rb->texture, p_normal_buffer, ssr_roughness_quality, rb->ssr.blur_radius[0], rb->ssr.blur_radius[1], p_metallic, p_metallic_mask, rb->depth_texture, rb->ssr.depth_scaled, rb->ssr.normal_scaled, rb->blur[0].mipmaps[1].texture, rb->blur[1].mipmaps[0].texture, Size2i(rb->width / 2, rb->height / 2), env->ssr_max_steps, env->ssr_fade_in, env->ssr_fade_out, env->ssr_depth_tolerance, p_projection);
-	storage->get_effects()->merge_specular(p_dest_framebuffer, p_specular_buffer, p_use_additive ? RID() : rb->texture, rb->blur[0].mipmaps[1].texture);
+	storage->get_effects()->screen_space_reflection(rb->internal_texture, p_normal_buffer, ssr_roughness_quality, rb->ssr.blur_radius[0], rb->ssr.blur_radius[1], p_metallic, p_metallic_mask, rb->depth_texture, rb->ssr.depth_scaled, rb->ssr.normal_scaled, rb->blur[0].mipmaps[1].texture, rb->blur[1].mipmaps[0].texture, Size2i(rb->internal_width / 2, rb->internal_height / 2), env->ssr_max_steps, env->ssr_fade_in, env->ssr_fade_out, env->ssr_depth_tolerance, p_projection);
+	storage->get_effects()->merge_specular(p_dest_framebuffer, p_specular_buffer, p_use_additive ? RID() : rb->internal_texture, rb->blur[0].mipmaps[1].texture);
 }
 
 void RendererSceneRenderRD::_process_ssao(RID p_render_buffers, RID p_environment, RID p_normal_buffer, const CameraMatrix &p_projection) {
@@ -2006,9 +2015,9 @@ void RendererSceneRenderRD::_render_buffers_post_process_and_tonemap(const Rende
 	// @TODO IMPLEMENT MULTIVIEW, all effects need to support stereo buffers or effects are only applied to the left eye
 
 	if (can_use_effects && can_use_storage && (rb->internal_width != rb->width || rb->internal_height != rb->height)) {
-		RD::get_singleton()->draw_command_begin_label("AMD FSR");
+		RD::get_singleton()->draw_command_begin_label("FSR Upscale");
 
-		storage->get_effects()->amd_fsr(rb->internal_texture, rb->upscale_texture, rb->texture, Size2i(rb->internal_width, rb->internal_height), Size2i(rb->width, rb->height), 0.2f);
+		storage->get_effects()->fsr_upscale(rb->internal_texture, rb->upscale_texture, rb->texture, Size2i(rb->internal_width, rb->internal_height), Size2i(rb->width, rb->height), rb->fsr_upscale_sharpness);
 
 		RD::get_singleton()->draw_command_end_label();
 	}
@@ -2525,7 +2534,7 @@ bool RendererSceneRenderRD::_render_buffers_can_be_storage() {
 	return true;
 }
 
-void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p_render_target, int p_internal_width, int p_internal_height, int p_width, int p_height, RS::ViewportMSAA p_msaa, RenderingServer::ViewportScreenSpaceAA p_screen_space_aa, bool p_use_debanding, uint32_t p_view_count) {
+void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p_render_target, int p_internal_width, int p_internal_height, int p_width, int p_height, float p_fsr_upscale_sharpness, RS::ViewportMSAA p_msaa, RenderingServer::ViewportScreenSpaceAA p_screen_space_aa, bool p_use_debanding, uint32_t p_view_count) {
 	ERR_FAIL_COND_MSG(p_view_count == 0, "Must have at least 1 view");
 
 	RenderBuffers *rb = render_buffers_owner.getornull(p_render_buffers);
@@ -2533,6 +2542,7 @@ void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p
 	rb->internal_height = p_internal_height;
 	rb->width = p_width;
 	rb->height = p_height;
+	rb->fsr_upscale_sharpness = p_fsr_upscale_sharpness;
 	rb->render_target = p_render_target;
 	rb->msaa = p_msaa;
 	rb->screen_space_aa = p_screen_space_aa;
@@ -2609,7 +2619,6 @@ void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p
 		rb->texture_fb = RD::get_singleton()->framebuffer_create(fb, RenderingDevice::INVALID_ID, rb->view_count);
 	}
 
-	//rb->data->configure(rb->internal_texture, rb->depth_texture, p_width, p_height, p_msaa, p_view_count);
 	rb->data->configure(rb->internal_texture, rb->depth_texture, p_internal_width, p_internal_height, p_msaa, p_view_count);
 
 	if (is_clustered_enabled()) {
@@ -3438,7 +3447,7 @@ void RendererSceneRenderRD::_update_volumetric_fog(RID p_render_buffers, RID p_e
 	ERR_FAIL_COND(!rb);
 	RendererSceneEnvironmentRD *env = environment_owner.getornull(p_environment);
 
-	float ratio = float(rb->internal_width) / float((rb->internal_width + rb->internal_height) / 2);
+	float ratio = float(rb->width) / float((rb->width + rb->height) / 2);
 	uint32_t target_width = uint32_t(float(volumetric_fog_size) * ratio);
 	uint32_t target_height = uint32_t(float(volumetric_fog_size) / ratio);
 
@@ -3741,14 +3750,14 @@ void RendererSceneRenderRD::_update_volumetric_fog(RID p_render_buffers, RID p_e
 		uint32_t cluster_size = rb->cluster_builder->get_cluster_size();
 		params.cluster_shift = get_shift_from_power_of_2(cluster_size);
 
-		uint32_t cluster_screen_width = (rb->internal_width - 1) / cluster_size + 1;
-		uint32_t cluster_screen_height = (rb->internal_height - 1) / cluster_size + 1;
+		uint32_t cluster_screen_width = (rb->width - 1) / cluster_size + 1;
+		uint32_t cluster_screen_height = (rb->height - 1) / cluster_size + 1;
 		params.cluster_type_size = cluster_screen_width * cluster_screen_height * (32 + 32);
 		params.cluster_width = cluster_screen_width;
 		params.max_cluster_element_count_div_32 = max_cluster_elements / 32;
 
-		params.screen_size[0] = rb->internal_width;
-		params.screen_size[1] = rb->internal_height;
+		params.screen_size[0] = rb->width;
+		params.screen_size[1] = rb->height;
 	}
 
 	/*	Vector2 dssize = directional_shadow_get_size();
@@ -4173,7 +4182,7 @@ void RendererSceneRenderRD::_debug_draw_cluster(RID p_render_buffers) {
 		_render_buffers_post_process_and_tonemap(&render_data);
 		_render_buffers_debug_draw(p_render_buffers, p_shadow_atlas, p_occluder_debug_tex);
 		if (debug_draw == RS::VIEWPORT_DEBUG_DRAW_SDFGI && rb != nullptr && rb->sdfgi != nullptr) {
-			rb->sdfgi->debug_draw(render_data.cam_projection, render_data.cam_transform, rb->internal_width, rb->internal_height, rb->render_target, rb->internal_texture);
+			rb->sdfgi->debug_draw(render_data.cam_projection, render_data.cam_transform, rb->width, rb->height, rb->render_target, rb->texture);
 		}
 	}
 }

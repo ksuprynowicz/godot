@@ -14,7 +14,7 @@
 #define A_GPU
 #define A_GLSL
 
-#ifdef MODE_AMD_FSR_NORMAL
+#ifdef MODE_FSR_UPSCALE_NORMAL
 
 #define A_HALF
 
@@ -27,19 +27,20 @@ layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 layout(rgba16f, set = 1, binding = 0) uniform restrict writeonly image2D fsr_image;
 layout(set = 0, binding = 0) uniform sampler2D source_image;
 
-#define FSR_PASS_TYPE_EASU 0
-#define FSR_PASS_TYPE_RCAS 1
+#define FSR_UPSCALE_PASS_TYPE_EASU 0
+#define FSR_UPSCALE_PASS_TYPE_RCAS 1
 
 layout(push_constant, binding = 1, std430) uniform Params {
-    uvec4 Const0;
-    uvec4 Const1;
-    uvec4 Const2;
-    uvec4 Const3;
-    uvec4 Pass;
+    float resolution_width, resolution_height;
+    float upscaled_width, upscaled_height;
+    float sharpness;
+    int pass;
 }
 params;
 
-#ifdef MODE_AMD_FSR_FALLBACK
+AU4 Const0, Const1, Const2, Const3;
+
+#ifdef MODE_FSR_UPSCALE_FALLBACK
 
 #define FSR_EASU_F
 AF4 FsrEasuRF(AF2 p) { AF4 res = textureGather(source_image, p, 0); return res; }
@@ -66,46 +67,53 @@ void FsrRcasInputH(inout AH1 r, inout AH1 g, inout AH1 b) {}
 #include "ffx_fsr1.h"
 
 void fsr_easu_pass(AU2 pos) {
-#ifdef MODE_AMD_FSR_NORMAL
+#ifdef MODE_FSR_UPSCALE_NORMAL
 
     AH3 Gamma2Color = AH3(0, 0, 0);
-    FsrEasuH(Gamma2Color, pos, params.Const0, params.Const1, params.Const2, params.Const3);
+    FsrEasuH(Gamma2Color, pos, Const0, Const1, Const2, Const3);
     imageStore(fsr_image, ASU2(pos), AH4(Gamma2Color, 1));
 
 #else
 
     AF3 Gamma2Color = AF3(0, 0, 0);
-    FsrEasuF(Gamma2Color, pos, params.Const0, params.Const1, params.Const2, params.Const3);
+    FsrEasuF(Gamma2Color, pos, Const0, Const1, Const2, Const3);
     imageStore(fsr_image, ASU2(pos), AF4(Gamma2Color, 1));
 
 #endif
 }
 
 void fsr_rcas_pass(AU2 pos) {
-#ifdef MODE_AMD_FSR_NORMAL
+#ifdef MODE_FSR_UPSCALE_NORMAL
 
     AH3 Gamma2Color = AH3(0, 0, 0);
-    FsrRcasH(Gamma2Color.r, Gamma2Color.g, Gamma2Color.b, pos, params.Const0);
+    FsrRcasH(Gamma2Color.r, Gamma2Color.g, Gamma2Color.b, pos, Const0);
     imageStore(fsr_image, ASU2(pos), AH4(Gamma2Color, 1));
 
 #else
 
     AF3 Gamma2Color = AF3(0, 0, 0);
-    FsrRcasF(Gamma2Color.r, Gamma2Color.g, Gamma2Color.b, pos, params.Const0);
+    FsrRcasF(Gamma2Color.r, Gamma2Color.g, Gamma2Color.b, pos, Const0);
     imageStore(fsr_image, ASU2(pos), AF4(Gamma2Color, 1));
 
 #endif
 }
 
 void fsr_pass(AU2 pos) {
-    if (params.Pass.x == FSR_PASS_TYPE_EASU) {
+    if (params.pass == FSR_UPSCALE_PASS_TYPE_EASU) {
         fsr_easu_pass(pos);
-    } else if (params.Pass.x == FSR_PASS_TYPE_RCAS) {
+    } else if (params.pass == FSR_UPSCALE_PASS_TYPE_RCAS) {
         fsr_rcas_pass(pos);
     }
 }
 
 void main() {
+    // Clang does not like unused functions. If ffx_a.h is included in the binary, clang will throw a fit and not compile
+    if (params.pass == FSR_UPSCALE_PASS_TYPE_EASU) {
+        FsrEasuCon(Const0, Const1, Const2, Const3, params.resolution_width, params.resolution_height, params.resolution_width, params.resolution_height, params.upscaled_width, params.upscaled_height);
+    } else if (params.pass == FSR_UPSCALE_PASS_TYPE_RCAS) {
+        FsrRcasCon(Const0, params.sharpness);
+    }
+
     AU2 gxy = ARmp8x8(gl_LocalInvocationID.x) + AU2(gl_WorkGroupID.x << 4u, gl_WorkGroupID.y << 4u);
     
     fsr_pass(gxy);

@@ -34,11 +34,6 @@
 #include "core/math/math_defs.h"
 #include "core/os/os.h"
 
-#define A_CPU
-
-#include "servers/rendering/renderer_rd/shaders/ffx_a.h"
-#include "servers/rendering/renderer_rd/shaders/ffx_fsr1.h"
-
 #include "servers/rendering/renderer_rd/renderer_compositor_rd.h"
 #include "thirdparty/misc/cubemap_coeffs.h"
 
@@ -242,37 +237,37 @@ RID EffectsRD::_get_compute_uniform_set_from_image_pair(RID p_texture1, RID p_te
 	return uniform_set;
 }
 
-void EffectsRD::amd_fsr(RID p_source_rd_texture, RID p_secondary_texture, RID p_destination_texture, const Size2i &p_internal_size, const Size2i &p_size, float p_sharpness) {
-	memset(&AMD_FSR.push_constant, 0, sizeof(AMDFSRPushConstant));
+void EffectsRD::fsr_upscale(RID p_source_rd_texture, RID p_secondary_texture, RID p_destination_texture, const Size2i &p_internal_size, const Size2i &p_size, float p_fsr_upscale_sharpness) {
+	memset(&FSR_upscale.push_constant, 0, sizeof(FSRUpscalePushConstant));
 
 	int dispatch_x = (p_size.x + 15) / 16;
 	int dispatch_y = (p_size.y + 15) / 16;
 
-	AMDFSRMode fsr_mode = AMD_FSR_MODE_FALLBACK; // FINISH
-
 	RD::ComputeListID compute_list = RD::get_singleton()->compute_list_begin();
-	RD::get_singleton()->compute_list_bind_compute_pipeline(compute_list, AMD_FSR.pipelines[fsr_mode]);
+	RD::get_singleton()->compute_list_bind_compute_pipeline(compute_list, FSR_upscale.pipeline);
 
-	//FSR Easc
-	FsrEasuCon(reinterpret_cast<AU1*>(&AMD_FSR.push_constant.Const0), reinterpret_cast<AU1*>(&AMD_FSR.push_constant.Const1), reinterpret_cast<AU1*>(&AMD_FSR.push_constant.Const2), reinterpret_cast<AU1*>(&AMD_FSR.push_constant.Const3), static_cast<AF1>(p_internal_size.x), static_cast<AF1>(p_internal_size.y), static_cast<AF1>(p_internal_size.x), static_cast<AF1>(p_internal_size.y), static_cast<AF1>(p_size.x), static_cast<AF1>(p_size.y));
+	FSR_upscale.push_constant.resolution_width = p_internal_size.width;
+	FSR_upscale.push_constant.resolution_height = p_internal_size.height;
+	FSR_upscale.push_constant.upscaled_width = p_size.width;
+	FSR_upscale.push_constant.upscaled_height = p_size.height;
+	FSR_upscale.push_constant.sharpness = p_fsr_upscale_sharpness;
 	
-	AMD_FSR.push_constant.Pass.x = AMD_FSR_PASS_EASU;
+	//FSR Easc
+	FSR_upscale.push_constant.pass = FSR_UPSCALE_PASS_EASU;
 	RD::get_singleton()->compute_list_bind_uniform_set(compute_list, _get_compute_uniform_set_from_texture(p_source_rd_texture), 0);
 	RD::get_singleton()->compute_list_bind_uniform_set(compute_list, _get_uniform_set_from_image(p_secondary_texture), 1);
 
-	RD::get_singleton()->compute_list_set_push_constant(compute_list, &AMD_FSR.push_constant, sizeof(AMDFSRPushConstant));
+	RD::get_singleton()->compute_list_set_push_constant(compute_list, &FSR_upscale.push_constant, sizeof(FSRUpscalePushConstant));
 
 	RD::get_singleton()->compute_list_dispatch(compute_list, dispatch_x, dispatch_y, 1);
 	RD::get_singleton()->compute_list_add_barrier(compute_list);
 
 	//FSR Rcas
-	FsrRcasCon(reinterpret_cast<AU1*>(&AMD_FSR.push_constant.Const0), static_cast<AF1>(p_sharpness));
-
-	AMD_FSR.push_constant.Pass.x = AMD_FSR_PASS_RCAS;
+	FSR_upscale.push_constant.pass = FSR_UPSCALE_PASS_RCAS;
 	RD::get_singleton()->compute_list_bind_uniform_set(compute_list, _get_compute_uniform_set_from_texture(p_secondary_texture), 0);
 	RD::get_singleton()->compute_list_bind_uniform_set(compute_list, _get_uniform_set_from_image(p_destination_texture), 1);
 
-	RD::get_singleton()->compute_list_set_push_constant(compute_list, &AMD_FSR.push_constant, sizeof(AMDFSRPushConstant));
+	RD::get_singleton()->compute_list_set_push_constant(compute_list, &FSR_upscale.push_constant, sizeof(FSRUpscalePushConstant));
 
 	RD::get_singleton()->compute_list_dispatch(compute_list, dispatch_x, dispatch_y, 1);
 
@@ -1930,17 +1925,18 @@ void EffectsRD::sort_buffer(RID p_uniform_set, int p_size) {
 
 EffectsRD::EffectsRD(bool p_prefer_raster_effects) {
 	{
-		Vector<String> amd_fsr_modes;
-		amd_fsr_modes.push_back("\n#define MODE_AMD_FSR_NORMAL\n"); // AMD_FSR_MODE_NORMAL
-		amd_fsr_modes.push_back("\n#define MODE_AMD_FSR_FALLBACK\n"); // AMD_FSR_MODE_FALLBACK
+		Vector<String> FSR_upscale_modes;
 
-		AMD_FSR.shader.initialize(amd_fsr_modes);
-
-		AMD_FSR.shader_version = AMD_FSR.shader.version_create();
-
-		for (int i = 0; i < AMD_FSR_MODE_MAX; i++) {
-				AMD_FSR.pipelines[i] = RD::get_singleton()->compute_pipeline_create(AMD_FSR.shader.version_get_shader(AMD_FSR.shader_version, i));
+		if (RD::get_singleton()->get_device_capabilities()->supports_fsr_upscale_normal) {
+			FSR_upscale_modes.push_back("\n#define MODE_FSR_UPSCALE_NORMAL\n");
+		} else {
+			FSR_upscale_modes.push_back("\n#define MODE_FSR_UPSCALE_FALLBACK\n");
 		}
+
+		FSR_upscale.shader.initialize(FSR_upscale_modes);
+
+		FSR_upscale.shader_version = FSR_upscale.shader.version_create();
+		FSR_upscale.pipeline = RD::get_singleton()->compute_pipeline_create(FSR_upscale.shader.version_get_shader(FSR_upscale.shader_version, 0));
 
 	}
 
@@ -2584,7 +2580,7 @@ EffectsRD::~EffectsRD() {
 	RD::get_singleton()->free(ssao.gather_constants_buffer);
 	RD::get_singleton()->free(ssao.importance_map_load_counter);
 
-	AMD_FSR.shader.version_free(AMD_FSR.shader_version);
+	FSR_upscale.shader.version_free(FSR_upscale.shader_version);
 	if (prefer_raster_effects) {
 		blur_raster.shader.version_free(blur_raster.shader_version);
 		bokeh.raster_shader.version_free(blur_raster.shader_version);

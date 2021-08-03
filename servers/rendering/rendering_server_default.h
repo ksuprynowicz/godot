@@ -536,7 +536,8 @@ public:
 	FUNC3(viewport_attach_to_screen, RID, const Rect2 &, int)
 	FUNC2(viewport_set_render_direct_to_screen, RID, bool)
 
-	FUNC2(viewport_set_amd_fsr_quality, RID, ViewportAMDFSRQualityMode)
+	FUNC2(viewport_set_fsr_upscale_quality, RID, ViewportFSRUpscaleQualityMode)
+	FUNC2(viewport_set_fsr_upscale_sharpness, RID, float)
 	FUNC2(viewport_set_update_mode, RID, ViewportUpdateMode)
 
 	FUNC1RC(RID, viewport_get_texture, RID)
