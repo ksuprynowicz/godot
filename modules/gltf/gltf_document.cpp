@@ -29,6 +29,7 @@
 /*************************************************************************/
 
 #include "gltf_document.h"
+#include "core/error/error_macros.h"
 #include "gltf_accessor.h"
 #include "gltf_animation.h"
 #include "gltf_camera.h"
@@ -5130,6 +5131,10 @@ GLTFLightIndex GLTFDocument::_convert_light(Ref<GLTFState> state, Light3D *p_lig
 }
 
 GLTFSkeletonIndex GLTFDocument::_convert_skeleton(Ref<GLTFState> state, Skeleton3D *p_skeleton, Ref<GLTFNode> p_node, MeshInstance3D *p_mi) {
+	ERR_FAIL_NULL_V(p_skeleton, -1);
+	ERR_FAIL_COND_V(state.is_null(), -1);
+	ERR_FAIL_COND_V(p_node.is_null(), -1);
+	ERR_FAIL_NULL_V(p_mi, -1);
 	print_verbose("glTF: Converting skeleton: " + p_skeleton->get_name());
 	Ref<GLTFSkeleton> gltf_skeleton;
 	gltf_skeleton.instantiate();
@@ -6707,6 +6712,9 @@ void GLTFDocument::_create_mesh_skin(Ref<GLTFState> state, MeshInstance3D *p_mi,
 		return;
 	}
 	Skeleton3D *skeleton = cast_to<Skeleton3D>(node);
+	if (!skeleton) {
+		return;
+	}
 	GLTFSkeletonIndex skeleton_gltf_i = -1;
 	for (int32_t skeleton_i = 0; skeleton_i < state->skeletons.size(); skeleton_i++) {
 		if (state->skeletons[skeleton_i]->godot_skeleton != skeleton) {
