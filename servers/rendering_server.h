@@ -762,15 +762,16 @@ public:
 	virtual void viewport_attach_to_screen(RID p_viewport, const Rect2 &p_rect = Rect2(), DisplayServer::WindowID p_screen = DisplayServer::MAIN_WINDOW_ID) = 0;
 	virtual void viewport_set_render_direct_to_screen(RID p_viewport, bool p_enable) = 0;
 
-	enum ViewportAMDFSRQualityMode {
-		VIEWPORT_AMD_FSR_QUALITY_MODE_DISABLED,
-		VIEWPORT_AMD_FSR_QUALITY_MODE_PERFORMANCE,
-		VIEWPORT_AMD_FSR_QUALITY_MODE_BALANCED,
-		VIEWPORT_AMD_FSR_QUALITY_MODE_QUALITY,
-		VIEWPORT_AMD_FSR_QUALITY_MODE_ULTRA_QUALITY
+	enum ViewportFSRUpscaleQualityMode {
+		VIEWPORT_FSR_UPSCALE_QUALITY_MODE_DISABLED,
+		VIEWPORT_FSR_UPSCALE_QUALITY_MODE_PERFORMANCE,
+		VIEWPORT_FSR_UPSCALE_QUALITY_MODE_BALANCED,
+		VIEWPORT_FSR_UPSCALE_QUALITY_MODE_QUALITY,
+		VIEWPORT_FSR_UPSCALE_QUALITY_MODE_ULTRA_QUALITY
 	};
 
-	virtual void viewport_set_amd_fsr_quality(RID p_viewport, ViewportAMDFSRQualityMode p_quality_mode) = 0;
+	virtual void viewport_set_fsr_upscale_quality(RID p_viewport, ViewportFSRUpscaleQualityMode p_quality_mode) = 0;
+	virtual void viewport_set_fsr_upscale_sharpness(RID p_viewport, float p_fsr_upscale_sharpness) = 0;
 
 	enum ViewportUpdateMode {
 		VIEWPORT_UPDATE_DISABLED,
@@ -1542,7 +1543,7 @@ VARIANT_ENUM_CAST(RenderingServer::ParticlesDrawOrder);
 VARIANT_ENUM_CAST(RenderingServer::ParticlesEmitFlags);
 VARIANT_ENUM_CAST(RenderingServer::ParticlesCollisionType);
 VARIANT_ENUM_CAST(RenderingServer::ParticlesCollisionHeightfieldResolution);
-VARIANT_ENUM_CAST(RenderingServer::ViewportAMDFSRQualityMode);
+VARIANT_ENUM_CAST(RenderingServer::ViewportFSRUpscaleQualityMode);
 VARIANT_ENUM_CAST(RenderingServer::ViewportUpdateMode);
 VARIANT_ENUM_CAST(RenderingServer::ViewportClearMode);
 VARIANT_ENUM_CAST(RenderingServer::ViewportMSAA);

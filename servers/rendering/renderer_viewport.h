@@ -54,7 +54,8 @@ public:
 		RID camera;
 		RID scenario;
 
-		RS::ViewportAMDFSRQualityMode quality_mode;
+		RS::ViewportFSRUpscaleQualityMode quality_mode;
+		float fsr_upscale_sharpness;
 		RS::ViewportUpdateMode update_mode;
 		RID render_target;
 		RID render_target_texture;
@@ -214,7 +215,8 @@ public:
 
 	void viewport_set_active(RID p_viewport, bool p_active);
 	void viewport_set_parent_viewport(RID p_viewport, RID p_parent_viewport);
-	void viewport_set_amd_fsr_quality(RID p_viewport, RS::ViewportAMDFSRQualityMode p_quality_mode);
+	void viewport_set_fsr_upscale_quality(RID p_viewport, RS::ViewportFSRUpscaleQualityMode p_quality_mode);
+	void viewport_set_fsr_upscale_sharpness(RID p_viewport, float p_sharpness);
 	void viewport_set_update_mode(RID p_viewport, RS::ViewportUpdateMode p_mode);
 	void viewport_set_vflip(RID p_viewport, bool p_enable);
 
