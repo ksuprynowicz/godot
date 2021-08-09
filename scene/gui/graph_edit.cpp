@@ -450,6 +450,7 @@ void GraphEdit::_notification(int p_what) {
 		zoom_plus->set_icon(get_theme_icon(SNAME("more")));
 		snap_button->set_icon(get_theme_icon(SNAME("snap")));
 		minimap_button->set_icon(get_theme_icon(SNAME("minimap")));
+		layout_button->set_icon(get_theme_icon(SNAME("layout")));
 	}
 	if (p_what == NOTIFICATION_READY) {
 		Size2 hmin = h_scroll->get_combined_minimum_size();
@@ -1646,6 +1647,502 @@ HBoxContainer *GraphEdit::get_zoom_hbox() {
 	return zoom_hb;
 }
 
+int GraphEdit::_set_operations(SET_OPERATIONS p_operation, Set<StringName> &r_u, const Set<StringName> &r_v) {
+	switch (p_operation) {
+		case GraphEdit::IS_EQUAL: {
+			for (Set<StringName>::Element *E = r_u.front(); E; E = E->next()) {
+				if (!r_v.has(E->get()))
+					return 0;
+			}
+			return r_u.size() == r_v.size();
+		} break;
+		case GraphEdit::IS_SUBSET: {
+			if (r_u.size() == r_v.size() && !r_u.size()) {
+				return 1;
+			}
+			for (Set<StringName>::Element *E = r_u.front(); E; E = E->next()) {
+				if (!r_v.has(E->get()))
+					return 0;
+			}
+			return 1;
+		} break;
+		case GraphEdit::DIFFERENCE: {
+			for (Set<StringName>::Element *E = r_u.front(); E; E = E->next()) {
+				if (r_v.has(E->get())) {
+					r_u.erase(E->get());
+				}
+			}
+			return r_u.size();
+		} break;
+		case GraphEdit::UNION: {
+			for (Set<StringName>::Element *E = r_v.front(); E; E = E->next()) {
+				if (!r_u.has(E->get())) {
+					r_u.insert(E->get());
+				}
+			}
+			return r_v.size();
+		} break;
+		default:
+			break;
+	}
+	return -1;
+}
+
+HashMap<int, Vector<StringName>> GraphEdit::_layering(const Set<StringName> &r_selected_nodes, const HashMap<StringName, Set<StringName>> &r_upper_neighbours) {
+	HashMap<int, Vector<StringName>> l;
+
+	Set<StringName> p = r_selected_nodes, q = r_selected_nodes, u, z;
+	int current_layer = 0;
+	bool selected = false;
+
+	while (!_set_operations(GraphEdit::IS_EQUAL, q, u)) {
+		_set_operations(GraphEdit::DIFFERENCE, p, u);
+		for (const Set<StringName>::Element *E = p.front(); E; E = E->next()) {
+			Set<StringName> n = r_upper_neighbours[E->get()];
+			if (_set_operations(GraphEdit::IS_SUBSET, n, z)) {
+				Vector<StringName> t;
+				t.push_back(E->get());
+				if (!l.has(current_layer)) {
+					l.set(current_layer, Vector<StringName>{});
+				}
+				selected = true;
+				t.append_array(l[current_layer]);
+				l.set(current_layer, t);
+				Set<StringName> V;
+				V.insert(E->get());
+				_set_operations(GraphEdit::UNION, u, V);
+			}
+		}
+		if (!selected) {
+			current_layer++;
+			_set_operations(GraphEdit::UNION, z, u);
+		}
+		selected = false;
+	}
+
+	return l;
+}
+
+Vector<StringName> GraphEdit::_split(const Vector<StringName> &r_layer, const HashMap<StringName, Dictionary> &r_crossings) {
+	if (!r_layer.size()) {
+		return Vector<StringName>();
+	}
+
+	StringName p = r_layer[Math::random(0, r_layer.size() - 1)];
+	Vector<StringName> left;
+	Vector<StringName> right;
+
+	for (int i = 0; i < r_layer.size(); i++) {
+		if (p != r_layer[i]) {
+			StringName q = r_layer[i];
+			int cross_pq = r_crossings[p][q];
+			int cross_qp = r_crossings[q][p];
+			if (cross_pq > cross_qp) {
+				left.push_back(q);
+			} else {
+				right.push_back(q);
+			}
+		}
+	}
+
+	left.push_back(p);
+	left.append_array(right);
+	return left;
+}
+
+void GraphEdit::_horizontal_alignment(Dictionary &r_root, Dictionary &r_align, const HashMap<int, Vector<StringName>> &r_layers, const HashMap<StringName, Set<StringName>> &r_upper_neighbours, const Set<StringName> &r_selected_nodes) {
+	for (const Set<StringName>::Element *E = r_selected_nodes.front(); E; E = E->next()) {
+		r_root[E->get()] = E->get();
+		r_align[E->get()] = E->get();
+	}
+
+	if (r_layers.size() == 1) {
+		return;
+	}
+
+	for (unsigned int i = 1; i < r_layers.size(); i++) {
+		Vector<StringName> lower_layer = r_layers[i];
+		Vector<StringName> upper_layer = r_layers[i - 1];
+		int r = -1;
+
+		for (int j = 0; j < lower_layer.size(); j++) {
+			Vector<Pair<int, StringName>> up;
+			StringName current_node = lower_layer[j];
+			for (int k = 0; k < upper_layer.size(); k++) {
+				StringName adjacent_neighbour = upper_layer[k];
+				if (r_upper_neighbours[current_node].has(adjacent_neighbour)) {
+					up.push_back(Pair<int, StringName>(k, adjacent_neighbour));
+				}
+			}
+
+			int start = up.size() / 2;
+			int end = up.size() % 2 ? start : start + 1;
+			for (int p = start; p <= end; p++) {
+				StringName Align = r_align[current_node];
+				if (Align == current_node && r < up[p].first) {
+					r_align[up[p].second] = lower_layer[j];
+					r_root[current_node] = r_root[up[p].second];
+					r_align[current_node] = r_root[up[p].second];
+					r = up[p].first;
+				}
+			}
+		}
+	}
+}
+
+void GraphEdit::crossing_minimisation(HashMap<int, Vector<StringName>> &l, const HashMap<StringName, Set<StringName>> &u) {
+	if (l.size() == 1) {
+		return;
+	}
+
+	for (unsigned int i = 1; i < l.size(); i++) {
+		Vector<StringName> upper_layer = l[i - 1];
+		Vector<StringName> lower_layer = l[i];
+		HashMap<StringName, Dictionary> c;
+
+		for (int j = 0; j < lower_layer.size(); j++) {
+			StringName p = lower_layer[j];
+			Dictionary d;
+
+			for (int k = 0; k < lower_layer.size(); k++) {
+				unsigned int crossings = 0;
+				StringName q = lower_layer[k];
+
+				if (j != k) {
+					for (int h = 1; h < upper_layer.size(); h++) {
+						if (u[p].has(upper_layer[h])) {
+							for (int g = 0; g < h; g++) {
+								if (u[q].has(upper_layer[g])) {
+									crossings++;
+								}
+							}
+						}
+					}
+				}
+				d[q] = crossings;
+			}
+			c.set(p, d);
+		}
+
+		l.set(i, _split(lower_layer, c));
+	}
+}
+
+void GraphEdit::calculate_inner_shifts(Dictionary &d, const Dictionary &root, const Dictionary &node_names, const Dictionary &align, const Set<StringName> &block_heads, const HashMap<StringName, Pair<int, int>> &port_info) {
+	for (const Set<StringName>::Element *E = block_heads.front(); E; E = E->next()) {
+		real_t left = 0;
+		StringName u = E->get();
+		StringName v = align[u];
+		while (u != v && (StringName)root[u] != v) {
+			String _connection = String(u) + " " + String(v);
+			GraphNode *gfrom = Object::cast_to<GraphNode>(node_names[u]);
+			GraphNode *gto = Object::cast_to<GraphNode>(node_names[v]);
+
+			Pair<int, int> ports = port_info[_connection];
+			int pfrom = ports.first;
+			int pto = ports.second;
+			Vector2 frompos = gfrom->get_connection_output_position(pfrom);
+			Vector2 topos = gto->get_connection_input_position(pto);
+
+			real_t s = (real_t)d[u] + (frompos.y - topos.y) / zoom;
+			d[v] = s;
+			left = MIN(left, s);
+
+			u = v;
+			v = (StringName)align[v];
+		}
+
+		u = E->get();
+		do {
+			d[u] = (real_t)d[u] - left;
+			u = (StringName)align[u];
+		} while (u != E->get());
+	}
+}
+
+float GraphEdit::calculate_threshold(StringName v, StringName w, const Dictionary &node_names, const HashMap<int, Vector<StringName>> &_layers, const Dictionary &root, const Dictionary &align, const Dictionary &inner_shift, real_t current_threshold, const HashMap<StringName, Vector2> &node_positions) {
+#define MAX_ORDER 2147483647
+#define ORDER(_node, _layers)                           \
+	for (unsigned int i = 0; i < _layers.size(); i++) { \
+		int index = _layers[i].find(_node);             \
+		if (index > 0) {                                \
+			order = index;                              \
+			break;                                      \
+		}                                               \
+		order = MAX_ORDER;                              \
+	}
+
+	int order = MAX_ORDER;
+	float threshold = current_threshold;
+	if (v == w) {
+		int min_order = MAX_ORDER;
+		Connection incoming;
+		for (List<Connection>::Element *E = connections.front(); E; E = E->next()) {
+			if (E->get().to == w) {
+				ORDER(E->get().from, _layers);
+				if (min_order > order) {
+					min_order = order;
+					incoming = E->get();
+				}
+			}
+		}
+
+		if (incoming.from != StringName()) {
+			GraphNode *gfrom = Object::cast_to<GraphNode>(node_names[incoming.from]);
+			GraphNode *gto = Object::cast_to<GraphNode>(node_names[w]);
+			Vector2 frompos = gfrom->get_connection_output_position(incoming.from_port);
+			Vector2 topos = gto->get_connection_input_position(incoming.to_port);
+
+			//If connected block node is selected, calculate thershold or add current block to list
+			if (gfrom->is_selected()) {
+				Vector2 connected_block_pos = node_positions[root[incoming.from]];
+				if (connected_block_pos.y != FLT_MAX) {
+					//Connected block is placed. Calculate threshold
+					threshold = connected_block_pos.y + (real_t)inner_shift[incoming.from] - (real_t)inner_shift[w] + frompos.y - topos.y;
+				}
+			}
+		}
+	}
+	if (threshold == FLT_MIN && (StringName)align[w] == v) {
+		//This time, pick an outgoing edge and repeat as above!
+		int min_order = MAX_ORDER;
+		Connection outgoing;
+		for (List<Connection>::Element *E = connections.front(); E; E = E->next()) {
+			if (E->get().from == w) {
+				ORDER(E->get().to, _layers);
+				if (min_order > order) {
+					min_order = order;
+					outgoing = E->get();
+				}
+			}
+		}
+
+		if (outgoing.to != StringName()) {
+			GraphNode *gfrom = Object::cast_to<GraphNode>(node_names[w]);
+			GraphNode *gto = Object::cast_to<GraphNode>(node_names[outgoing.to]);
+			Vector2 frompos = gfrom->get_connection_output_position(outgoing.from_port);
+			Vector2 topos = gto->get_connection_input_position(outgoing.to_port);
+
+			//If connected block node is selected, calculate thershold or add current block to list
+			if (gto->is_selected()) {
+				Vector2 connected_block_pos = node_positions[root[outgoing.to]];
+				if (connected_block_pos.y != FLT_MAX) {
+					//Connected block is placed. Calculate threshold
+					threshold = connected_block_pos.y + (real_t)inner_shift[outgoing.to] - (real_t)inner_shift[w] + frompos.y - topos.y;
+				}
+			}
+		}
+	}
+#undef MAX_ORDER
+#undef ORDER
+	return threshold;
+}
+
+void GraphEdit::place_block(StringName v, float delta, const HashMap<int, Vector<StringName>> &_layers, const Dictionary &root, const Dictionary &align, const Dictionary &node_name, const Dictionary &inner_shift, Dictionary &sink, Dictionary &shift, HashMap<StringName, Vector2> &node_positions) {
+#define PRED(_node, _layers)                            \
+	for (unsigned int i = 0; i < _layers.size(); i++) { \
+		int index = _layers[i].find(_node);             \
+		if (index > 0) {                                \
+			predecessor = _layers[i][index - 1];        \
+			break;                                      \
+		}                                               \
+		predecessor = StringName();                     \
+	}
+
+	StringName predecessor;
+	StringName successor;
+	Vector2 pos = node_positions[v];
+
+	if (pos.y == FLT_MAX) {
+		pos.y = 0;
+		bool initial = false;
+		StringName w = v;
+		real_t threshold = FLT_MIN;
+		do {
+			PRED(w, _layers);
+			if (predecessor != StringName()) {
+				StringName u = root[predecessor];
+				place_block(u, delta, _layers, root, align, node_name, inner_shift, sink, shift, node_positions);
+				threshold = calculate_threshold(v, w, node_name, _layers, root, align, inner_shift, threshold, node_positions);
+				if ((StringName)sink[v] == v) {
+					sink[v] = sink[u];
+				}
+
+				Vector2 predecessor_root_pos = node_positions[u];
+				Vector2 predecessor_node_size = Object::cast_to<GraphNode>(node_name[predecessor])->get_size();
+				if (sink[v] != sink[u]) {
+					real_t sc = pos.y + (real_t)inner_shift[w] - predecessor_root_pos.y - (real_t)inner_shift[predecessor] - predecessor_node_size.y - delta;
+					shift[sink[u]] = MIN(sc, (real_t)shift[sink[u]]);
+				} else {
+					real_t sb = predecessor_root_pos.y + (real_t)inner_shift[predecessor] + predecessor_node_size.y - (real_t)inner_shift[w] + delta;
+					sb = MAX(sb, threshold);
+					if (initial) {
+						pos.y = sb;
+					} else {
+						pos.y = MAX(pos.y, sb);
+					}
+					initial = false;
+				}
+			}
+			threshold = calculate_threshold(v, w, node_name, _layers, root, align, inner_shift, threshold, node_positions);
+			w = align[w];
+		} while (w != v);
+		node_positions.set(v, pos);
+	}
+
+#undef PRED
+}
+
+void GraphEdit::arrange_nodes() {
+	if (!arranging_graph) {
+		arranging_graph = true;
+	} else {
+		return;
+	}
+
+	Dictionary node_names;
+	Set<StringName> selected_nodes;
+
+	for (int i = get_child_count() - 1; i >= 0; i--) {
+		GraphNode *gn = Object::cast_to<GraphNode>(get_child(i));
+		if (!gn) {
+			continue;
+		}
+
+		node_names[gn->get_name()] = gn;
+	}
+
+	HashMap<StringName, Set<StringName>> upper_neighbours;
+	HashMap<StringName, Pair<int, int>> port_info;
+	Vector2 origin(FLT_MAX, FLT_MAX);
+	//To be changed by user through GUI
+	float gap_v = 100.0f;
+	float gap_h = 100.0f;
+
+	//Creating a map with each graph node pointing to a set of its upper neighbours
+	for (int i = get_child_count() - 1; i >= 0; i--) {
+		GraphNode *gn = Object::cast_to<GraphNode>(get_child(i));
+		if (!gn) {
+			continue;
+		}
+
+		if (gn->is_selected()) {
+			selected_nodes.insert(gn->get_name());
+			origin = origin < gn->get_position_offset() ? origin : gn->get_position_offset();
+			Set<StringName> s;
+			for (List<Connection>::Element *E = connections.front(); E; E = E->next()) {
+				GraphNode *p_from = Object::cast_to<GraphNode>(node_names[E->get().from]);
+				if (E->get().to == gn->get_name() && p_from->is_selected()) {
+					if (!s.has(p_from->get_name())) {
+						s.insert(p_from->get_name());
+					}
+					String s_connection = String(p_from->get_name()) + " " + String(E->get().to);
+					StringName _connection(s_connection);
+					Pair<int, int> ports(E->get().from_port, E->get().to_port);
+					if (port_info.has(_connection)) {
+						Pair<int, int> p_ports = port_info[_connection];
+						if (p_ports.first < ports.first) {
+							ports = p_ports;
+						}
+					}
+					port_info.set(_connection, ports);
+				}
+			}
+			upper_neighbours.set(gn->get_name(), s);
+		}
+	}
+
+	HashMap<int, Vector<StringName>> l = _layering(selected_nodes, upper_neighbours);
+	crossing_minimisation(l, upper_neighbours);
+
+	Dictionary root, align, sink, shift;
+	_horizontal_alignment(root, align, l, upper_neighbours, selected_nodes);
+
+	HashMap<StringName, Vector2> new_positions;
+	Vector2 default_position(FLT_MAX, FLT_MAX);
+	Dictionary inner_shift;
+	Set<StringName> block_heads;
+
+	for (const Set<StringName>::Element *E = selected_nodes.front(); E; E = E->next()) {
+		inner_shift[E->get()] = 0.0f;
+		sink[E->get()] = E->get();
+		shift[E->get()] = FLT_MAX;
+		new_positions.set(E->get(), default_position);
+		if ((StringName)root[E->get()] == E->get()) {
+			block_heads.insert(E->get());
+		}
+	}
+
+	calculate_inner_shifts(inner_shift, root, node_names, align, block_heads, port_info);
+
+	for (const Set<StringName>::Element *E = block_heads.front(); E; E = E->next()) {
+		place_block(E->get(), gap_v, l, root, align, node_names, inner_shift, sink, shift, new_positions);
+	}
+
+	//Compute: Vertical co-ordinates for each block head
+	for (const Set<StringName>::Element *E = block_heads.front(); E; E = E->next()) {
+		StringName u = E->get();
+		StringName prev = u;
+		float start_from = origin.y + new_positions[E->get()].y;
+		do {
+			Vector2 cal_pos;
+			cal_pos.y = start_from + (real_t)inner_shift[u];
+			new_positions.set(u, cal_pos);
+			prev = u;
+			u = align[u];
+		} while (u != E->get());
+	}
+	//Assigning horizontal co-ordinates
+	float start_from = origin.x;
+	float largest_node_size = 0.0f;
+
+	for (unsigned int i = 0; i < l.size(); i++) {
+		Vector<StringName> layer = l[i];
+		for (int j = 0; j < layer.size(); j++) {
+			float current_node_size = Object::cast_to<GraphNode>(node_names[layer[j]])->get_size().x;
+			largest_node_size = MAX(largest_node_size, current_node_size);
+		}
+
+		for (int j = 0; j < layer.size(); j++) {
+			float current_node_size = Object::cast_to<GraphNode>(node_names[layer[j]])->get_size().x;
+			Vector2 cal_pos = new_positions[layer[j]];
+
+			if (current_node_size == largest_node_size) {
+				cal_pos.x = start_from;
+			} else {
+				float current_node_start_pos;
+				if (current_node_size >= largest_node_size / 2) {
+					current_node_start_pos = start_from;
+				} else {
+					current_node_start_pos = start_from + largest_node_size - current_node_size;
+				}
+				cal_pos.x = current_node_start_pos;
+			}
+			new_positions.set(layer[j], cal_pos);
+		}
+
+		start_from += largest_node_size + gap_h;
+		largest_node_size = 0.0f;
+	}
+
+	//Moving nodes to new positions
+	emit_signal("begin_node_move");
+	for (const Set<StringName>::Element *E = selected_nodes.front(); E; E = E->next()) {
+		GraphNode *gn = Object::cast_to<GraphNode>(node_names[E->get()]);
+		gn->set_drag(true);
+		Vector2 pos = (new_positions[E->get()]);
+
+		if (is_using_snap()) {
+			const int snap = get_snap();
+			pos = pos.snapped(Vector2(snap, snap));
+		}
+		gn->set_position_offset(pos);
+		gn->set_drag(false);
+	}
+	emit_signal("end_node_move");
+	arranging_graph = false;
+}
+
 void GraphEdit::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("connect_node", "from", "from_port", "to", "to_port"), &GraphEdit::connect_node);
 	ClassDB::bind_method(D_METHOD("is_node_connected", "from", "from_port", "to", "to_port"), &GraphEdit::is_node_connected);
@@ -1850,6 +2347,13 @@ GraphEdit::GraphEdit() {
 	minimap_button->set_pressed(true);
 	minimap_button->set_focus_mode(FOCUS_NONE);
 	zoom_hb->add_child(minimap_button);
+
+	layout_button = memnew(Button);
+	layout_button->set_flat(true);
+	zoom_hb->add_child(layout_button);
+	layout_button->set_tooltip(RTR("Arrange nodes."));
+	layout_button->connect("pressed", callable_mp(this, &GraphEdit::arrange_nodes));
+	layout_button->set_focus_mode(FOCUS_NONE);
 
 	Vector2 minimap_size = Vector2(240, 160);
 	float minimap_opacity = 0.65;

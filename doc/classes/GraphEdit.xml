@@ -283,6 +283,8 @@
 		<theme_item name="grid_minor" data_type="color" type="Color" default="Color(1, 1, 1, 0.05)">
 			Color of minor grid lines.
 		</theme_item>
+		<theme_item name="layout" data_type="icon" type="Texture2D">
+		</theme_item>
 		<theme_item name="minimap" data_type="icon" type="Texture2D">
 		</theme_item>
 		<theme_item name="minus" data_type="icon" type="Texture2D">

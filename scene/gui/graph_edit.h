@@ -116,6 +116,8 @@ private:
 
 	Button *minimap_button;
 
+	Button *layout_button;
+
 	HScrollBar *h_scroll;
 	VScrollBar *v_scroll;
 
@@ -230,6 +232,24 @@ private:
 
 	bool _check_clickable_control(Control *p_control, const Vector2 &pos);
 
+	bool arranging_graph = false;
+
+	enum SET_OPERATIONS {
+		IS_EQUAL,
+		IS_SUBSET,
+		DIFFERENCE,
+		UNION,
+	};
+
+	int _set_operations(SET_OPERATIONS p_operation, Set<StringName> &r_u, const Set<StringName> &r_v);
+	HashMap<int, Vector<StringName>> _layering(const Set<StringName> &r_selected_nodes, const HashMap<StringName, Set<StringName>> &r_upper_neighbours);
+	Vector<StringName> _split(const Vector<StringName> &r_layer, const HashMap<StringName, Dictionary> &r_crossings);
+	void _horizontal_alignment(Dictionary &r_root, Dictionary &r_align, const HashMap<int, Vector<StringName>> &r_layers, const HashMap<StringName, Set<StringName>> &r_upper_neighbours, const Set<StringName> &r_selected_nodes);
+	void crossing_minimisation(HashMap<int, Vector<StringName>> &l, const HashMap<StringName, Set<StringName>> &u);
+	void calculate_inner_shifts(Dictionary &d, const Dictionary &node_names, const Dictionary &root, const Dictionary &align, const Set<StringName> &block_heads, const HashMap<StringName, Pair<int, int>> &port_info);
+	float calculate_threshold(StringName v, StringName w, const Dictionary &node_names, const HashMap<int, Vector<StringName>> &_layers, const Dictionary &root, const Dictionary &align, const Dictionary &inner_shift, real_t current_threshold, const HashMap<StringName, Vector2> &node_positions);
+	void place_block(StringName v, float delta, const HashMap<int, Vector<StringName>> &_layers, const Dictionary &root, const Dictionary &align, const Dictionary &node_name, const Dictionary &inner_shift, Dictionary &sink, Dictionary &shift, HashMap<StringName, Vector2> &node_positions);
+
 protected:
 	static void _bind_methods();
 	virtual void add_child_notify(Node *p_child) override;
@@ -303,6 +323,8 @@ public:
 	bool is_connection_lines_antialiased() const;
 
 	HBoxContainer *get_zoom_hbox();
+
+	void arrange_nodes();
 
 	GraphEdit();
 };
