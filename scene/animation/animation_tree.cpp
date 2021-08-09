@@ -106,7 +106,7 @@ void AnimationNode::blend_animation(const StringName &p_animation, real_t p_time
 
 	AnimationState anim_state;
 	anim_state.blend = p_blend;
-	anim_state.track_blends = &blends;
+	anim_state.track_blends = blends;
 	anim_state.delta = p_delta;
 	anim_state.time = p_time;
 	anim_state.animation = animation;
@@ -840,7 +840,7 @@ void AnimationTree::_process_graph(real_t p_delta) {
 
 				ERR_CONTINUE(blend_idx < 0 || blend_idx >= state.track_count);
 
-				real_t blend = (*as.track_blends)[blend_idx] * weight;
+				real_t blend = (as.track_blends)[blend_idx] * weight;
 
 				if (blend < CMP_EPSILON) {
 					continue; //nothing to blend
