@@ -2825,11 +2825,9 @@ Error GLTFDocument::_parse_meshes(Ref<GLTFState> state) {
 					if (t.has("TANGENT")) {
 						const Vector<Vector3> tangents_v3 = _decode_accessor_as_vec3(state, t["TANGENT"], true);
 						const Vector<float> src_tangents = array[Mesh::ARRAY_TANGENT];
-						ERR_FAIL_COND_V(src_tangents.size() == 0, ERR_PARSE_ERROR);
 
-						Vector<float> tangents_v4;
-
-						{
+						if (src_tangents.size()) {
+							Vector<float> tangents_v4;
 							int max_idx = tangents_v3.size();
 
 							int size4 = src_tangents.size();
@@ -2849,11 +2847,11 @@ Error GLTFDocument::_parse_meshes(Ref<GLTFState> state) {
 									w4[l * 4 + 1] = r4[l * 4 + 1];
 									w4[l * 4 + 2] = r4[l * 4 + 2];
 								}
-								w4[l * 4 + 3] = r4[l * 4 + 3]; //copy flip value
+								w4[l * 4 + 3] = r4[l * 4 + 3] * -1; //copy flip value
 							}
-						}
 
-						array_copy[Mesh::ARRAY_TANGENT] = tangents_v4;
+							array_copy[Mesh::ARRAY_TANGENT] = tangents_v4;
+						}
 					}
 
 					if (generate_tangents) {
