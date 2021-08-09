@@ -60,6 +60,7 @@
 #include "scene/resources/surface_tool.h"
 
 #include "modules/modules_enabled.gen.h"
+#include <cstdint>
 #ifdef MODULE_CSG_ENABLED
 #include "modules/csg/csg_shape.h"
 #endif // MODULE_CSG_ENABLED
@@ -4721,7 +4722,7 @@ Error GLTFDocument::_serialize_animations(Ref<GLTFState> state) {
 
 				Dictionary target;
 				target["path"] = "scale";
-				target["node"] = track_i->key();
+				target["node"] = anim_track_i->key();
 
 				t["target"] = target;
 				channels.push_back(t);
@@ -4730,24 +4731,11 @@ Error GLTFDocument::_serialize_animations(Ref<GLTFState> state) {
 				Dictionary t;
 				t["sampler"] = samplers.size();
 				Dictionary s;
-
-				Vector<real_t> times;
+				Vector<real_t> times = track.weight_tracks[0].times;
 				Vector<real_t> values;
-
-				for (int32_t times_i = 0; times_i < track.weight_tracks[0].times.size(); times_i++) {
-					real_t time = track.weight_tracks[0].times[times_i];
-					times.push_back(time);
-				}
-
-				values.resize(times.size() * track.weight_tracks.size());
-				// TODO Sort by order in blend shapes
 				for (int k = 0; k < track.weight_tracks.size(); k++) {
-					Vector<float> wdata = track.weight_tracks[k].values;
-					for (int l = 0; l < wdata.size(); l++) {
-						values.write[l * track.weight_tracks.size() + k] = wdata.write[l];
-					}
+					values.append_array(track.weight_tracks[k].values);
 				}
-
 				s["interpolation"] = interpolation_to_string(track.weight_tracks[track.weight_tracks.size() - 1].interpolation);
 				s["input"] = _encode_accessor_as_floats(state, times, false);
 				s["output"] = _encode_accessor_as_floats(state, values, false);
@@ -4756,7 +4744,7 @@ Error GLTFDocument::_serialize_animations(Ref<GLTFState> state) {
 
 				Dictionary target;
 				target["path"] = "weights";
-				target["node"] = track_i->key();
+				target["node"] = anim_track_i->key();
 
 				t["target"] = target;
 				channels.push_back(t);
@@ -6340,18 +6328,15 @@ void GLTFDocument::_convert_animation(Ref<GLTFState> state, AnimationPlayer *ap,
 			}
 			ERR_CONTINUE(mesh_index == -1);
 			GLTFAnimation::Track track = gltf_animation->get_tracks().has(mesh_index) ? gltf_animation->get_tracks()[mesh_index] : GLTFAnimation::Track();
-			for (int32_t shape_i = 0; shape_i < mesh->get_blend_shape_count(); shape_i++) {
+			int64_t key_count = animation->get_length() * BAKE_FPS;
+			for (int64_t shape_i = 0; shape_i < mesh->get_blend_shape_count(); shape_i++) {
+				GLTFAnimation::Channel<float> channel;
+				channel.times.resize(key_count);
+				for (int64_t time_i = 0; time_i < key_count; time_i++) {
+					channel.times.write[time_i] = time_i * 1.0 * BAKE_FPS;
+				}
 				String shape_name = mesh->get_blend_shape_name(shape_i);
 				NodePath shape_path = String(path) + ":blend_shapes/" + shape_name;
-				int32_t shape_track_i = animation->find_track(shape_path);
-				if (shape_track_i == -1) {
-					GLTFAnimation::Channel<float> weight;
-					weight.interpolation = GLTFAnimation::INTERP_LINEAR;
-					weight.times.push_back(0.0f);
-					weight.values.push_back(0.0f);
-					track.weight_tracks.push_back(weight);
-					continue;
-				}
 				Animation::InterpolationType interpolation = animation->track_get_interpolation_type(track_i);
 				GLTFAnimation::Interpolation gltf_interpolation = GLTFAnimation::INTERP_LINEAR;
 				if (interpolation == Animation::InterpolationType::INTERPOLATION_LINEAR) {
@@ -6361,20 +6346,21 @@ void GLTFDocument::_convert_animation(Ref<GLTFState> state, AnimationPlayer *ap,
 				} else if (interpolation == Animation::InterpolationType::INTERPOLATION_CUBIC) {
 					gltf_interpolation = GLTFAnimation::INTERP_CUBIC_SPLINE;
 				}
-				int32_t key_count = animation->track_get_key_count(shape_track_i);
-				GLTFAnimation::Channel<float> weight;
-				weight.interpolation = gltf_interpolation;
-				weight.times.resize(key_count);
-				for (int32_t time_i = 0; time_i < key_count; time_i++) {
-					weight.times.write[time_i] = animation->track_get_key_time(shape_track_i, time_i);
+				channel.interpolation = gltf_interpolation;
+				Vector<float> values;
+				values.resize(key_count);
+				int32_t shape_track_i = animation->find_track(shape_path);
+				if (shape_track_i == -1) {
+					for (int64_t value_i = 0; value_i < key_count; value_i++) {
+						values.write[value_i] = 0.0f;
+					}
+				} else {
+					for (int64_t value_i = 0; value_i < key_count; value_i++) {
+						values.write[value_i] = animation->track_get_key_value(shape_track_i, value_i);
+					}
 				}
-				weight.values.resize(key_count);
-				for (int32_t value_i = 0; value_i < key_count; value_i++) {
-					weight.values.write[value_i] = animation->track_get_key_value(shape_track_i, value_i);
-				}
-				weight.times.push_back(0.0f);
-				weight.values.push_back(0.0f);
-				track.weight_tracks.push_back(weight);
+				channel.values.append_array(values);
+				track.weight_tracks.push_back(channel);
 			}
 			Map<int, GLTFAnimation::Track> &tracks = gltf_animation->get_tracks();
 			tracks[mesh_index] = track;
