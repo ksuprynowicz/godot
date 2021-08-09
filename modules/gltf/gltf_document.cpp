@@ -6347,19 +6347,17 @@ void GLTFDocument::_convert_animation(Ref<GLTFState> state, AnimationPlayer *ap,
 					gltf_interpolation = GLTFAnimation::INTERP_CUBIC_SPLINE;
 				}
 				channel.interpolation = gltf_interpolation;
-				Vector<float> values;
-				values.resize(key_count);
+				channel.values.resize(key_count);
 				int32_t shape_track_i = animation->find_track(shape_path);
 				if (shape_track_i == -1) {
 					for (int64_t value_i = 0; value_i < key_count; value_i++) {
-						values.write[value_i] = 0.0f;
+						channel.values.write[value_i] = 0.0f;
 					}
 				} else {
 					for (int64_t value_i = 0; value_i < key_count; value_i++) {
-						values.write[value_i] = animation->track_get_key_value(shape_track_i, value_i);
+						channel.values.write[value_i] = animation->track_get_key_value(shape_track_i, value_i);
 					}
 				}
-				channel.values.append_array(values);
 				track.weight_tracks.push_back(channel);
 			}
 			Map<int, GLTFAnimation::Track> &tracks = gltf_animation->get_tracks();
