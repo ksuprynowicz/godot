@@ -943,7 +943,7 @@ void AudioServer::init() {
 	channel_disable_threshold_db = GLOBAL_DEF_RST("audio/buses/channel_disable_threshold_db", -60.0);
 	channel_disable_frames = float(GLOBAL_DEF_RST("audio/buses/channel_disable_time", 2.0)) * get_mix_rate();
 	ProjectSettings::get_singleton()->set_custom_property_info("audio/buses/channel_disable_time", PropertyInfo(Variant::FLOAT, "audio/buses/channel_disable_time", PROPERTY_HINT_RANGE, "0,5,0.01,or_greater"));
-	buffer_size = 1024; //hardcoded for now
+	buffer_size = GLOBAL_DEF_RST("audio/mix_buffer_size", 1024);
 
 	init_channels_and_buffers();
 
