@@ -189,10 +189,10 @@ private:
 			const int component_type, const int component_size,
 			const bool normalized, const int byte_offset,
 			const bool for_vertex);
-	Vector<double> _decode_accessor(Ref<GLTFState> state,
+	Vector<real_t> _decode_accessor(Ref<GLTFState> state,
 			const GLTFAccessorIndex p_accessor,
 			const bool p_for_vertex);
-	Vector<float> _decode_accessor_as_floats(Ref<GLTFState> state,
+	Vector<real_t> _decode_accessor_as_floats(Ref<GLTFState> state,
 			const GLTFAccessorIndex p_accessor,
 			const bool p_for_vertex);
 	Vector<int> _decode_accessor_as_ints(Ref<GLTFState> state,
@@ -271,7 +271,7 @@ private:
 			const GLTFNodeIndex node_index);
 	void _assign_scene_names(Ref<GLTFState> state);
 	template <class T>
-	T _interpolate_track(const Vector<float> &p_times, const Vector<T> &p_values,
+	T _interpolate_track(const Vector<real_t> &p_times, const Vector<T> &p_values,
 			const float p_time,
 			const GLTFAnimation::Interpolation p_interp);
 	GLTFAccessorIndex _encode_accessor_as_quaternions(Ref<GLTFState> state,
