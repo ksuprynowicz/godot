@@ -29,12 +29,12 @@
 /*************************************************************************/
 
 #include "image_loader_svg.h"
+
 #include "core/error/error_macros.h"
-#include "core/math/vector2.h"
 #include "core/templates/local_vector.h"
-#include <stdint.h>
+
+#include <stdlib.h>
 #include <thorvg.h>
-#include <memory>
 
 void ImageLoaderSVG::set_convert_colors(Dictionary *p_replace_color) {
 	if (p_replace_color) {
@@ -53,10 +53,12 @@ void ImageLoaderSVG::set_convert_colors(Dictionary *p_replace_color) {
 		replace_colors.old_colors.clear();
 		replace_colors.new_colors.clear();
 	}
-	// Restore dark and light color replacement
+	// FIXME: Restore dark and light color replacement.
 }
 
-void ImageLoaderSVG::create_image_from_string(Ref<Image> p_image, String p_string, float p_scale, bool upsample, bool p_convert_color) {
+void ImageLoaderSVG::create_image_from_string(Ref<Image> p_image, String p_string, float p_scale, bool p_upsample, bool p_convert_color) {
+	ERR_FAIL_COND(Math::is_zero_approx(p_scale));
+
 	Vector<uint8_t> data = p_string.to_utf8_buffer();
 
 	uint32_t bgColor = 0xffffffff;
@@ -68,10 +70,12 @@ void ImageLoaderSVG::create_image_from_string(Ref<Image> p_image, String p_strin
 		return;
 	}
 	picture->viewbox(nullptr, nullptr, &fw, &fh);
-	ERR_FAIL_COND(Math::is_zero_approx(p_scale));
+
+	// FIXME: p_upsample is not used.
 	uint32_t width = MIN(fw * p_scale, 16 * 1024);
 	uint32_t height = MIN(fh * p_scale, 16 * 1024);
 	picture->size(width, height);
+
 	std::unique_ptr<tvg::SwCanvas> swCanvas = tvg::SwCanvas::gen();
 	uint32_t *buffer = (uint32_t *)malloc(sizeof(uint32_t) * width * height);
 	tvg::Result res = swCanvas->target(buffer, width, width, height, tvg::SwCanvas::ARGB8888);
@@ -121,8 +125,7 @@ void ImageLoaderSVG::get_recognized_extensions(List<String> *p_extensions) const
 	p_extensions->push_back("svg");
 }
 
-Error ImageLoaderSVG::load_image(Ref<Image> p_image, FileAccess *p_fileaccess,
-		bool p_force_linear, float p_scale) {
+Error ImageLoaderSVG::load_image(Ref<Image> p_image, FileAccess *p_fileaccess, bool p_force_linear, float p_scale) {
 	String svg = p_fileaccess->get_as_utf8_string();
 	create_image_from_string(p_image, svg, p_scale, false, false);
 	ERR_FAIL_COND_V(p_image->is_empty(), FAILED);

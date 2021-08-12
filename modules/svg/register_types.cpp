@@ -29,8 +29,10 @@
 /*************************************************************************/
 
 #include "register_types.h"
+
 #include "image_loader_svg.h"
-#include "thirdparty/thorvg/inc/thorvg.h"
+
+#include <thorvg.h>
 
 static ImageLoaderSVG *image_loader_svg = nullptr;
 
@@ -45,5 +47,6 @@ void register_svg_types() {
 }
 
 void unregister_svg_types() {
+	memdelete(image_loader_svg);
 	tvg::Initializer::term(tvg::CanvasEngine::Sw);
 }
