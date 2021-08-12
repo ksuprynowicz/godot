@@ -634,7 +634,7 @@ Files extracted from upstream source:
 ## thorvg
 
 - Upstream: https://github.com/Samsung/thorvg
-- Version: v0.3.2 (0b504f62a2b2c1e957bfb2a532c6c15678b80a26, 2021)
+- Version: 0.3.2 (0b504f62a2b2c1e957bfb2a532c6c15678b80a26, 2021)
 - License: MIT
 
 Files extracted from upstream source:
