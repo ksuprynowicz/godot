@@ -311,6 +311,19 @@ Vector3 &Vector3::operator*=(real_t p_scalar) {
 }
 
 _FORCE_INLINE_ Vector3 operator*(real_t p_scalar, const Vector3 &p_vec) {
+	return p_vec *
+	 p_scalar;
+}
+
+_FORCE_INLINE_ Vector3 operator*(real_t p_scalar, const Vector3i &p_vec) {
+	return p_vec * p_scalar;
+}
+
+_FORCE_INLINE_ Vector3 operator*(int64_t p_scalar, const Vector3i &p_vec) {
+	return p_vec * p_scalar;
+}
+
+_FORCE_INLINE_ Vector3 operator*(int64_t p_scalar, const Vector3 &p_vec) {
 	return p_vec * p_scalar;
 }
 
