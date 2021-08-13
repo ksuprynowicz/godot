@@ -32,13 +32,21 @@
 
 #include "image_loader_svg.h"
 
+#include <thorvg.h>
+
 static ImageLoaderSVG *image_loader_svg = nullptr;
 
 void register_svg_types() {
+	tvg::CanvasEngine tvgEngine = tvg::CanvasEngine::Sw;
+	uint32_t threads = std::thread::hardware_concurrency();
+	if (tvg::Initializer::init(tvgEngine, threads) != tvg::Result::Success) {
+		return;
+	}
 	image_loader_svg = memnew(ImageLoaderSVG);
 	ImageLoader::add_image_format_loader(image_loader_svg);
 }
 
 void unregister_svg_types() {
 	memdelete(image_loader_svg);
+	tvg::Initializer::term(tvg::CanvasEngine::Sw);
 }
