@@ -29,9 +29,15 @@
 /*************************************************************************/
 
 #include "scene_importer_mesh.h"
+#include "thirdparty/opensubdiv/far/primvarRefiner.h"
+#include "thirdparty/opensubdiv/far/topologyDescriptor.h"
 
 #include "core/math/math_defs.h"
 #include "scene/resources/surface_tool.h"
+#include "thirdparty/opensubdiv/far/topologyRefiner.h"
+#include "thirdparty/opensubdiv/sdc/types.h"
+
+typedef OpenSubdiv::v3_4_3::Far::TopologyDescriptor Descriptor;
 
 void EditorSceneImporterMesh::add_blend_shape(const String &p_name) {
 	ERR_FAIL_COND(surfaces.size() > 0);
@@ -172,6 +178,13 @@ void EditorSceneImporterMesh::generate_lods() {
 		if (surfaces[i].primitive != Mesh::PRIMITIVE_TRIANGLES) {
 			continue;
 		}
+		Ref<SurfaceTool> st;
+		st.instance();
+		st->create_from_triangle_arrays(surfaces[i].arrays);
+		st->deindex();
+		st->index();
+		surfaces.write[i].arrays = st->commit_to_arrays();
+		surfaces.write[i].arrays = subdivide(surfaces[i].arrays, 1);
 
 		surfaces.write[i].lods.clear();
 		Vector<Vector3> vertices = surfaces[i].arrays[RS::ARRAY_VERTEX];
@@ -849,4 +862,151 @@ void EditorSceneImporterMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_lightmap_size_hint"), &EditorSceneImporterMesh::get_lightmap_size_hint);
 
 	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "_data", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_NOEDITOR), "_set_data", "_get_data");
+}
+
+Array EditorSceneImporterMesh::subdivide(Array p_mesh_arrays, int p_level) {
+	struct Vertex {
+		void Clear() { x = y = z = 0; }
+		void AddWithWeight(Vertex const &src, float weight) {
+			x += weight * src.x;
+			y += weight * src.y;
+			z += weight * src.z;
+		}
+		float x, y, z;
+	};
+
+	int subdiv_vertex_count = 0;
+	int subdiv_index_count = 0;
+
+	Vector<Vector3> subdiv_vertex_array;
+	Vector<int> subdiv_index_array;
+
+	int subdiv_face_count = 0;
+
+	Map<Vector3, int> vertex_map;
+
+	Vector<int> mesh_to_subdiv_index_map;
+
+	// Gather all vertices and faces from surfaces
+	Vector<Vector3> vertex_array = p_mesh_arrays[Mesh::ARRAY_VERTEX];
+	Vector<int> index_array = p_mesh_arrays[Mesh::ARRAY_INDEX];
+
+	int index_count = index_array.size();
+
+	// Remove duplicated vertices to link faces properly
+	{
+		int vertex_source_count = vertex_array.size();
+
+		mesh_to_subdiv_index_map.resize(vertex_source_count);
+		subdiv_vertex_array.resize(subdiv_vertex_count + vertex_source_count);
+
+		int vertex_index_out = 0;
+		for (int vertex_index = 0; vertex_index < vertex_source_count; ++vertex_index) {
+			const Vector3 &vertex = vertex_array[vertex_index];
+			Map<Vector3, int>::Element *found_vertex = vertex_map.find(vertex);
+			if (found_vertex) {
+				mesh_to_subdiv_index_map.write[vertex_index] = found_vertex->value();
+			} else {
+				int subdiv_vertex_index = subdiv_vertex_count + vertex_index_out;
+				vertex_map[vertex] = subdiv_vertex_index;
+				mesh_to_subdiv_index_map.write[vertex_index] = subdiv_vertex_index;
+				subdiv_vertex_array.write[subdiv_vertex_index] = vertex;
+				++vertex_index_out;
+			}
+		}
+
+		subdiv_vertex_count += vertex_index_out;
+	}
+	subdiv_vertex_array.resize(subdiv_vertex_count);
+
+	// Add vertex indices
+	{
+		subdiv_index_array.resize(subdiv_index_count + index_count);
+
+		for (int index = 0; index < index_count; ++index) {
+			int subdiv_index = subdiv_index_count + index;
+			subdiv_index_array.write[subdiv_index] = mesh_to_subdiv_index_map[index_array[index]];
+		}
+
+		subdiv_index_count += index_count;
+
+		int face_count = index_count / 3;
+		subdiv_face_count += face_count;
+	}
+
+	Array subdiv_mesh_arrays;
+	// Generate subdivision data
+	Vector<int> index_array_out;
+	// Create per-face vertex count
+	Vector<int> subdiv_face_vertex_count;
+	{
+		subdiv_face_vertex_count.resize(subdiv_face_count);
+		for (int face_index = 0; face_index < subdiv_face_count; ++face_index) {
+			subdiv_face_vertex_count.write[face_index] = 3;
+		}
+	}
+
+	OpenSubdiv::v3_4_3::Far::TopologyDescriptor desc;
+	desc.numVertices = subdiv_vertex_count;
+	desc.numFaces = subdiv_face_count;
+	desc.numVertsPerFace = subdiv_face_vertex_count.ptr();
+	desc.vertIndicesPerFace = subdiv_index_array.ptr();
+
+	// Create topology refiner
+	OpenSubdiv::Sdc::SchemeType type = OpenSubdiv::Sdc::SCHEME_LOOP;
+
+	OpenSubdiv::Sdc::Options options;
+	options.SetVtxBoundaryInterpolation(OpenSubdiv::Sdc::Options::VTX_BOUNDARY_EDGE_AND_CORNER);
+	options.SetFVarLinearInterpolation(OpenSubdiv::Sdc::Options::FVAR_LINEAR_ALL);
+	options.SetCreasingMethod(OpenSubdiv::Sdc::Options::CREASE_UNIFORM);
+
+	OpenSubdiv::v3_4_3::Far::TopologyRefinerFactory<Descriptor>::Options create_options(type, options);
+
+	OpenSubdiv::v3_4_3::Far::TopologyRefiner *refiner = OpenSubdiv::v3_4_3::Far::TopologyRefinerFactory<Descriptor>::Create(desc, create_options);
+
+	OpenSubdiv::Far::TopologyRefiner::UniformOptions refine_options(p_level);
+	refiner->RefineUniform(refine_options);
+
+	subdiv_vertex_count = refiner->GetNumVerticesTotal();
+
+	// Create subdivision vertices
+	{
+		subdiv_vertex_array.resize(subdiv_vertex_count);
+
+		// Interpolate vertex primvar data
+		OpenSubdiv::Far::PrimvarRefiner primvar_refiner(*refiner);
+
+		Vertex *src = (Vertex *)subdiv_vertex_array.ptrw();
+		int level = 0;
+		Vertex *dst = src + refiner->GetLevel(level).GetNumVertices();
+		primvar_refiner.Interpolate(level + 1, src, dst);
+		src = dst;
+	}
+
+	subdiv_mesh_arrays.resize(Mesh::ARRAY_MAX);
+	subdiv_mesh_arrays[Mesh::ARRAY_VERTEX] = subdiv_vertex_array;
+	// Create subdivision faces
+	{
+		OpenSubdiv::v3_4_3::Far::TopologyLevel const &last_level = refiner->GetLevel(p_level);
+		int face_count_out = last_level.GetNumFaces();
+
+		int vertex_index_offset = subdiv_vertex_count - last_level.GetNumVertices();
+
+		for (int face_index = 0; face_index < face_count_out; ++face_index) {
+			int parent_face_index = last_level.GetFaceParentFace(face_index);
+			for (int level_index = p_level - 1; level_index > 0; --level_index) {
+				OpenSubdiv::v3_4_3::Far::TopologyLevel const &prev_level = refiner->GetLevel(level_index);
+				parent_face_index = prev_level.GetFaceParentFace(parent_face_index);
+			}
+			OpenSubdiv::Far::ConstIndexArray face_vertices = last_level.GetFaceVertices(face_index);
+			ERR_FAIL_COND_V(face_vertices.size() != 3, p_mesh_arrays);
+
+			index_array_out.push_back(vertex_index_offset + face_vertices[0]);
+			index_array_out.push_back(vertex_index_offset + face_vertices[1]);
+			index_array_out.push_back(vertex_index_offset + face_vertices[2]);
+		}
+		subdiv_mesh_arrays[Mesh::ARRAY_INDEX] = index_array_out;
+	}
+	delete refiner;
+	return subdiv_mesh_arrays;
 }
