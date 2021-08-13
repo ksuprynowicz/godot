@@ -179,7 +179,7 @@ void EditorSceneImporterMesh::generate_lods() {
 			continue;
 		}
 		Ref<SurfaceTool> st;
-		st.instance();
+		st.instantiate();
 		st->create_from_triangle_arrays(surfaces[i].arrays);
 		st->deindex();
 		st->index();
