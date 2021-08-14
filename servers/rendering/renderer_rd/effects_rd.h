@@ -68,6 +68,7 @@
 #include "servers/rendering_server.h"
 
 class EffectsRD {
+private:
 	enum FSRUpscalePass {
 		FSR_UPSCALE_PASS_EASU = 0,
 		FSR_UPSCALE_PASS_RCAS = 1
