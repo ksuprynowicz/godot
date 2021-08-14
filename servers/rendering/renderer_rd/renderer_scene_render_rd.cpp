@@ -2537,6 +2537,11 @@ bool RendererSceneRenderRD::_render_buffers_can_be_storage() {
 void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p_render_target, int p_internal_width, int p_internal_height, int p_width, int p_height, float p_fsr_upscale_sharpness, RS::ViewportMSAA p_msaa, RenderingServer::ViewportScreenSpaceAA p_screen_space_aa, bool p_use_debanding, uint32_t p_view_count) {
 	ERR_FAIL_COND_MSG(p_view_count == 0, "Must have at least 1 view");
 
+	if (!_render_buffers_can_be_storage()) {
+		p_internal_height = p_height;
+		p_internal_width = p_width;
+	}
+
 	RenderBuffers *rb = render_buffers_owner.getornull(p_render_buffers);
 	rb->internal_width = p_internal_width;
 	rb->internal_height = p_internal_height;
