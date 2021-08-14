@@ -679,7 +679,7 @@ void RendererViewport::viewport_set_size(RID p_viewport, int p_width, int p_heig
 
 	float scale_factor;
 
-	switch(viewport->fsr_quality_mode) {
+	switch (viewport->fsr_quality_mode) {
 		case RS::VIEWPORT_FSR_UPSCALE_DISABLED:
 			scale_factor = 1.0f;
 			break;
@@ -687,19 +687,19 @@ void RendererViewport::viewport_set_size(RID p_viewport, int p_width, int p_heig
 		case RS::VIEWPORT_FSR_UPSCALE_PERFORMANCE:
 			scale_factor = 2.0f;
 			break;
-		
+
 		case RS::VIEWPORT_FSR_UPSCALE_BALANCED:
 			scale_factor = 1.7f;
 			break;
-		
+
 		case RS::VIEWPORT_FSR_UPSCALE_QUALITY:
 			scale_factor = 1.5f;
 			break;
-		
+
 		case RS::VIEWPORT_FSR_UPSCALE_ULTRA_QUALITY:
 			scale_factor = 1.3f;
 			break;
-		
+
 		default:
 			scale_factor = 1.0f;
 			break;
