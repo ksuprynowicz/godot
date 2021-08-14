@@ -2803,7 +2803,7 @@ RenderingServer::RenderingServer() {
 			"rendering/vulkan/rendering/fsr_upscale_quality",
 			PROPERTY_HINT_ENUM, "Disabled (Slowest),Performance (Fast), Balanced (Normal), Quality (Slow), Ultra Quality (Slowest)"));
 	ProjectSettings::get_singleton()->set_custom_property_info("rendering/vulkan/rendering/fsr_upscale_sharpness",
-		PropertyInfo(Variant::INT,
+		PropertyInfo(Variant::FLOAT,
 			"rendering/vulkan/rendering/fsr_upscale_sharpness",
 			PROPERTY_HINT_RANGE, "0,2,0.1"));
 
