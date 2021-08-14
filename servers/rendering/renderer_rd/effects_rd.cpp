@@ -251,7 +251,7 @@ void EffectsRD::fsr_upscale(RID p_source_rd_texture, RID p_secondary_texture, RI
 	FSR_upscale.push_constant.upscaled_width = p_size.width;
 	FSR_upscale.push_constant.upscaled_height = p_size.height;
 	FSR_upscale.push_constant.sharpness = p_fsr_upscale_sharpness;
-	
+
 	//FSR Easc
 	FSR_upscale.push_constant.pass = FSR_UPSCALE_PASS_EASU;
 	RD::get_singleton()->compute_list_bind_uniform_set(compute_list, _get_compute_uniform_set_from_texture(p_source_rd_texture), 0);
@@ -1939,7 +1939,6 @@ EffectsRD::EffectsRD(bool p_prefer_raster_effects) {
 
 		FSR_upscale.shader_version = FSR_upscale.shader.version_create();
 		FSR_upscale.pipeline = RD::get_singleton()->compute_pipeline_create(FSR_upscale.shader.version_get_shader(FSR_upscale.shader_version, 0));
-
 	}
 
 	prefer_raster_effects = p_prefer_raster_effects;
