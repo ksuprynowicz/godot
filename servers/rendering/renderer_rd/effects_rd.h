@@ -33,7 +33,6 @@
 
 #include "core/math/camera_matrix.h"
 #include "servers/rendering/renderer_rd/pipeline_cache_rd.h"
-#include "servers/rendering/renderer_rd/shaders/fsr_upscale.glsl.gen.h"
 #include "servers/rendering/renderer_rd/shaders/blur_raster.glsl.gen.h"
 #include "servers/rendering/renderer_rd/shaders/bokeh_dof.glsl.gen.h"
 #include "servers/rendering/renderer_rd/shaders/bokeh_dof_raster.glsl.gen.h"
