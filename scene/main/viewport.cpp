@@ -3531,6 +3531,12 @@ void Viewport::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_screen_space_aa", "screen_space_aa"), &Viewport::set_screen_space_aa);
 	ClassDB::bind_method(D_METHOD("get_screen_space_aa"), &Viewport::get_screen_space_aa);
 
+	ClassDB::bind_method(D_METHOD("set_fsr_upscale_quality", "fsr_upscale_quality"), &Viewport::set_fsr_upscale_quality);
+	ClassDB::bind_method(D_METHOD("get_fsr_upscale_quality"), &Viewport::get_fsr_upscale_quality);
+
+	ClassDB::bind_method(D_METHOD("set_fsr_upscale_sharpness", "fsr_upscale_sharpness"), &Viewport::set_fsr_upscale_sharpness);
+	ClassDB::bind_method(D_METHOD("get_fsr_upscale_sharpness"), &Viewport::get_fsr_upscale_sharpness);
+
 	ClassDB::bind_method(D_METHOD("set_use_debanding", "enable"), &Viewport::set_use_debanding);
 	ClassDB::bind_method(D_METHOD("is_using_debanding"), &Viewport::is_using_debanding);
 
