@@ -54,8 +54,9 @@ public:
 		RID camera;
 		RID scenario;
 
-		RS::ViewportFSRUpscaleQualityMode quality_mode;
+		RS::ViewportFSRUpscaleQualityMode fsr_quality_mode;
 		float fsr_upscale_sharpness;
+		bool fsr_enabled;
 		RS::ViewportUpdateMode update_mode;
 		RID render_target;
 		RID render_target_texture;

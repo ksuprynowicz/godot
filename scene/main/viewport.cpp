@@ -2833,10 +2833,11 @@ Viewport::ScreenSpaceAA Viewport::get_screen_space_aa() const {
 }
 
 void Viewport::set_fsr_upscale_quality(FSRUpscaleQuality p_fsr_upscale_quality) {
-	ERR_FAIL_INDEX(p_fsr_upscale_quality, FSR_UPSCALE_QUALITY_MAX);
+	ERR_FAIL_INDEX(p_fsr_upscale_quality, FSR_UPSCALE_MAX);
 	if (fsr_upscale_quality == p_fsr_upscale_quality) {
 		return;
 	}
+
 	fsr_upscale_quality = p_fsr_upscale_quality;
 	RS::get_singleton()->viewport_set_fsr_upscale_quality(viewport, RS::ViewportFSRUpscaleQualityMode(p_fsr_upscale_quality));
 }
@@ -2855,6 +2856,7 @@ void Viewport::set_fsr_upscale_sharpness(float p_fsr_upscale_sharpness) {
 	} else if (p_fsr_upscale_sharpness < 0.0f) {
 		p_fsr_upscale_sharpness = 0.0f;
 	}
+
 	fsr_upscale_sharpness = p_fsr_upscale_sharpness;
 	RS::get_singleton()->viewport_set_fsr_upscale_sharpness(viewport, p_fsr_upscale_sharpness);
 }
@@ -3696,11 +3698,11 @@ void Viewport::_bind_methods() {
 	BIND_ENUM_CONSTANT(SCREEN_SPACE_AA_FXAA);
 	BIND_ENUM_CONSTANT(SCREEN_SPACE_AA_MAX);
 
-	BIND_ENUM_CONSTANT(FSR_UPSCALE_QUALITY_DISABLED);
-	BIND_ENUM_CONSTANT(FSR_UPSCALE_QUALITY_PERFORMANCE);
-	BIND_ENUM_CONSTANT(FSR_UPSCALE_QUALITY_BALANCED);
-	BIND_ENUM_CONSTANT(FSR_UPSCALE_QUALITY_QUALITY);
-	BIND_ENUM_CONSTANT(FSR_UPSCALE_QUALITY_ULTRA_QUALITY);
+	BIND_ENUM_CONSTANT(FSR_UPSCALE_DISABLED);
+	BIND_ENUM_CONSTANT(FSR_UPSCALE_PERFORMANCE);
+	BIND_ENUM_CONSTANT(FSR_UPSCALE_BALANCED);
+	BIND_ENUM_CONSTANT(FSR_UPSCALE_QUALITY);
+	BIND_ENUM_CONSTANT(FSR_UPSCALE_ULTRA_QUALITY);
 
 	BIND_ENUM_CONSTANT(RENDER_INFO_OBJECTS_IN_FRAME);
 	BIND_ENUM_CONSTANT(RENDER_INFO_PRIMITIVES_IN_FRAME);

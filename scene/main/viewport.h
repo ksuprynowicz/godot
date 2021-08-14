@@ -115,12 +115,12 @@ public:
 	};
 
 	enum FSRUpscaleQuality {
-		FSR_UPSCALE_QUALITY_DISABLED,
-		FSR_UPSCALE_QUALITY_PERFORMANCE,
-		FSR_UPSCALE_QUALITY_BALANCED,
-		FSR_UPSCALE_QUALITY_QUALITY,
-		FSR_UPSCALE_QUALITY_ULTRA_QUALITY,
-		FSR_UPSCALE_QUALITY_MAX
+		FSR_UPSCALE_DISABLED,
+		FSR_UPSCALE_PERFORMANCE,
+		FSR_UPSCALE_BALANCED,
+		FSR_UPSCALE_QUALITY,
+		FSR_UPSCALE_ULTRA_QUALITY,
+		FSR_UPSCALE_MAX
 	};
 
 	enum RenderInfo {
@@ -291,7 +291,7 @@ private:
 
 	MSAA msaa = MSAA_DISABLED;
 	ScreenSpaceAA screen_space_aa = SCREEN_SPACE_AA_DISABLED;
-	FSRUpscaleQuality fsr_upscale_quality = FSR_UPSCALE_QUALITY_DISABLED;;
+	FSRUpscaleQuality fsr_upscale_quality = FSR_UPSCALE_DISABLED;
 	float fsr_upscale_sharpness = 0.2f;
 	bool use_debanding = false;
 	float lod_threshold = 1.0;

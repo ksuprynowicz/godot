@@ -328,19 +328,19 @@
 		<constant name="SCREEN_SPACE_AA_MAX" value="2" enum="ScreenSpaceAA">
 			Represents the size of the [enum ScreenSpaceAA] enum.
 		</constant>
-		<constant name="FSR_UPSCALE_QUALITY_DISABLED" value="0" enum="FSRUpscaleQuality">
-			Does not perform any upscaling/sharpening and does not apply any render scaling. This provides the best visual quality, but is the slowest (even compared to [constant FSR_UPSCALE_QUALITY_ULTRA_QUALITY]).
+		<constant name="FSR_UPSCALE_DISABLED" value="0" enum="FSRUpscaleQuality">
+			Does not perform any upscaling/sharpening and does not apply any render scaling. This provides the best visual quality, but is the slowest (even compared to [constant FSR_UPSCALE_ULTRA_QUALITY]).
 		</constant>
-		<constant name="FSR_UPSCALE_QUALITY_PERFORMANCE" value="1" enum="FSRUpscaleQuality">
+		<constant name="FSR_UPSCALE_PERFORMANCE" value="1" enum="FSRUpscaleQuality">
 			Renders the viewport at 50% resolution on each axis, then upscales to the viewport's native resolution. For example, when targeting 4K (3840×2160), this will make the viewport render in 1920×1080 then upscale to 3840×2160.
 		</constant>
-		<constant name="FSR_UPSCALE_QUALITY_BALANCED" value="2" enum="FSRUpscaleQuality">
+		<constant name="FSR_UPSCALE_BALANCED" value="2" enum="FSRUpscaleQuality">
 			Renders the viewport at 59% resolution on each axis, then upscales to the viewport's native resolution. For example, when targeting 4K (3840×2160), this will make the viewport render in 2259×1270 then upscale to 3840×2160.
 		</constant>
-		<constant name="FSR_UPSCALE_QUALITY_QUALITY" value="3" enum="FSRUpscaleQuality">
+		<constant name="FSR_UPSCALE_QUALITY" value="3" enum="FSRUpscaleQuality">
 			Renders the viewport at 67% resolution on each axis, then upscales to the viewport's native resolution. For example, when targeting 4K (3840×2160), this will make the viewport render in 2560×1440 then upscale to 3840×2160.
 		</constant>
-		<constant name="FSR_UPSCALE_QUALITY_ULTRA_QUALITY" value="4" enum="FSRUpscaleQuality">
+		<constant name="FSR_UPSCALE_ULTRA_QUALITY" value="4" enum="FSRUpscaleQuality">
 			Renders the viewport at 77% resolution on each axis, then upscales to the viewport's native resolution. For example, when targeting 4K (3840×2160), this will make the viewport render in 2954×1662 then upscale to 3840×2160. This is the highest-quality FSR option, but it brings the lowest performance advantage compared to rendering at the native resolution directly.
 		</constant>
 		<constant name="RENDER_INFO_OBJECTS_IN_FRAME" value="0" enum="RenderInfo">
