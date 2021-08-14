@@ -749,7 +749,7 @@ void RendererViewport::viewport_set_fsr_upscale_quality(RID p_viewport, RS::View
 	Viewport *viewport = viewport_owner.getornull(p_viewport);
 	ERR_FAIL_COND(!viewport);
 
-	if (viewport->fsr_enabled) {
+	if (!viewport->fsr_enabled) {
 		viewport->fsr_quality_mode = RS::VIEWPORT_FSR_UPSCALE_DISABLED;
 	} else {
 		viewport->fsr_quality_mode = p_quality_mode;
