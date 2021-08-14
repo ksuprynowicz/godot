@@ -4268,17 +4268,7 @@ void RendererSceneRenderRD::_debug_draw_cluster(RID p_render_buffers) {
 				default: {
 				}
 			}
-			if (current_cluster_builder != nullptr) {
-				current_cluster_builder->debug(elem_type);
-			}
-		}
-
-		RENDER_TIMESTAMP("Tonemap");
-
-		_render_buffers_post_process_and_tonemap(&render_data);
-		_render_buffers_debug_draw(p_render_buffers, p_shadow_atlas, p_occluder_debug_tex);
-		if (debug_draw == RS::VIEWPORT_DEBUG_DRAW_SDFGI && rb != nullptr && rb->sdfgi != nullptr) {
-			rb->sdfgi->debug_draw(render_data.cam_projection, render_data.cam_transform, rb->width, rb->height, rb->render_target, rb->texture);
+			current_cluster_builder->debug(elem_type);
 		}
 	}
 }
