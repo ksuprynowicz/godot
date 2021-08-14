@@ -2624,7 +2624,8 @@ void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p
 		rb->texture_fb = RD::get_singleton()->framebuffer_create(fb, RenderingDevice::INVALID_ID, rb->view_count);
 	}
 
-	rb->data->configure(rb->internal_texture, rb->depth_texture, p_internal_width, p_internal_height, p_msaa, p_view_count);
+	RID target_texture = storage->render_target_get_rd_texture(rb->render_target);
+	rb->data->configure(rb->internal_texture, rb->depth_texture, target_texture, p_internal_width, p_internal_height, p_msaa, p_view_count);
 
 	if (is_clustered_enabled()) {
 		rb->cluster_builder->setup(Size2i(p_width, p_height), max_cluster_elements, rb->depth_texture, storage->sampler_rd_get_default(RS::CANVAS_ITEM_TEXTURE_FILTER_NEAREST, RS::CANVAS_ITEM_TEXTURE_REPEAT_DISABLED), rb->internal_texture);
@@ -4142,9 +4143,7 @@ void RendererSceneRenderRD::render_scene(RID p_render_buffers, const CameraData 
 	if (p_render_buffers.is_valid()) {
 		/*
 		_debug_draw_cluster(p_render_buffers);
-
 		RENDER_TIMESTAMP("Tonemap");
-
 		_render_buffers_post_process_and_tonemap(&render_data);
 		*/
 
@@ -4177,17 +4176,7 @@ void RendererSceneRenderRD::_debug_draw_cluster(RID p_render_buffers) {
 				default: {
 				}
 			}
-			if (current_cluster_builder != nullptr) {
-				current_cluster_builder->debug(elem_type);
-			}
-		}
-
-		RENDER_TIMESTAMP("Tonemap");
-
-		_render_buffers_post_process_and_tonemap(&render_data);
-		_render_buffers_debug_draw(p_render_buffers, p_shadow_atlas, p_occluder_debug_tex);
-		if (debug_draw == RS::VIEWPORT_DEBUG_DRAW_SDFGI && rb != nullptr && rb->sdfgi != nullptr) {
-			rb->sdfgi->debug_draw(render_data.cam_projection, render_data.cam_transform, rb->width, rb->height, rb->render_target, rb->texture);
+			current_cluster_builder->debug(elem_type);
 		}
 	}
 }
