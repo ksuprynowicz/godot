@@ -70,12 +70,10 @@ void ImageLoaderSVG::create_image_from_string(Ref<Image> p_image, String p_strin
 		return;
 	}
 	picture->viewbox(nullptr, nullptr, &fw, &fh);
+	const float upscale = p_upsample ? 2.0 : 1.0;
 
-	fw *= p_upsample;
-	fh *= p_upsample;
-
-	uint32_t width = MIN(fw * p_scale, 16 * 1024);
-	uint32_t height = MIN(fh * p_scale, 16 * 1024);
+	uint32_t width = MIN(fw * p_scale * upscale, 16 * 1024);
+	uint32_t height = MIN(fh * p_scale * upscale, 16 * 1024);
 	picture->size(width, height);
 
 	std::unique_ptr<tvg::SwCanvas> swCanvas = tvg::SwCanvas::gen();
