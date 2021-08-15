@@ -27,6 +27,12 @@
 
 namespace tvg
 {
+    struct Iterator
+    {
+        virtual ~Iterator() {}
+        virtual const Paint* next() = 0;
+    };
+
     struct StrategyMethod
     {
         virtual ~StrategyMethod() {}
@@ -37,6 +43,7 @@ namespace tvg
         virtual bool bounds(float* x, float* y, float* w, float* h) const = 0;
         virtual RenderRegion bounds(RenderMethod& renderer) const = 0;
         virtual Paint* duplicate() = 0;
+        virtual Iterator* iterator() = 0;
     };
 
     struct Paint::Impl
@@ -96,6 +103,11 @@ namespace tvg
             return smethod->dispose(renderer);
         }
 
+        Iterator* iterator()
+        {
+            return smethod->iterator();
+        }
+
         bool composite(Paint* target, CompositeMethod method)
         {
             if ((!target && method != CompositeMethod::None) || (target && method == CompositeMethod::None)) return false;
@@ -150,6 +162,11 @@ namespace tvg
         Paint* duplicate() override
         {
             return inst->duplicate();
+        }
+
+        Iterator* iterator() override
+        {
+            return inst->iterator();
         }
     };
 }

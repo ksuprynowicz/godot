@@ -28,6 +28,7 @@
 struct SvgNode;
 struct SvgStyleGradient;
 
+//NOTE: Please update simpleXmlNodeTypeToString() as well.
 enum class SvgNodeType
 {
     Doc,
@@ -189,6 +190,12 @@ struct SvgLineNode
     float y2;
 };
 
+struct SvgImageNode
+{
+    float x, y, w, h;
+    string *href;
+};
+
 struct SvgPathNode
 {
     string* path;
@@ -322,6 +329,7 @@ struct SvgNode
         SvgRectNode rect;
         SvgPathNode path;
         SvgLineNode line;
+        SvgImageNode image;
     } node;
     bool display;
 };

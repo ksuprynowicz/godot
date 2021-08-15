@@ -18,15 +18,21 @@
 #include <string>
 
 #ifdef TVG_BUILD
-    #define TVG_EXPORT __attribute__ ((visibility ("default")))
+    #ifdef _MSC_VER
+        #define TVG_EXPORT __declspec(dllexport)
+        #define TVG_DEPRECATED __declspec(deprecated)
+    #else
+        #define TVG_EXPORT __attribute__ ((visibility ("default")))
+        #define TVG_DEPRECATED __attribute__ ((__deprecated__))
+    #endif
 #else
     #define TVG_EXPORT
+    #define TVG_DEPRECATED
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 #define _TVG_DECLARE_PRIVATE(A) \
 protected: \
@@ -43,7 +49,9 @@ protected: \
 #define _TVG_DECLARE_ACCESSOR() \
     friend Canvas; \
     friend Scene; \
-    friend Picture
+    friend Picture; \
+    friend SaveModule; \
+
 
 #define _TVG_DECALRE_IDENTIFIER() \
     auto id() const { return _id; } \
@@ -54,6 +62,7 @@ namespace tvg
 {
 
 class RenderMethod;
+class SaveModule;
 class Scene;
 class Picture;
 class Canvas;
@@ -244,7 +253,7 @@ public:
      *
      * @retval The augmented transformation matrix.
      *
-     * @BETA_API
+     * @since 0.4
      */
     Matrix transform() noexcept;
 
@@ -685,7 +694,7 @@ public:
      * The rectangle with rounded corners can be achieved by setting non-zero values to @p rx and @p ry arguments.
      * The @p rx and @p ry values specify the radii of the ellipse defining the rounding of the corners.
      *
-     * The position of the rectangle is specified by the coordinates of its upper left corner -  @p x and @p y arguments.
+     * The position of the rectangle is specified by the coordinates of its upper left corner - @p x and @p y arguments.
      *
      * The rectangle is treated as a new sub-path - it is not connected with the previous sub-path.
      *
@@ -973,7 +982,7 @@ public:
  * @class Picture
  *
  * @brief A class representing an image read in one of the supported formats: raw, svg, png and etc.
- * Besides the methods inherited from the Paint, it provides  methods to load & draw images on the canvas.
+ * Besides the methods inherited from the Paint, it provides methods to load & draw images on the canvas.
  *
  * @note Supported formats are depended on the available TVG loaders.
  */
@@ -1009,11 +1018,30 @@ public:
      * @retval Result::NonSupport When trying to load a file with an unknown extension.
      * @retval Result::Unknown If an error occurs at a later stage.
      *
-     * @note: This api supports only SVG format
+     * @warning: you have responsibility to release the @p data memory if the @p copy is true
+     * @deprecated Use load(const char* data, uint32_t size, const std::string& mimeType, bool copy) instead.
+     * @see Result load(const char* data, uint32_t size, const std::string& mimeType, bool copy = false) noexcept
+     */
+    TVG_DEPRECATED Result load(const char* data, uint32_t size, bool copy = false) noexcept;
+
+    /**
+     * @brief Loads a picture data from a memory block of a given size.
+     *
+     * @param[in] data A pointer to a memory location where the content of the picture file is stored.
+     * @param[in] size The size in bytes of the memory occupied by the @p data.
+     * @param[in] mimetype Mimetype or extension of data such as "jpg", "jpeg", "svg", "svg+xml", "png", etc. If empty string or unknown, loaders will be tried one by one.
+     * @param[in] copy Decides whether the data should be copied into the engine local buffer.
+     *
+     * @retval Result::Success When succeed.
+     * @retval Result::InvalidArguments In case no data are provided or the @p size is zero or less.
+     * @retval Result::NonSupport When trying to load a file with an unknown extension.
+     * @retval Result::Unknown If an error occurs at a later stage.
      *
      * @warning: you have responsibility to release the @p data memory if the @p copy is true
+     *
+     * @BETA_API
      */
-    Result load(const char* data, uint32_t size, bool copy = false) noexcept;
+    Result load(const char* data, uint32_t size, const std::string& mimeType, bool copy = false) noexcept;
 
     /**
      * @brief Resize the picture content with the given width and height.
@@ -1045,19 +1073,10 @@ public:
      *
      * @BETA_API
      */
-    const uint32_t* data() const noexcept;
+    const uint32_t* data(uint32_t* w, uint32_t* h) const noexcept;
 
     /**
-     * @brief Set paint for the picture.
-     *
-     * @param[in] paint A Paint object to be drawn.
-     *
-     * @return Result::Success when succeed.
-     * @return Result::InsufficientCondition if paint already set.
-     * @return Result::MemoryCorruption when bad memory handling.
-     *
-     * @warning Please do not use it, this API is not official one. It could be modified in the next version.
-     *
+     * Must remove it!
      * @BETA_API
      */
     Result paint(std::unique_ptr<Paint> paint) noexcept;
@@ -1072,7 +1091,7 @@ public:
     Result load(uint32_t* data, uint32_t w, uint32_t h, bool copy) noexcept;
 
     /**
-     * @brief Gets the position and the size of the loaded picture.
+     * @brief Gets the position and the size of the loaded SVG picture.
      *
      * @warning Please do not use it, this API is not official one. It could be modified in the next version.
      *
@@ -1182,8 +1201,7 @@ public:
 
     /**
      * @brief Enumeration specifying the methods of Memory Pool behavior policy.
-     *
-     * @BETA_API
+     * @since 0.4
      */
     enum MempoolPolicy
     {
@@ -1219,21 +1237,21 @@ public:
      * while processing rendering. It internally uses one shared memory pool
      * which can be reused among the canvases in order to avoid memory overhead.
      *
-     * Thus ThorVG suggests memory pool policy to satisfy user demands,
+     * Thus ThorVG suggests using a memory pool policy to satisfy user demands,
      * if it needs to guarantee the thread-safety of the internal data access.
      *
-     * @param[in] policy Use the shared cache memory. The default value is @c true
+     * @param[in] policy The method specifying the Memory Pool behavior. The default value is @c MempoolPolicy::Default.
      *
      * @retval Result::Success When succeed.
-     * @retval Result::InsufficientCondition If the canvas has any paints.
+     * @retval Result::InsufficientCondition If the canvas has no paints.
      * @retval Result::NonSupport In case the software engine is not supported.
      *
-     * @note When @c policy is set as @c MempoolPolicy::Individual, current instance of canvas uses its own individual
-     *       memory data that is not shared with others. This is necessary when the canvas is accessed on a worker-thread.
+     * @note When @c policy is set as @c MempoolPolicy::Individual, the current instance of canvas uses its own individual
+     *       memory data, which is not shared with others. This is necessary when the canvas is accessed on a worker-thread.
      *
      * @warning It's not allowed after pushing any paints.
      *
-     * @BETA_API
+     * @since 0.4
     */
     Result mempool(MempoolPolicy policy) noexcept;
 
@@ -1330,6 +1348,75 @@ public:
     static Result term(CanvasEngine engine) noexcept;
 
     _TVG_DISABLE_CTOR(Initializer);
+};
+
+
+/**
+ * @class Saver
+ *
+ * @brief A class for exporting a paint object into a specified file, from which to recover the paint data later.
+ *
+ * ThorVG provides a feature for exporting & importing paint data, the Saver has a role to export it to a file.
+ * Basically, this feature is useful when you need to save the composed scene or image from a paint object and recreate it later.
+ *
+ * The file format is decided by the extension name(i.e. "*.tvg") while the supported formats depend on the TVG packaging environment.
+ * If it doesn't support the file format, it will return the @c NonSuppport result by the save() method.
+ *
+ * Once you export a paint to the file successfully, you can recreate it using the Picture class.
+ *
+ * @see Picture::load()
+ *
+ * @BETA_API
+ */
+class TVG_EXPORT Saver
+{
+public:
+    ~Saver();
+
+    /**
+     * @brief Export the given @p paint data to the given @p path
+     *
+     * @param[in] paint The paint to be saved with all its associated properties.
+     * @param[in] path A path to the file, in which the paint data is to be saved.
+     *
+     * @retval Result::Success When succeed.
+     * @retval Result::NonSupport When trying to save a file with an unknown extension nor non supported format.
+     * @retval Result::Unknown Others.
+     *
+     * @note Saving can be asynchronous if the assigned thread number is greater than zero. To guarantee the saving is done, call sync() afterwards.
+     * @see Saver::sync()
+     *
+     * @BETA_API
+     */
+    Result save(std::unique_ptr<Paint> paint, const std::string& path) noexcept;
+
+    /**
+     * @brief Guarantees that the saving task is finished.
+     *
+     * The behavior of the saver will work on a sync/async basis, depending on the threading setting of the Initializer.
+     * Thus if you wish to have a benefit of it, you must call sync() after the save() in the proper delayed time.
+     * Otherwise, you can call sync() immediately.
+     *
+     * @return Result::Success when succeed.
+     * @return Result::InsufficientCondition otherwise.
+     *
+     * @note The asynchronous tasking is depend on the saver module implementation.
+     * @see Saver::save()
+     *
+     * @BETA_API
+     */
+    Result sync() noexcept;
+
+    /**
+     * @brief Creates a new Saver object.
+     *
+     * @return A new Saver object.
+     *
+     * @BETA_API
+     */
+    static std::unique_ptr<Saver> gen() noexcept;
+
+    _TVG_DECLARE_PRIVATE(Saver);
 };
 
 /** @}*/

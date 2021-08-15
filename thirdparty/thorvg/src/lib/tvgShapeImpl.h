@@ -390,6 +390,11 @@ struct Shape::Impl
 
         return ret.release();
     }
+
+    Iterator* iterator()
+    {
+        return nullptr;
+    }
 };
 
 #endif //_TVG_SHAPE_IMPL_H_

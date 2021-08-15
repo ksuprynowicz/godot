@@ -25,7 +25,7 @@
 #include <fstream>
 #include <float.h>
 #include <math.h>
-#include "tvgLoaderMgr.h"
+#include "tvgLoader.h"
 #include "tvgXmlParser.h"
 #include "tvgSvgLoader.h"
 #include "tvgSvgSceneBuilder.h"
@@ -760,7 +760,7 @@ static bool _attrParseSvgNode(void* data, const char* key, const char* value)
     }
 #ifdef THORVG_LOG_ENABLED
     else if (!strcmp(key, "x") || !strcmp(key, "y")) {
-        if (0.0f == _parseLength(value, &type)) printf("SVG: Unsupported attributes used [Elements type: Svg][Attribute: %s][Value: %s]\n", key, value);
+        if (0.0f == _parseLength(value, &type)) TVGLOG("SVG", "Unsupported attributes used [Elements type: Svg][Attribute: %s][Value: %s]", key, value);
     }
 #endif
     else {
@@ -980,6 +980,7 @@ static bool _attrParseGNode(void* data, const char* key, const char* value)
     } else if (!strcmp(key, "transform")) {
         node->transform = _parseTransformationMatrix(value);
     } else if (!strcmp(key, "id")) {
+        if (node->id && value) delete node->id;
         node->id = _copyId(value);
     } else if (!strcmp(key, "clip-path")) {
         _handleClipPathAttr(loader, node, value);
@@ -1005,6 +1006,7 @@ static bool _attrParseClipPathNode(void* data, const char* key, const char* valu
     } else if (!strcmp(key, "transform")) {
         node->transform = _parseTransformationMatrix(value);
     } else if (!strcmp(key, "id")) {
+        if (node->id && value) delete node->id;
         node->id = _copyId(value);
     } else {
         return _parseStyleAttr(loader, key, value, false);
@@ -1023,6 +1025,7 @@ static bool _attrParseMaskNode(void* data, const char* key, const char* value)
     } else if (!strcmp(key, "transform")) {
         node->transform = _parseTransformationMatrix(value);
     } else if (!strcmp(key, "id")) {
+        if (node->id && value) delete node->id;
         node->id = _copyId(value);
     } else {
         return _parseStyleAttr(loader, key, value, false);
@@ -1168,6 +1171,7 @@ static bool _attrParsePathNode(void* data, const char* key, const char* value)
     } else if (!strcmp(key, "mask")) {
         _handleMaskAttr(loader, node, value);
     } else if (!strcmp(key, "id")) {
+        if (node->id && value) delete node->id;
         node->id = _copyId(value);
     } else {
         return _parseStyleAttr(loader, key, value, false);
@@ -1227,6 +1231,7 @@ static bool _attrParseCircleNode(void* data, const char* key, const char* value)
     } else if (!strcmp(key, "mask")) {
         _handleMaskAttr(loader, node, value);
     } else if (!strcmp(key, "id")) {
+        if (node->id && value) delete node->id;
         node->id = _copyId(value);
     } else {
         return _parseStyleAttr(loader, key, value, false);
@@ -1280,6 +1285,7 @@ static bool _attrParseEllipseNode(void* data, const char* key, const char* value
     }
 
     if (!strcmp(key, "id")) {
+        if (node->id && value) delete node->id;
         node->id = _copyId(value);
     } else if (!strcmp(key, "style")) {
         return simpleXmlParseW3CAttribute(value, _parseStyleAttr, loader);
@@ -1337,7 +1343,6 @@ static bool _attrParsePolygonPoints(const char* str, float** points, int* ptCoun
     return true;
 
 error_alloc:
-    //LOG: allocation for point array failed. out of memory
     return false;
 }
 
@@ -1363,6 +1368,7 @@ static bool _attrParsePolygonNode(void* data, const char* key, const char* value
     } else if (!strcmp(key, "mask")) {
         _handleMaskAttr(loader, node, value);
     } else if (!strcmp(key, "id")) {
+        if (node->id && value) delete node->id;
         node->id = _copyId(value);
     } else {
         return _parseStyleAttr(loader, key, value, false);
@@ -1436,6 +1442,7 @@ static bool _attrParseRectNode(void* data, const char* key, const char* value)
     }
 
     if (!strcmp(key, "id")) {
+        if (node->id && value) delete node->id;
         node->id = _copyId(value);
     } else if (!strcmp(key, "style")) {
         ret = simpleXmlParseW3CAttribute(value, _parseStyleAttr, loader);
@@ -1478,7 +1485,7 @@ static constexpr struct
 };
 
 
-/* parse the attributes for a rect element.
+/* parse the attributes for a line element.
  * https://www.w3.org/TR/SVG/shapes.html#LineElement
  */
 static bool _attrParseLineNode(void* data, const char* key, const char* value)
@@ -1498,6 +1505,7 @@ static bool _attrParseLineNode(void* data, const char* key, const char* value)
     }
 
     if (!strcmp(key, "id")) {
+        if (node->id && value) delete node->id;
         node->id = _copyId(value);
     } else if (!strcmp(key, "style")) {
         return simpleXmlParseW3CAttribute(value, _parseStyleAttr, loader);
@@ -1528,6 +1536,68 @@ static string* _idFromHref(const char* href)
     href = _skipSpace(href, nullptr);
     if ((*href) == '#') href++;
     return new string(href);
+}
+
+
+static constexpr struct
+{
+    const char* tag;
+    SvgParserLengthType type;
+    int sz;
+    size_t offset;
+} imageTags[] = {
+    {"x", SvgParserLengthType::Horizontal, sizeof("x"), offsetof(SvgRectNode, x)},
+    {"y", SvgParserLengthType::Vertical, sizeof("y"), offsetof(SvgRectNode, y)},
+    {"width", SvgParserLengthType::Horizontal, sizeof("width"), offsetof(SvgRectNode, w)},
+    {"height", SvgParserLengthType::Vertical, sizeof("height"), offsetof(SvgRectNode, h)},
+};
+
+
+/* parse the attributes for a image element.
+ * https://www.w3.org/TR/SVG/embedded.html#ImageElement
+ */
+static bool _attrParseImageNode(void* data, const char* key, const char* value)
+{
+    SvgLoaderData* loader = (SvgLoaderData*)data;
+    SvgNode* node = loader->svgParse->node;
+    SvgImageNode* image = &(node->node.image);
+    unsigned char* array;
+    int sz = strlen(key);
+
+    array = (unsigned char*)image;
+    for (unsigned int i = 0; i < sizeof(imageTags) / sizeof(imageTags[0]); i++) {
+        if (imageTags[i].sz - 1 == sz && !strncmp(imageTags[i].tag, key, sz)) {
+            *((float*)(array + imageTags[i].offset)) = _toFloat(loader->svgParse, value, imageTags[i].type);
+            return true;
+        }
+    }
+
+    if (!strcmp(key, "href") || !strcmp(key, "xlink:href")) {
+        image->href = _idFromHref(value);
+    } else if (!strcmp(key, "id")) {
+        if (node->id && value) delete node->id;
+        node->id = _copyId(value);
+    } else if (!strcmp(key, "style")) {
+        return simpleXmlParseW3CAttribute(value, _parseStyleAttr, loader);
+    } else if (!strcmp(key, "clip-path")) {
+        _handleClipPathAttr(loader, node, value);
+    } else if (!strcmp(key, "mask")) {
+        _handleMaskAttr(loader, node, value);
+    } else {
+        return _parseStyleAttr(loader, key, value);
+    }
+    return true;
+}
+
+
+static SvgNode* _createImageNode(SvgLoaderData* loader, SvgNode* parent, const char* buf, unsigned bufLength)
+{
+    loader->svgParse->node = _createNode(parent, SvgNodeType::Image);
+
+    if (!loader->svgParse->node) return nullptr;
+
+    simpleXmlParseAttributes(buf, bufLength, _attrParseImageNode, loader);
+    return loader->svgParse->node;
 }
 
 
@@ -1681,6 +1751,14 @@ static void _copyAttr(SvgNode* to, const SvgNode* from)
             memcpy(to->node.polyline.points, from->node.polyline.points, to->node.polyline.pointsCount * sizeof(float));
             break;
         }
+        case SvgNodeType::Image: {
+            to->node.image.x = from->node.image.x;
+            to->node.image.y = from->node.image.y;
+            to->node.image.w = from->node.image.w;
+            to->node.image.h = from->node.image.h;
+            if (from->node.image.href) to->node.image.href = new string(from->node.image.href->c_str());
+            break;
+        }
         default: {
             break;
         }
@@ -1731,7 +1809,7 @@ static bool _attrParseUseNode(void* data, const char* key, const char* value)
     SvgNode *defs, *nodeFrom, *node = loader->svgParse->node;
     string* id;
 
-    if (!strcmp(key, "xlink:href")) {
+    if (!strcmp(key, "href") || !strcmp(key, "xlink:href")) {
         id = _idFromHref(value);
         defs = _getDefsNode(node);
         nodeFrom = _findChildById(defs, id->c_str());
@@ -1779,7 +1857,8 @@ static constexpr struct
     {"polygon", sizeof("polygon"), _createPolygonNode},
     {"rect", sizeof("rect"), _createRectNode},
     {"polyline", sizeof("polyline"), _createPolylineNode},
-    {"line", sizeof("line"), _createLineNode}
+    {"line", sizeof("line"), _createLineNode},
+    {"image", sizeof("image"), _createImageNode}
 };
 
 
@@ -1937,7 +2016,7 @@ static bool _attrParseRadialGradientNode(void* data, const char* key, const char
         grad->id = _copyId(value);
     } else if (!strcmp(key, "spreadMethod")) {
         grad->spread = _parseSpreadValue(value);
-    } else if (!strcmp(key, "xlink:href")) {
+    } else if (!strcmp(key, "href") || !strcmp(key, "xlink:href")) {
         grad->ref = _idFromHref(value);
     } else if (!strcmp(key, "gradientUnits") && !strcmp(value, "userSpaceOnUse")) {
         grad->userSpace = true;
@@ -2123,7 +2202,7 @@ static bool _attrParseLinearGradientNode(void* data, const char* key, const char
         grad->id = _copyId(value);
     } else if (!strcmp(key, "spreadMethod")) {
         grad->spread = _parseSpreadValue(value);
-    } else if (!strcmp(key, "xlink:href")) {
+    } else if (!strcmp(key, "href") || !strcmp(key, "xlink:href")) {
         grad->ref = _idFromHref(value);
     } else if (!strcmp(key, "gradientUnits") && !strcmp(value, "userSpaceOnUse")) {
         grad->userSpace = true;
@@ -2297,21 +2376,16 @@ static void _svgLoaderParserXmlOpen(SvgLoaderData* loader, const char* content, 
         loader->latestGradient = gradient;
     } else if (!strcmp(tagName, "stop")) {
         if (!loader->latestGradient) {
-#ifdef THORVG_LOG_ENABLED
-            printf("SVG: Stop element is used outside of the Gradient element\n");
-#endif
+            TVGLOG("SVG", "Stop element is used outside of the Gradient element");
             return;
         }
         /* default value for opacity */
         loader->svgParse->gradStop = {0.0f, 0, 0, 0, 255};
         simpleXmlParseAttributes(attrs, attrsLength, _attrParseStops, loader);
         loader->latestGradient->stops.push(loader->svgParse->gradStop);
+    } else if (!isIgnoreUnsupportedLogElements(tagName)) {
+        TVGLOG("SVG", "Unsupported elements used [Elements: %s]", tagName);
     }
-#ifdef THORVG_LOG_ENABLED
-    else {
-        if (!isIgnoreUnsupportedLogElements(tagName)) printf("SVG: Unsupported elements used [Elements: %s]\n", tagName);
-    }
-#endif
 }
 
 
@@ -2403,49 +2477,50 @@ static void _styleInherit(SvgStyleProperty* child, const SvgStyleProperty* paren
 }
 
 
+static void _inefficientNodeCheck(TVG_UNUSED SvgNode* node){
 #ifdef THORVG_LOG_ENABLED
-static void _inefficientNodeCheck(SvgNode* node){
-    if (!node->display && node->type != SvgNodeType::ClipPath) printf("SVG: Inefficient elements used [Display is none][Node Type : %s]\n", simpleXmlNodeTypeToString(node->type).c_str());
-    if (node->style->opacity == 0) printf("SVG: Inefficient elements used [Opacity is zero][Node Type : %s]\n", simpleXmlNodeTypeToString(node->type).c_str());
-    if (node->style->fill.opacity == 0 && node->style->stroke.opacity == 0) printf("SVG: Inefficient elements used [Fill opacity and stroke opacity are zero][Node Type : %s]\n", simpleXmlNodeTypeToString(node->type).c_str());
+    auto type = simpleXmlNodeTypeToString(node->type);
+
+    if (!node->display && node->type != SvgNodeType::ClipPath) TVGLOG("SVG", "Inefficient elements used [Display is none][Node Type : %s]", type);
+    if (node->style->opacity == 0) TVGLOG("SVG", "Inefficient elements used [Opacity is zero][Node Type : %s]", type);
+    if (node->style->fill.opacity == 0 && node->style->stroke.opacity == 0) TVGLOG("SVG", "Inefficient elements used [Fill opacity and stroke opacity are zero][Node Type : %s]", type);
 
     switch (node->type) {
         case SvgNodeType::Path: {
-            if (!node->node.path.path || node->node.path.path->empty()) printf("SVG: Inefficient elements used [Empty path][Node Type : %s]\n", simpleXmlNodeTypeToString(node->type).c_str());
+            if (!node->node.path.path || node->node.path.path->empty()) TVGLOG("SVG", "Inefficient elements used [Empty path][Node Type : %s]", type);
             break;
         }
         case SvgNodeType::Ellipse: {
-            if (node->node.ellipse.rx == 0 && node->node.ellipse.ry == 0) printf("SVG: Inefficient elements used [Size is zero][Node Type : %s]\n", simpleXmlNodeTypeToString(node->type).c_str());
+            if (node->node.ellipse.rx == 0 && node->node.ellipse.ry == 0) TVGLOG("SVG", "Inefficient elements used [Size is zero][Node Type : %s]", type);
             break;
         }
         case SvgNodeType::Polygon:
         case SvgNodeType::Polyline: {
-            if (node->node.polygon.pointsCount < 2) printf("SVG: Inefficient elements used [Invalid Polygon][Node Type : %s]\n", simpleXmlNodeTypeToString(node->type).c_str());
+            if (node->node.polygon.pointsCount < 2) TVGLOG("SVG", "Inefficient elements used [Invalid Polygon][Node Type : %s]", type);
             break;
         }
         case SvgNodeType::Circle: {
-            if (node->node.circle.r == 0) printf("SVG: Inefficient elements used [Size is zero][Node Type : %s]\n", simpleXmlNodeTypeToString(node->type).c_str());
+            if (node->node.circle.r == 0) TVGLOG("SVG", "Inefficient elements used [Size is zero][Node Type : %s]", type);
             break;
         }
         case SvgNodeType::Rect: {
-            if (node->node.rect.w == 0 && node->node.rect.h) printf("SVG: Inefficient elements used [Size is zero][Node Type : %s]\n", simpleXmlNodeTypeToString(node->type).c_str());
+            if (node->node.rect.w == 0 && node->node.rect.h) TVGLOG("SVG", "Inefficient elements used [Size is zero][Node Type : %s]", type);
             break;
         }
         case SvgNodeType::Line: {
-            if (node->node.line.x1 == node->node.line.x2 && node->node.line.y1 == node->node.line.y2) printf("SVG: Inefficient elements used [Size is zero][Node Type : %s]\n", simpleXmlNodeTypeToString(node->type).c_str());
+            if (node->node.line.x1 == node->node.line.x2 && node->node.line.y1 == node->node.line.y2) TVGLOG("SVG", "Inefficient elements used [Size is zero][Node Type : %s]", type);
             break;
         }
         default: break;
     }
-}
 #endif
+}
+
 
 static void _updateStyle(SvgNode* node, SvgStyleProperty* parentStyle)
 {
     _styleInherit(node->style, parentStyle);
-#ifdef THORVG_LOG_ENABLED
     _inefficientNodeCheck(node);
-#endif
 
     auto child = node->child.data;
     for (uint32_t i = 0; i < node->child.count; ++i, ++child) {
@@ -2579,6 +2654,10 @@ static void _freeNode(SvgNode* node)
                  ++gradients;
              }
              node->node.defs.gradients.reset();
+             break;
+         }
+         case SvgNodeType::Image: {
+             delete node->node.image.href;
              break;
          }
          default: {
@@ -2724,7 +2803,7 @@ bool SvgLoader::header()
 
         preserveAspect = loaderData.doc->node.doc.preserveAspect;
     } else {
-        //LOG: No SVG File. There is no <svg/>
+        TVGLOG("SVG", "No SVG File. There is no <svg/>");
         return false;
     }
 
@@ -2770,6 +2849,41 @@ bool SvgLoader::open(const string& path)
 }
 
 
+bool SvgLoader::resize(Paint* paint, float w, float h)
+{
+    if (!paint) return false;
+
+    auto sx = w / vw;
+    auto sy = h / vh;
+
+    if (preserveAspect) {
+        //Scale
+        auto scale = sx < sy ? sx : sy;
+        paint->scale(scale);
+        //Align
+        auto vx = this->vx * scale;
+        auto vy = this->vy * scale;
+        auto vw = this->vw * scale;
+        auto vh = this->vh * scale;
+        if (vw > vh) vy -= (h - vh) * 0.5f;
+        else vx -= (w - vw) * 0.5f;
+        paint->translate(-vx, -vy);
+    } else {
+        //Align
+        auto vx = this->vx * sx;
+        auto vy = this->vy * sy;
+        auto vw = this->vw * sx;
+        auto vh = this->vh * sy;
+        if (vw > vh) vy -= (h - vh) * 0.5f;
+        else vx -= (w - vw) * 0.5f;
+
+        Matrix m = {sx, 0, -vx, 0, sy, -vy, 0, 0, 1};
+        paint->transform(m);
+    }
+    return true;
+}
+
+
 bool SvgLoader::read()
 {
     if (!content || size == 0) return false;
@@ -2805,7 +2919,7 @@ bool SvgLoader::close()
 }
 
 
-unique_ptr<Scene> SvgLoader::scene()
+unique_ptr<Paint> SvgLoader::paint()
 {
     this->done();
     if (root) return move(root);

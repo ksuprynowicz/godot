@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2021 Samsung Electronics Co., Ltd. All rights reserved.
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,27 +19,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#ifndef _TVG_JPG_LOADER_H_
+#define _TVG_JPG_LOADER_H_
 
-#ifndef _TVG_GL_SHADER_H_
-#define _TVG_GL_SHADER_H_
+using tjhandle = void*;
 
-#include "tvgGlCommon.h"
-
-class GlShader
+//TODO: Use Task?
+class JpgLoader : public LoadModule
 {
 public:
-    static std::shared_ptr<GlShader> gen(const char* vertSrc, const char* fragSrc);
-    ~GlShader();
+    JpgLoader();
+    ~JpgLoader();
 
-    uint32_t getVertexShader();
-    uint32_t getFragmentShader();
+    using LoadModule::open;
+    bool open(const string& path) override;
+    bool open(const char* data, uint32_t size, bool copy) override;
+    bool read() override;
+    bool close() override;
+
+    const uint32_t* pixels() override;
 
 private:
-    void    createShader(const char* vertSrc, const char* fragSrc);
-    uint32_t complileShader(uint32_t type, char* shaderSrc);
+    void clear();
 
-    uint32_t mVtShader;
-    uint32_t mFrShader;
+    tjhandle jpegDecompressor;
+    unsigned char* data = nullptr;
+    unsigned char *image = nullptr;
+    unsigned long size = 0;
+    bool freeData = false;
 };
 
-#endif /* _TVG_GL_SHADER_H_ */
+#endif //_TVG_JPG_LOADER_H_

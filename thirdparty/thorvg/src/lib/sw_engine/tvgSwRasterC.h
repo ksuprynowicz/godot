@@ -20,13 +20,31 @@
  * SOFTWARE.
  */
 
-#ifndef _TVG_TVG_LOAD_PARSER_H_
-#define _TVG_TVG_LOAD_PARSER_H_
 
-#include "tvgCommon.h"
-#include "tvgBinaryDesc.h"
+static inline void cRasterRGBA32(uint32_t *dst, uint32_t val, uint32_t offset, int32_t len)
+{
+    dst += offset;
+    while (len--) *dst++ = val;
+}
 
-bool tvgValidateData(const char *ptr, uint32_t size);
-unique_ptr<Scene> tvgLoadData(const char *ptr, uint32_t size);
 
-#endif //_TVG_TVG_LOAD_PARSER_H_
+static inline bool cRasterTranslucentRle(SwSurface* surface, const SwRleData* rle, uint32_t color)
+{
+    auto span = rle->spans;
+    uint32_t src;
+
+    for (uint32_t i = 0; i < rle->size; ++i) {
+        auto dst = &surface->buffer[span->y * surface->stride + span->x];
+
+        if (span->coverage < 255) src = ALPHA_BLEND(color, span->coverage);
+        else src = color;
+
+        auto ialpha = 255 - surface->blender.alpha(src);
+
+        for (uint32_t x = 0; x < span->len; ++x)
+            dst[x] = src + ALPHA_BLEND(dst[x], ialpha);
+
+        ++span;
+    }
+    return true;
+}

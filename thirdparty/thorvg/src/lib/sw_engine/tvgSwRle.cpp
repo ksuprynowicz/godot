@@ -22,7 +22,6 @@
 #include <setjmp.h>
 #include <limits.h>
 #include <memory.h>
-#include <iostream>
 #include "tvgSwCommon.h"
 
 /************************************************************************/
@@ -142,6 +141,7 @@ static void _genSpan(SwRleData* rle, const SwSpan* spans, uint32_t count)
     /* when the rle needs to be regenerated because of attribute change. */
     if (rle->alloc < newSize) {
         rle->alloc = (newSize * 2);
+        //OPTIMIZE: use mempool!
         rle->spans = static_cast<SwSpan*>(realloc(rle->spans, rle->alloc * sizeof(SwSpan)));
     }
 
@@ -163,7 +163,7 @@ static void _horizLine(RleWorker& rw, SwCoord x, SwCoord y, SwCoord area, SwCoor
 
     /* compute the coverage line's coverage, depending on the outline fill rule */
     /* the coverage percentage is area/(PIXEL_BITS*PIXEL_BITS*2) */
-    auto coverage = static_cast<int>(area >> (PIXEL_BITS * 2 + 1 - 8));    //range 0 - 256
+    auto coverage = static_cast<int>(area >> (PIXEL_BITS * 2 + 1 - 8));    //range 0 - 255
 
     if (coverage < 0) coverage = -coverage;
 
@@ -177,11 +177,11 @@ static void _horizLine(RleWorker& rw, SwCoord x, SwCoord y, SwCoord area, SwCoor
 
     //span has ushort coordinates. check limit overflow
     if (x >= SHRT_MAX) {
-        //LOG: x coordinate overflow!
+        TVGERR("SW_ENGINE", "X-coordiante overflow!");
         x = SHRT_MAX;
     }
     if (y >= SHRT_MAX) {
-        //LOG: y coordinate overflow!
+        TVGERR("SW_ENGINE", "Y Coordiante overflow!");
         y = SHRT_MAX;
     }
 
@@ -248,12 +248,10 @@ static void _sweep(RleWorker& rw)
         auto cell = rw.yCells[y];
 
         while (cell) {
-
             if (cell->x > x && cover != 0) _horizLine(rw, x, y, cover * (ONE_PIXEL * 2), cell->x - x);
             cover += cell->cover;
             auto area = cover * (ONE_PIXEL * 2) - cell->area;
             if (area != 0 && cell->x >= 0) _horizLine(rw, cell->x, y, area, 1);
-
             x = cell->x + 1;
             cell = cell->next;
         }
@@ -589,7 +587,7 @@ static bool _decomposeOutline(RleWorker& rw)
     return true;
 
 invalid_outline:
-    //LOG: Invalid Outline!
+    TVGERR("SW_ENGINE", "Invalid Outline!");
     return false;
 }
 
@@ -614,7 +612,7 @@ SwSpan* _intersectSpansRegion(const SwRleData *clip, const SwRleData *targetRle,
     auto clipSpans = clip->spans;
     auto clipEnd = clip->spans + clip->size;
 
-    while (spanCnt > 0 && spans < end ) {
+    while (spanCnt > 0 && spans < end) {
         if (clipSpans == clipEnd) {
             spans = end;
             break;
@@ -658,74 +656,6 @@ SwSpan* _intersectSpansRegion(const SwRleData *clip, const SwRleData *targetRle,
     return out;
 }
 
-SwSpan* _intersectMaskRegion(const SwRleData *clip, const SwRleData *targetRle, SwSpan *outSpans, uint32_t spanCnt)
-{
-
-    auto out = outSpans;
-    auto spans = targetRle->spans;
-    auto end = targetRle->spans + targetRle->size;
-    auto clipSpans = clip->spans;
-    auto clipSpans1 = clip->spans;
-    auto clipEnd = clip->spans + clip->size;
-
-    auto maskClipMin = clipSpans1->y;
-    auto maskClipMax = clipSpans1->y;
-
-    while (clipSpans1->y) {
-        if (clipSpans1->y > maskClipMax)
-            maskClipMax = clipSpans1->y;
-
-        if (clipSpans1->y < maskClipMax)
-            maskClipMin = clipSpans1->y;
-        clipSpans1++;
-    }
-
-    while (spanCnt && spans < end ) {
-        if (clipSpans > clipEnd) {
-            spans = end;
-            break;
-        }
-
-
-        if (spans->y < maskClipMin || spans->y > maskClipMax) {
-            out->x = spans->x;
-            out->y = spans->y;
-            out->len = spans->len;
-            out->coverage = spans->coverage;
-            ++out;
-        } 
-        else {
-            while (clipSpans->y) {
-                auto sx1 = spans->x;
-                auto sx2 = sx1 + spans->len;
-                auto cx1 = clipSpans->x;
-                auto cx2 = cx1 + clipSpans->len;
-                auto x = sx1 > cx1 ? sx1 : cx1;
-                auto len = (sx2 < cx2 ? sx2 : cx2) - x;
-
-                if (len > 1) {
-                    out->x = sx1;
-                    out->y = clipSpans->y;
-                    out->len = cx1-sx1;
-                    out->coverage = spans->coverage;
-                    ++out;
-
-                    out->x = cx2;
-                    out->y = clipSpans->y;
-                    out->len = sx2 - cx2;
-                    out->coverage = spans->coverage;
-                    ++out;
-                }
-                clipSpans++; 
-            }
-        }
-        --spanCnt;
-        ++spans;
-    }
-
-    return out;
-}
-
 
 SwSpan* _intersectSpansRect(const SwBBox *bbox, const SwRleData *targetRle, SwSpan *outSpans, uint32_t spanCnt)
 {
@@ -737,7 +667,7 @@ SwSpan* _intersectSpansRect(const SwBBox *bbox, const SwRleData *targetRle, SwSp
     auto maxx = minx + static_cast<int16_t>(bbox->max.x - bbox->min.x) - 1;
     auto maxy = miny + static_cast<int16_t>(bbox->max.y - bbox->min.y) - 1;
 
-    while (spanCnt && spans < end ) {
+    while (spanCnt && spans < end) {
         if (spans->y > maxy) {
             spans = end;
             break;
@@ -927,9 +857,7 @@ void rleClipPath(SwRleData *rle, const SwRleData *clip)
 
     _replaceClipSpan(rle, spans, spansEnd - spans);
 
-#ifdef THORVG_LOG_ENABLED
-    cout << "SW_ENGINE: Using ClipPath!" << endl;
-#endif
+    TVGLOG("SW_ENGINE", "Using ClipPath!");
 }
 
 
@@ -942,22 +870,5 @@ void rleClipRect(SwRleData *rle, const SwBBox* clip)
 
     _replaceClipSpan(rle, spans, spansEnd - spans);
 
-#ifdef THORVG_LOG_ENABLED
-    cout <<"SW_ENGINE: Using ClipRect!" << endl;
-#endif
+    TVGLOG("SW_ENGINE", "Using ClipRect!");
 }
-
-
-void rleAlphaMask(SwRleData *rle, const SwRleData *clip)
-{
-    if (rle->size == 0 || clip->size == 0) return;
-    auto spanCnt = rle->size + clip->size;
-
-    auto spans = static_cast<SwSpan*>(malloc(sizeof(SwSpan) * (spanCnt)));
-
-    if (!spans) return;
-    auto spansEnd = _intersectMaskRegion(clip, rle, spans, spanCnt);
-
-    _replaceClipSpan(rle, spans, spansEnd - spans);
-}
-

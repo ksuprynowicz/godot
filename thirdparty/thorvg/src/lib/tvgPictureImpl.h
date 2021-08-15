@@ -24,15 +24,30 @@
 
 #include <string>
 #include "tvgPaint.h"
-#include "tvgLoaderMgr.h"
+#include "tvgLoader.h"
 
 /************************************************************************/
 /* Internal Class Implementation                                        */
 /************************************************************************/
 
+struct PictureIterator : Iterator
+{
+    Paint* paint = nullptr;
+
+    PictureIterator(Paint* p) : paint(p) {}
+
+    const Paint* next() override
+    {
+        auto ret = paint;
+        paint = nullptr;
+        return ret;
+    }
+};
+
+
 struct Picture::Impl
 {
-    shared_ptr<Loader> loader = nullptr;
+    shared_ptr<LoadModule> loader = nullptr;
     Paint* paint = nullptr;
     uint32_t *pixels = nullptr;
     Picture *picture = nullptr;
@@ -61,47 +76,17 @@ struct Picture::Impl
         return ret;
     }
 
-    void resize()
-    {
-        auto sx = w / loader->vw;
-        auto sy = h / loader->vh;
-
-        if (loader->preserveAspect) {
-            //Scale
-            auto scale = sx < sy ? sx : sy;
-            paint->scale(scale);
-            //Align
-            auto vx = loader->vx * scale;
-            auto vy = loader->vy * scale;
-            auto vw = loader->vw * scale;
-            auto vh = loader->vh * scale;
-            if (vw > vh) vy -= (h - vh) * 0.5f;
-            else vx -= (w - vw) * 0.5f;
-            paint->translate(-vx, -vy);
-        } else {
-            //Align
-            auto vx = loader->vx * sx;
-            auto vy = loader->vy * sy;
-            auto vw = loader->vw * sx;
-            auto vh = loader->vh * sy;
-            if (vw > vh) vy -= (h - vh) * 0.5f;
-            else vx -= (w - vw) * 0.5f;
-
-            Matrix m = {sx, 0, -vx, 0, sy, -vy, 0, 0, 1};
-            paint->transform(m);
-        }
-        resizing = false;
-    }
-
     uint32_t reload()
     {
         if (loader) {
             if (!paint) {
-                auto scene = loader->scene();
-                if (scene) {
-                    paint = scene.release();
+                if (auto p = loader->paint()) {
+                    paint = p.release();
                     loader->close();
-                    if (w != loader->w && h != loader->h) resize();
+                    if (w != loader->w && h != loader->h) {
+                        loader->resize(paint, w, h);
+                        resizing = false;
+                    }
                     if (paint) return RenderUpdateFlag::None;
                 }
             }
@@ -114,14 +99,33 @@ struct Picture::Impl
         return RenderUpdateFlag::None;
     }
 
-    void* update(RenderMethod &renderer, const RenderTransform* transform, uint32_t opacity, Array<RenderData>& clips, RenderUpdateFlag pFlag)
+    RenderTransform resizeTransform(const RenderTransform* pTransform)
+    {
+        //Overriding Transformation by the desired image size
+        auto sx = w / loader->w;
+        auto sy = h / loader->h;
+        auto scale = sx < sy ? sx : sy;
+
+        RenderTransform tmp;
+        tmp.m = {scale, 0, 0, 0, scale, 0, 0, 0, 1};
+
+        if (!pTransform) return tmp;
+        else return RenderTransform(pTransform, &tmp);
+    }
+
+    void* update(RenderMethod &renderer, const RenderTransform* pTransform, uint32_t opacity, Array<RenderData>& clips, RenderUpdateFlag pFlag)
     {
         auto flag = reload();
 
-        if (pixels) rdata = renderer.prepare(*picture, rdata, transform, opacity, clips, static_cast<RenderUpdateFlag>(pFlag | flag));
-        else if (paint) {
-            if (resizing) resize();
-            rdata = paint->pImpl->update(renderer, transform, opacity, clips, static_cast<RenderUpdateFlag>(pFlag | flag));
+        if (pixels) {
+            auto transform = resizeTransform(pTransform);
+            rdata = renderer.prepare(*picture, rdata, &transform, opacity, clips, static_cast<RenderUpdateFlag>(pFlag | flag));
+        } else if (paint) {
+            if (resizing) {
+                loader->resize(paint, w, h);
+                resizing = false;
+            }
+            rdata = paint->pImpl->update(renderer, pTransform, opacity, clips, static_cast<RenderUpdateFlag>(pFlag | flag));
         }
         return rdata;
     }
@@ -153,8 +157,10 @@ struct Picture::Impl
 
     bool bounds(float* x, float* y, float* w, float* h) const
     {
-        if (!paint) return false;
-        return paint->pImpl->bounds(x, y, w, h);
+        if (paint) return paint->pImpl->bounds(x, y, w, h);
+        if (w) *w = this->w;
+        if (h) *h = this->h;
+        return true;
     }
 
     RenderRegion bounds(RenderMethod& renderer)
@@ -179,10 +185,10 @@ struct Picture::Impl
         return Result::Success;
     }
 
-    Result load(const char* data, uint32_t size, bool copy)
+    Result load(const char* data, uint32_t size, const string& mimeType, bool copy)
     {
         if (loader) loader->close();
-        loader = LoaderMgr::loader(data, size, copy);
+        loader = LoaderMgr::loader(data, size, mimeType, copy);
         if (!loader) return Result::NonSupport;
         if (!loader->read()) return Result::Unknown;
         w = loader->w;
@@ -217,6 +223,12 @@ struct Picture::Impl
         dup->resizing = resizing;
 
         return ret.release();
+    }
+
+    Iterator* iterator()
+    {
+        reload();
+        return new PictureIterator(paint);
     }
 };
 

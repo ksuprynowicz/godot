@@ -24,22 +24,23 @@
 
 #include <png.h>
 
-//OPTIMIZE ME: Use Task?
-class PngLoader : public Loader
+class PngLoader : public LoadModule
 {
 public:
-    png_imagep image = nullptr;
-    const uint32_t* content = nullptr;
-
     PngLoader();
     ~PngLoader();
 
-    using Loader::open;
+    using LoadModule::open;
     bool open(const string& path) override;
+    bool open(const char* data, uint32_t size, bool copy) override;
     bool read() override;
     bool close() override;
 
     const uint32_t* pixels() override;
+
+private:
+    png_imagep image = nullptr;
+    const uint32_t* content = nullptr;
 };
 
 #endif //_TVG_PNG_LOADER_H_

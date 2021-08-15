@@ -38,7 +38,7 @@ constexpr auto PATH_KAPPA = 0.552284f;
 
 Shape :: Shape() : pImpl(new Impl(this))
 {
-    _id = PAINT_ID_SHAPE;
+    _id = TVG_CLASS_ID_SHAPE;
     Paint::pImpl->method(new PaintMethod<Shape::Impl>(pImpl));
 }
 
@@ -86,7 +86,7 @@ uint32_t Shape::pathCoords(const Point** pts) const noexcept
 
 Result Shape::appendPath(const PathCommand *cmds, uint32_t cmdCnt, const Point* pts, uint32_t ptsCnt) noexcept
 {
-    if (cmdCnt == 0 || ptsCnt == 0 || !pts || !ptsCnt) return Result::InvalidArguments;
+    if (cmdCnt == 0 || ptsCnt == 0 || !cmds || !pts) return Result::InvalidArguments;
 
     pImpl->path.grow(cmdCnt, ptsCnt);
     pImpl->path.append(cmds, cmdCnt, pts, ptsCnt);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2021 Samsung Electronics Co., Ltd. All rights reserved.
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,13 +20,35 @@
  * SOFTWARE.
  */
 
-#ifndef _TVG_GL_SHADERSRC_H_
-#define _TVG_GL_SHADERSRC_H_
+#ifndef _TVG_TVG_COMMON_H_
+#define _TVG_TVG_COMMON_H_
 
-extern const char* COLOR_VERT_SHADER;
-extern const char* COLOR_FRAG_SHADER;
-extern const char* GRADIENT_VERT_SHADER;
-extern const char* LINEAR_GRADIENT_FRAG_SHADER;
-extern const char* RADIAL_GRADIENT_FRAG_SHADER;
+#include "tvgCommon.h"
+#include "tvgBinaryDesc.h"
 
-#endif /* _TVG_GL_SHADERSRC_H_ */
+#define SIZE(A) sizeof(A)
+#define READ_UI32(dst, src) memcpy(dst, (src), sizeof(uint32_t))
+#define READ_FLOAT(dst, src) memcpy(dst, (src), sizeof(float))
+
+
+/* Interface for Tvg Binary Interpreter */
+class TvgBinInterpreterBase
+{
+public:
+    virtual ~TvgBinInterpreterBase() {}
+
+    /* ptr: points the tvg binary body (after header)
+       end: end of the tvg binary data */
+    virtual unique_ptr<Scene> run(const char* ptr, const char* end) = 0;
+};
+
+
+/* Version 0 */
+class TvgBinInterpreter : public TvgBinInterpreterBase
+{
+public:
+    unique_ptr<Scene> run(const char* ptr, const char* end) override;
+};
+
+
+#endif  //_TVG_TVG_COMMON_H_

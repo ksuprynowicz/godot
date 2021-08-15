@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2021 Samsung Electronics Co., Ltd. All rights reserved.
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,29 +19,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#ifndef _TVG_SAVE_MODULE_H_
+#define _TVG_SAVE_MODULE_H_
 
-#ifndef _TVG_GL_GPU_BUFFER_H_
-#define _TVG_GL_GPU_BUFFER_H_
+#include "tvgPaint.h"
 
-#include "tvgGlCommon.h"
+namespace tvg
+{
 
-class GlGpuBuffer
+class SaveModule
 {
 public:
-    enum class Target
+    virtual ~SaveModule() {}
+
+    virtual bool save(Paint* paint, const string& path) = 0;
+    virtual bool close() = 0;
+
+    //Utility Method: Iterator Delegator
+    Iterator* iterator(const Paint* paint)
     {
-        ARRAY_BUFFER = GL_ARRAY_BUFFER,
-        ELEMENT_ARRAY_BUFFER = GL_ARRAY_BUFFER
-    };
-
-    GlGpuBuffer();
-    ~GlGpuBuffer();
-    void updateBufferData(Target target, uint32_t size, const void* data);
-    void unbind(Target target);
-private:
-    uint32_t    mGlBufferId = 0;
-
+        return paint->pImpl->iterator();
+    }
 };
 
-#endif /* _TVG_GL_GPU_BUFFER_H_ */
+}
 
+#endif //_TVG_SAVE_MODULE_H_

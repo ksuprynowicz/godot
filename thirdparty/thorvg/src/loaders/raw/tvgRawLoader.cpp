@@ -21,7 +21,7 @@
  */
 #include <fstream>
 #include <string.h>
-#include "tvgLoaderMgr.h"
+#include "tvgLoader.h"
 #include "tvgRawLoader.h"
 
 /************************************************************************/
@@ -45,14 +45,14 @@ bool RawLoader::open(const uint32_t* data, uint32_t w, uint32_t h, bool copy)
 {
     if (!data || w == 0 || h == 0) return false;
 
-    this->w = vw = w;
-    this->h = vh = h;
+    this->w = w;
+    this->h = h;
     this->copy = copy;
 
     if (copy) {
-        content = (uint32_t*)malloc(sizeof(uint32_t) * vw * vh);
+        content = (uint32_t*)malloc(sizeof(uint32_t) * w * h);
         if (!content) return false;
-        memcpy((void*)content, data, sizeof(uint32_t) * vw * vh);
+        memcpy((void*)content, data, sizeof(uint32_t) * w * h);
     }
     else content = data;
 

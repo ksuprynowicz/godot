@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Samsung Electronics Co., Ltd. All rights reserved.
+ * Copyright (c) 2021 Samsung Electronics Co., Ltd. All rights reserved.
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,46 +20,32 @@
  * SOFTWARE.
  */
 
-#ifndef _TVG_GL_COMMON_H_
-#define _TVG_GL_COMMON_H_
+#ifdef THORVG_AVX_VECTOR_SUPPORT
 
-#include <assert.h>
-#include <GLES2/gl2.h>
-#include "tvgCommon.h"
-#include "tvgRender.h"
+#include <immintrin.h>
 
 
-#define GL_CHECK(x) \
-        x; \
-        do { \
-          GLenum glError = glGetError(); \
-          if(glError != GL_NO_ERROR) { \
-            printf("glGetError() = %i (0x%.8x) at line %s : %i\n", glError, glError, __FILE__, __LINE__); \
-            assert(0); \
-          } \
-        } while(0)
-
-#define EGL_CHECK(x) \
-    x; \
-    do { \
-        EGLint eglError = eglGetError(); \
-        if(eglError != EGL_SUCCESS) { \
-            printf("eglGetError() = %i (0x%.8x) at line %s : %i\n", eglError, eglError, __FILE__, __LINE__); \
-            assert(0); \
-        } \
-    } while(0)
-
-
-class GlGeometry;
-
-struct GlShape
+static inline void avxRasterRGBA32(uint32_t *dst, uint32_t val, uint32_t offset, int32_t len)
 {
-  const Shape* shape = nullptr;
-  float viewWd;
-  float viewHt;
-  RenderUpdateFlag updateFlag = None;
-  unique_ptr<GlGeometry> geometry;
-};
+    //1. calculate how many iterations we need to cover length
+    uint32_t iterations = len / 8;
+    uint32_t avxFilled = iterations * 8;
 
+    //2. set beginning of the array
+    dst += offset;
+    __m256i_u* avxDst = (__m256i_u*) dst;
 
-#endif /* _TVG_GL_COMMON_H_ */
+    //3. fill octets
+    for (uint32_t i = 0; i < iterations; ++i) {
+        *avxDst = _mm256_set1_epi32(val);
+        avxDst++;
+    }
+
+    //4. fill leftovers (in first step we have to set pointer to place where avx job is done)
+    int32_t leftovers = len - avxFilled;
+    dst += avxFilled;
+
+    while (leftovers--) *dst++ = val;
+}
+
+#endif

@@ -25,10 +25,6 @@
 #include "tvgCommon.h"
 #include "tvgRender.h"
 
-#ifdef THORVG_AVX_VECTOR_SUPPORT
-    #include <immintrin.h>
-#endif
-
 #if 0
 #include <sys/time.h>
 static double timeStamp()
@@ -70,7 +66,7 @@ struct SwPoint
         return {x - rhs.x, y - rhs.y};
     }
 
-    bool operator==(const SwPoint& rhs ) const
+    bool operator==(const SwPoint& rhs) const
     {
         return (x == rhs.x && y == rhs.y);
     }
@@ -262,7 +258,7 @@ struct SwMpool
 
 static inline SwCoord TO_SWCOORD(float val)
 {
-    return SwCoord(val * 64);
+    return SwCoord(val * 64.0f);
 }
 
 static inline uint32_t ALPHA_BLEND(uint32_t c, uint32_t a)
@@ -270,6 +266,14 @@ static inline uint32_t ALPHA_BLEND(uint32_t c, uint32_t a)
     return (((((c >> 8) & 0x00ff00ff) * a + 0x00ff00ff) & 0xff00ff00) +
             ((((c & 0x00ff00ff) * a + 0x00ff00ff) >> 8) & 0x00ff00ff));
 }
+
+#if defined(THORVG_NEON_VECTOR_SUPPORT)
+static inline uint8x8_t ALPHA_BLEND_NEON(uint8x8_t c, uint8x8_t a)
+{
+	uint16x8_t t = vmull_u8(c, a);
+	return vshrn_n_u16(t, 8);
+}
+#endif
 
 static inline uint32_t COLOR_INTERPOLATE(uint32_t c1, uint32_t a1, uint32_t c2, uint32_t a2)
 {
@@ -285,7 +289,7 @@ static inline uint32_t ALPHA_MULTIPLY(uint32_t c, uint32_t a)
 
 static inline SwCoord HALF_STROKE(float width)
 {
-    return TO_SWCOORD(width * 0.5);
+    return TO_SWCOORD(width * 0.5f);
 }
 
 int64_t mathMultiply(int64_t a, int64_t b);
@@ -325,7 +329,7 @@ bool strokeParseOutline(SwStroke* stroke, const SwOutline& outline);
 SwOutline* strokeExportOutline(SwStroke* stroke, SwMpool* mpool, unsigned tid);
 void strokeFree(SwStroke* stroke);
 
-bool imagePrepare(SwImage* image, const Picture* pdata, const Matrix* transform, const SwBBox& clipRegion, SwBBox& renderRegion, SwMpool* mpool, unsigned tid);
+bool imagePrepare(SwImage* image, const Matrix* transform, const SwBBox& clipRegion, SwBBox& renderRegion, SwMpool* mpool, unsigned tid);
 bool imagePrepared(const SwImage* image);
 bool imageGenRle(SwImage* image, TVG_UNUSED const Picture* pdata, const SwBBox& renderRegion, bool antiAlias);
 void imageDelOutline(SwImage* image, SwMpool* mpool, uint32_t tid);
@@ -343,7 +347,6 @@ void rleFree(SwRleData* rle);
 void rleReset(SwRleData* rle);
 void rleClipPath(SwRleData *rle, const SwRleData *clip);
 void rleClipRect(SwRleData *rle, const SwBBox* clip);
-void rleAlphaMask(SwRleData *rle, const SwRleData *clip);
 
 SwMpool* mpoolInit(uint32_t threads);
 bool mpoolTerm(SwMpool* mpool);
@@ -360,34 +363,6 @@ bool rasterImage(SwSurface* surface, SwImage* image, const Matrix* transform, co
 bool rasterStroke(SwSurface* surface, SwShape* shape, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 bool rasterGradientStroke(SwSurface* surface, SwShape* shape, unsigned id);
 bool rasterClear(SwSurface* surface);
-
-static inline void rasterRGBA32(uint32_t *dst, uint32_t val, uint32_t offset, int32_t len)
-{
-#ifdef THORVG_AVX_VECTOR_SUPPORT
-    //1. calculate how many iterations we need to cover length
-    uint32_t iterations = len / 8;
-    uint32_t avxFilled = iterations * 8;
-    int32_t leftovers = 0;
-
-    //2. set beginning of the array
-    dst+=offset;
-    __m256i_u* avxDst = (__m256i_u*) dst;
-
-    //3. fill octets
-    for (uint32_t i = 0; i < iterations; ++i) {
-        *avxDst = _mm256_set1_epi32(val);
-        avxDst++;
-    }
-
-    //4. fill leftovers (in first step we have to set pointer to place where avx job is done)
-    leftovers = len - avxFilled;
-    dst+= avxFilled;
-
-    while (leftovers--) *dst++ = val;
-#else
-    dst += offset;
-    while (len--) *dst++ = val;
-#endif
-}
+void rasterRGBA32(uint32_t *dst, uint32_t val, uint32_t offset, int32_t len);
 
 #endif /* _TVG_SW_COMMON_H_ */

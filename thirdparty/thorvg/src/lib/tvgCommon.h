@@ -28,13 +28,6 @@
 using namespace std;
 using namespace tvg;
 
-#define FILL_ID_LINEAR 0
-#define FILL_ID_RADIAL 1
-
-#define PAINT_ID_SHAPE   0
-#define PAINT_ID_SCENE   1
-#define PAINT_ID_PICTURE 2
-
 //for MSVC Compat
 #ifdef _MSC_VER
     #define TVG_UNUSED
@@ -43,5 +36,26 @@ using namespace tvg;
 #else
     #define TVG_UNUSED __attribute__ ((__unused__))
 #endif
+
+
+//TVG class identifier values
+#define TVG_CLASS_ID_UNDEFINED 0
+#define TVG_CLASS_ID_SHAPE     1
+#define TVG_CLASS_ID_SCENE     2
+#define TVG_CLASS_ID_PICTURE   3
+#define TVG_CLASS_ID_LINEAR    4
+#define TVG_CLASS_ID_RADIAL    5
+
+enum class FileType { Tvg = 0, Svg, Raw, Png, Jpg, Unknown };
+
+#ifdef THORVG_LOG_ENABLED
+    #define TVGLOG(tag, fmt, ...) fprintf(stdout, tag ": " fmt "\n", ##__VA_ARGS__)  //Log Message for notifying user some useful info
+    #define TVGERR(tag, fmt, ...) fprintf(stderr, tag ": " fmt "\n", ##__VA_ARGS__)  //Error Message for us to fix it
+#else
+    #define TVGERR(...)
+    #define TVGLOG(...)
+#endif
+
+uint16_t THORVG_VERSION_NUMBER();
 
 #endif //_TVG_COMMON_H_

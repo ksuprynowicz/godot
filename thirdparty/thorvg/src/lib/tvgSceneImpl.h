@@ -29,10 +29,26 @@
 /* Internal Class Implementation                                        */
 /************************************************************************/
 
+struct SceneIterator : Iterator
+{
+    Array<Paint*>* paints;
+    uint32_t idx = 0;
+
+    SceneIterator(Array<Paint*>* p) : paints(p)
+    {
+    }
+
+    const Paint* next() override
+    {
+        if (idx >= paints->count) return nullptr;
+        return paints->data[idx++];
+    }
+};
+
 struct Scene::Impl
 {
     Array<Paint*> paints;
-    uint8_t opacity;            //for composition
+    uint8_t opacity;                     //for composition
     RenderMethod* renderer = nullptr;    //keep it for explicit clear
 
     ~Impl()
@@ -60,7 +76,7 @@ struct Scene::Impl
 
         //If scene has several children or only scene, it may require composition.
         if (paints.count > 1) return true;
-        if (paints.count == 1 && (*paints.data)->id() == PAINT_ID_SCENE) return true;
+        if (paints.count == 1 && (*paints.data)->id() == TVG_CLASS_ID_SCENE) return true;
         return false;
     }
 
@@ -180,6 +196,11 @@ struct Scene::Impl
         }
         paints.clear();
         renderer = nullptr;
+    }
+
+    Iterator* iterator()
+    {
+        return new SceneIterator(&paints);
     }
 };
 

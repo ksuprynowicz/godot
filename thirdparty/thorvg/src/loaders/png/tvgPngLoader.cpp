@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-#include "tvgLoaderMgr.h"
+#include "tvgLoader.h"
 #include "tvgPngLoader.h"
 
 PngLoader::PngLoader()
@@ -45,8 +45,20 @@ bool PngLoader::open(const string& path)
 
     if (!png_image_begin_read_from_file(image, path.c_str())) return false;
 
-    vw = w = image->width;
-    vh = h = image->height;
+    w = image->width;
+    h = image->height;
+
+    return true;
+}
+
+bool PngLoader::open(const char* data, uint32_t size, bool copy)
+{
+    image->opaque = NULL;
+
+    if (!png_image_begin_read_from_memory(image, data, size)) return false;
+
+    w = image->width;
+    h = image->height;
 
     return true;
 }
@@ -57,7 +69,7 @@ bool PngLoader::read()
     image->format = PNG_FORMAT_BGRA;
     buffer = static_cast<png_bytep>(malloc(PNG_IMAGE_SIZE((*image))));
     if (!buffer) {
-        // out of memory, only time when libpng doesnt free its data
+        //out of memory, only time when libpng doesnt free its data
         png_image_free(image);
         return false;
     }

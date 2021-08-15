@@ -24,30 +24,33 @@
 #define _TVG_TVG_LOADER_H_
 
 #include "tvgTaskScheduler.h"
+#include "tvgTvgCommon.h"
 
-class TvgLoader : public Loader, public Task
+
+class TvgLoader : public LoadModule, public Task
 {
 public:
     const char* data = nullptr;
-    const char* pointer = nullptr;
+    const char* ptr = nullptr;
     uint32_t size = 0;
-
+    uint16_t version = 0;
     unique_ptr<Scene> root = nullptr;
-
+    TvgBinInterpreterBase* interpreter = nullptr;
     bool copy = false;
 
     ~TvgLoader();
 
-    using Loader::open;
+    using LoadModule::open;
     bool open(const string &path) override;
     bool open(const char *data, uint32_t size, bool copy) override;
     bool read() override;
     bool close() override;
-
-    void run(unsigned tid) override;
-    unique_ptr<Scene> scene() override;
+    bool resize(Paint* paint, float w, float h) override;
+    unique_ptr<Paint> paint() override;
 
 private:
+    bool readHeader();
+    void run(unsigned tid) override;
     void clear();
 };
 

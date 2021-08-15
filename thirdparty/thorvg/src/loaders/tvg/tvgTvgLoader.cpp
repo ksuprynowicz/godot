@@ -19,25 +19,62 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-#include <fstream>
 #include <memory.h>
-#include "tvgLoaderMgr.h"
+#include <fstream>
+#include "tvgLoader.h"
 #include "tvgTvgLoader.h"
-#include "tvgTvgLoadParser.h"
 
 
 /************************************************************************/
 /* Internal Class Implementation                                        */
 /************************************************************************/
 
+
 void TvgLoader::clear()
 {
     if (copy) free((char*)data);
-    data = nullptr;
-    pointer = nullptr;
+    ptr = data = nullptr;
     size = 0;
     copy = false;
+
+    if (interpreter) {
+        delete(interpreter);
+        interpreter = nullptr;
+    }
+}
+
+
+/* WARNING: Header format shall not change! */
+bool TvgLoader::readHeader()
+{
+    if (!ptr) return false;
+
+    //1. Signature
+    if (memcmp(ptr, TVG_HEADER_SIGNATURE, TVG_HEADER_SIGNATURE_LENGTH)) return false;
+    ptr += TVG_HEADER_SIGNATURE_LENGTH;
+
+    //2. Version
+    char version[TVG_HEADER_VERSION_LENGTH];
+    memcpy(version, ptr, TVG_HEADER_VERSION_LENGTH);
+    ptr += TVG_HEADER_VERSION_LENGTH;
+    this->version = atoi(version);
+    if (this->version > THORVG_VERSION_NUMBER()) {
+        TVGLOG("TVG", "This TVG file expects a higher version(%d) of ThorVG symbol(%d)", this->version, THORVG_VERSION_NUMBER());
+    }
+
+    //3. Reserved
+    ptr += TVG_HEADER_RESERVED_LENGTH;
+
+    //4. View Size
+    READ_FLOAT(&w, ptr);
+    ptr += SIZE(float);
+    READ_FLOAT(&h, ptr);
+    ptr += SIZE(float);
+
+    //Decide the proper Tvg Binary Interpreter based on the current file version
+    if (this->version >= 0) interpreter = new TvgBinInterpreter;
+
+    return true;
 }
 
 
@@ -80,10 +117,11 @@ bool TvgLoader::open(const string &path)
 
     f.close();
 
-    pointer = data;
+    ptr = data;
 
-    return tvgValidateData(pointer, size);
+    return readHeader();
 }
+
 
 bool TvgLoader::open(const char *data, uint32_t size, bool copy)
 {
@@ -95,21 +133,46 @@ bool TvgLoader::open(const char *data, uint32_t size, bool copy)
         memcpy((char*)this->data, data, size);
     } else this->data = data;
 
-    this->pointer = this->data;
+    this->ptr = this->data;
     this->size = size;
     this->copy = copy;
 
-    return tvgValidateData(pointer, size);
+    return readHeader();
 }
+
+
+bool TvgLoader::resize(Paint* paint, float w, float h)
+{
+    if (!paint) return false;
+
+    auto sx = w / this->w;
+    auto sy = h / this->h;
+
+    //Scale
+    auto scale = sx < sy ? sx : sy;
+    paint->scale(scale);
+
+    //Align
+    float tx = 0, ty = 0;
+    auto sw = this->w * scale;
+    auto sh = this->h * scale;
+    if (sw > sh) ty -= (h - sh) * 0.5f;
+    else tx -= (w - sw) * 0.5f;
+    paint->translate(-tx, -ty);
+
+    return true;
+}
+
 
 bool TvgLoader::read()
 {
-    if (!pointer || size == 0) return false;
+    if (!ptr || size == 0) return false;
 
     TaskScheduler::request(this);
 
     return true;
 }
+
 
 bool TvgLoader::close()
 {
@@ -118,14 +181,18 @@ bool TvgLoader::close()
     return true;
 }
 
+
 void TvgLoader::run(unsigned tid)
 {
     if (root) root.reset();
-    root = tvgLoadData(pointer, size);
+
+    root = interpreter->run(ptr, data + size);
+
     if (!root) clear();
 }
 
-unique_ptr<Scene> TvgLoader::scene()
+
+unique_ptr<Paint> TvgLoader::paint()
 {
     this->done();
     if (root) return move(root);

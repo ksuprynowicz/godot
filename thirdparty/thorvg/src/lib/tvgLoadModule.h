@@ -19,20 +19,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef _TVG_LOADER_MGR_H_
-#define _TVG_LOADER_MGR_H_
+#ifndef _TVG_LOAD_MODULE_H_
+#define _TVG_LOAD_MODULE_H_
 
-#include "tvgLoader.h"
+#include "tvgCommon.h"
 
-enum class FileType { Tvg = 0, Svg, Raw, Png, Unknown };
-
-struct LoaderMgr
+namespace tvg
 {
-    static bool init();
-    static bool term();
-    static shared_ptr<Loader> loader(const string& path, bool* invalid);
-    static shared_ptr<Loader> loader(const char* data, uint32_t size, bool copy);
-    static shared_ptr<Loader> loader(const uint32_t* data, uint32_t w, uint32_t h, bool copy);
+
+class LoadModule
+{
+public:
+    //default view box, if any.
+    float vx = 0;
+    float vy = 0;
+    float vw = 0;
+    float vh = 0;
+    float w = 0, h = 0;         //default image size
+    bool preserveAspect = true; //keep aspect ratio by default.
+
+    virtual ~LoadModule() {}
+
+    virtual bool open(const string& path) { return false; };
+    virtual bool open(const char* data, uint32_t size, bool copy) { return false; };
+    virtual bool open(const uint32_t* data, uint32_t w, uint32_t h, bool copy) { return false; };
+
+    //Override this if the vector-format has own resizing policy.
+    virtual bool resize(Paint* paint, float w, float h) { return false; };
+
+    virtual bool read() = 0;
+    virtual bool close() = 0;
+    virtual const uint32_t* pixels() { return nullptr; };
+    virtual unique_ptr<Paint> paint() { return nullptr; };
 };
 
-#endif //_TVG_LOADER_MGR_H_
+}
+
+#endif //_TVG_LOAD_MODULE_H_
