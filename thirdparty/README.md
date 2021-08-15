@@ -639,7 +639,7 @@ Files extracted from upstream source:
 
 Files extracted from upstream source:
 
-See `thirdparty/thorvg/update-thorvg.sh` for extraction instructions.
+See `thorvg/update-thorvg.sh` for extraction instructions.
 
 
 ## vhacd
