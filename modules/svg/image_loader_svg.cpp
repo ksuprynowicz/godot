@@ -71,7 +71,9 @@ void ImageLoaderSVG::create_image_from_string(Ref<Image> p_image, String p_strin
 	}
 	picture->viewbox(nullptr, nullptr, &fw, &fh);
 
-	// FIXME: p_upsample is not used.
+	fw *= p_upsample;
+	fh *= p_upsample;
+
 	uint32_t width = MIN(fw * p_scale, 16 * 1024);
 	uint32_t height = MIN(fh * p_scale, 16 * 1024);
 	picture->size(width, height);
