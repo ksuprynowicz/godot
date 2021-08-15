@@ -25,6 +25,7 @@ thirdparty_sources = [
     "src/lib/tvgShape.cpp",
     "src/lib/tvgSwCanvas.cpp",
     "src/lib/tvgTaskScheduler.cpp",
+    "src/loaders/raw/tvgRawLoader.cpp",
     "src/loaders/svg/tvgXmlParser.cpp",
     "src/loaders/svg/tvgSvgUtil.cpp",
     "src/loaders/svg/tvgSvgSceneBuilder.cpp",
