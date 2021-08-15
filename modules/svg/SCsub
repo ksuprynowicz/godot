@@ -15,6 +15,7 @@ thirdparty_sources = [
     "src/lib/tvgCanvas.cpp",
     "src/lib/tvgFill.cpp",
     "src/lib/tvgInitializer.cpp",
+    "src/lib/tvgLoader.cpp",
     "src/lib/tvgLinearGradient.cpp",
     "src/lib/tvgPaint.cpp",
     "src/lib/tvgPicture.cpp",
