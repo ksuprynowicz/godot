@@ -2144,6 +2144,7 @@ void RenderingServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("viewport_attach_to_screen", "viewport", "rect", "screen"), &RenderingServer::viewport_attach_to_screen, DEFVAL(Rect2()), DEFVAL(DisplayServer::MAIN_WINDOW_ID));
 	ClassDB::bind_method(D_METHOD("viewport_set_render_direct_to_screen", "viewport", "enabled"), &RenderingServer::viewport_set_render_direct_to_screen);
 
+	ClassDB::bind_method(D_METHOD("viewport_set_fsr_upscale_quality", "viewport", "quality_mode"), &RenderingServer::viewport_set_fsr_upscale_quality);
 	ClassDB::bind_method(D_METHOD("viewport_set_update_mode", "viewport", "update_mode"), &RenderingServer::viewport_set_update_mode);
 	ClassDB::bind_method(D_METHOD("viewport_set_clear_mode", "viewport", "clear_mode"), &RenderingServer::viewport_set_clear_mode);
 	ClassDB::bind_method(D_METHOD("viewport_get_texture", "viewport"), &RenderingServer::viewport_get_texture);
@@ -2794,6 +2795,17 @@ RenderingServer::RenderingServer() {
 			PropertyInfo(Variant::INT,
 					"rendering/vulkan/rendering/back_end",
 					PROPERTY_HINT_ENUM, "Forward Clustered (Supports Desktop Only),Forward Mobile (Supports Desktop and Mobile)"));
+
+	GLOBAL_DEF_RST_BASIC("rendering/vulkan/rendering/fsr_upscale_quality", 0);
+	GLOBAL_DEF_RST_BASIC("rendering/vulkan/rendering/fsr_upscale_sharpness", 0.2f);
+	ProjectSettings::get_singleton()->set_custom_property_info("rendering/vulkan/rendering/fsr_upscale_quality",
+			PropertyInfo(Variant::INT,
+					"rendering/vulkan/rendering/fsr_upscale_quality",
+					PROPERTY_HINT_ENUM, "Disabled (Slowest),Performance (Fast), Balanced (Normal), Quality (Slow), Ultra Quality (Slowest)"));
+	ProjectSettings::get_singleton()->set_custom_property_info("rendering/vulkan/rendering/fsr_upscale_sharpness",
+			PropertyInfo(Variant::FLOAT,
+					"rendering/vulkan/rendering/fsr_upscale_sharpness",
+					PROPERTY_HINT_RANGE, "0,2,0.1"));
 
 	GLOBAL_DEF("rendering/shader_compiler/shader_cache/enabled", true);
 	GLOBAL_DEF("rendering/shader_compiler/shader_cache/compress", true);
