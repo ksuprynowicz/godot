@@ -1378,6 +1378,8 @@ public:
 		return default_rd_samplers[p_filter][p_repeat];
 	}
 
+	void sampler_rd_set_default(float p_mipmap_bias);
+
 	/* CANVAS TEXTURE API */
 
 	RID canvas_texture_allocate();

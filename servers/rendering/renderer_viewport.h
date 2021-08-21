@@ -49,10 +49,16 @@ public:
 
 		bool use_xr; /* use xr interface to override camera positioning and projection matrices and control output */
 
+		Size2i internal_size;
 		Size2i size;
 		RID camera;
 		RID scenario;
 
+		RS::ViewportFSRUpscaleQualityMode fsr_upscale_quality_mode;
+		float fsr_upscale_custom_quality = 1.0f;
+		float fsr_upscale_sharpness;
+		float fsr_upscale_mipmap_bias;
+		bool fsr_upscale_enabled;
 		RS::ViewportUpdateMode update_mode;
 		RID render_target;
 		RID render_target_texture;
@@ -212,6 +218,10 @@ public:
 
 	void viewport_set_active(RID p_viewport, bool p_active);
 	void viewport_set_parent_viewport(RID p_viewport, RID p_parent_viewport);
+	void viewport_set_fsr_upscale_quality(RID p_viewport, RS::ViewportFSRUpscaleQualityMode p_quality_mode);
+	void viewport_set_fsr_upscale_custom_quality(RID p_viewport, float p_custom_quality);
+	void viewport_set_fsr_upscale_sharpness(RID p_viewport, float p_sharpness);
+	void viewport_set_fsr_upscale_mipmap_bias(RID p_viewport, float p_mipmap_bias);
 	void viewport_set_update_mode(RID p_viewport, RS::ViewportUpdateMode p_mode);
 	void viewport_set_vflip(RID p_viewport, bool p_enable);
 
