@@ -637,7 +637,7 @@ void RendererViewport::viewport_initialize(RID p_rid) {
 	viewport->render_target = RSG::storage->render_target_create();
 	viewport->shadow_atlas = RSG::scene->shadow_atlas_create();
 	viewport->viewport_render_direct_to_screen = false;
-		
+
 	bool is_mobile_renderer = (bool)GLOBAL_GET("rendering/vulkan/rendering/back_end");
 	viewport->fsr_upscale_enabled = !is_mobile_renderer && !viewport->disable_3d;
 }
@@ -699,7 +699,7 @@ void RendererViewport::viewport_set_size(RID p_viewport, int p_width, int p_heig
 		case RS::VIEWPORT_FSR_UPSCALE_ULTRA_QUALITY:
 			scale_factor = 1.3f;
 			break;
-		
+
 		case RS::VIEWPORT_FSR_UPSCALE_CUSTOM:
 			scale_factor = 1.0f / viewport->fsr_upscale_custom_quality;
 			break;
@@ -766,7 +766,6 @@ void RendererViewport::viewport_set_fsr_upscale_quality(RID p_viewport, RS::View
 void RendererViewport::viewport_set_fsr_upscale_custom_quality(RID p_viewport, float p_custom_quality) {
 	Viewport *viewport = viewport_owner.getornull(p_viewport);
 	ERR_FAIL_COND(!viewport);
-
 
 	if (viewport->fsr_upscale_enabled) {
 		viewport->fsr_upscale_custom_quality = p_custom_quality;

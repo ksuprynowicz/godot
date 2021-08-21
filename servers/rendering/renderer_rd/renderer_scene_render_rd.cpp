@@ -2620,7 +2620,7 @@ bool RendererSceneRenderRD::_render_buffers_can_be_storage() {
 void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p_render_target, int p_internal_width, int p_internal_height, int p_width, int p_height, float p_fsr_upscale_sharpness, float p_fsr_upscale_mipmap_bias, RS::ViewportMSAA p_msaa, RenderingServer::ViewportScreenSpaceAA p_screen_space_aa, bool p_use_debanding, uint32_t p_view_count) {
 	ERR_FAIL_COND_MSG(p_view_count == 0, "Must have at least 1 view");
 
-	float mipmap_bias = -log2(p_width/(float)p_internal_width) + p_fsr_upscale_mipmap_bias;
+	float mipmap_bias = -log2(p_width / (float)p_internal_width) + p_fsr_upscale_mipmap_bias;
 	if (mipmap_bias > 0.0f) {
 		mipmap_bias = 0.0f;
 	}

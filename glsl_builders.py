@@ -63,7 +63,7 @@ def include_file_in_rd_header(filename, header_data, depth):
 
             if includeline.startswith("thirdparty/"):
                 included_file = os.path.relpath(includeline)
-                
+
             else:
                 included_file = os.path.relpath(os.path.dirname(filename) + "/" + includeline)
 
