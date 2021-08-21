@@ -3994,6 +3994,15 @@ RID RenderingDeviceVulkan::sampler_create(const SamplerState &p_state) {
 	return sampler_owner.make_rid(sampler);
 }
 
+void RenderingDeviceVulkan::sampler_destroy(RID p_sampler) {
+	VkSampler *sampler = sampler_owner.getornull(p_sampler);
+	ERR_FAIL_COND(!sampler);
+
+	vkDestroySampler(device, *sampler, nullptr);
+
+	sampler_owner.free(p_sampler);
+}
+
 /**********************/
 /**** VERTEX ARRAY ****/
 /**********************/

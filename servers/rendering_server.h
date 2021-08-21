@@ -767,11 +767,14 @@ public:
 		VIEWPORT_FSR_UPSCALE_PERFORMANCE,
 		VIEWPORT_FSR_UPSCALE_BALANCED,
 		VIEWPORT_FSR_UPSCALE_QUALITY,
-		VIEWPORT_FSR_UPSCALE_ULTRA_QUALITY
+		VIEWPORT_FSR_UPSCALE_ULTRA_QUALITY,
+		VIEWPORT_FSR_UPSCALE_CUSTOM
 	};
 
 	virtual void viewport_set_fsr_upscale_quality(RID p_viewport, ViewportFSRUpscaleQualityMode p_quality_mode) = 0;
+	virtual void viewport_set_fsr_upscale_custom_quality(RID p_viewport, float p_fsr_upscale_quality) = 0;
 	virtual void viewport_set_fsr_upscale_sharpness(RID p_viewport, float p_fsr_upscale_sharpness) = 0;
+	virtual void viewport_set_fsr_upscale_mipmap_bias(RID p_viewport, float p_fsr_upscale_mipmap_bias) = 0;
 
 	enum ViewportUpdateMode {
 		VIEWPORT_UPDATE_DISABLED,

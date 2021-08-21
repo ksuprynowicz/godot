@@ -1070,6 +1070,7 @@ public:
 	/*****************/
 
 	virtual RID sampler_create(const SamplerState &p_state);
+	virtual void sampler_destroy(const RID p_sampler);
 
 	/**********************/
 	/**** VERTEX ARRAY ****/

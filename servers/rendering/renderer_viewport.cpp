@@ -142,7 +142,7 @@ void RendererViewport::_draw_viewport(Viewport *p_viewport, uint32_t p_view_coun
 	if ((scenario_draw_canvas_bg || can_draw_3d) && !p_viewport->render_buffers.is_valid()) {
 		//wants to draw 3D but there is no render buffer, create
 		p_viewport->render_buffers = RSG::scene->render_buffers_create();
-		RSG::scene->render_buffers_configure(p_viewport->render_buffers, p_viewport->render_target, p_viewport->internal_size.width, p_viewport->internal_size.height, p_viewport->size.width, p_viewport->size.height, p_viewport->fsr_upscale_sharpness, p_viewport->msaa, p_viewport->screen_space_aa, p_viewport->use_debanding, p_view_count);
+		RSG::scene->render_buffers_configure(p_viewport->render_buffers, p_viewport->render_target, p_viewport->internal_size.width, p_viewport->internal_size.height, p_viewport->size.width, p_viewport->size.height, p_viewport->fsr_upscale_sharpness, p_viewport->fsr_upscale_mipmap_bias, p_viewport->msaa, p_viewport->screen_space_aa, p_viewport->use_debanding, p_view_count);
 	}
 
 	RSG::storage->render_target_request_clear(p_viewport->render_target, bgcolor);
@@ -637,9 +637,9 @@ void RendererViewport::viewport_initialize(RID p_rid) {
 	viewport->render_target = RSG::storage->render_target_create();
 	viewport->shadow_atlas = RSG::scene->shadow_atlas_create();
 	viewport->viewport_render_direct_to_screen = false;
-
+		
 	bool is_mobile_renderer = (bool)GLOBAL_GET("rendering/vulkan/rendering/back_end");
-	viewport->fsr_enabled = !is_mobile_renderer;
+	viewport->fsr_upscale_enabled = !is_mobile_renderer && !viewport->disable_3d;
 }
 
 void RendererViewport::viewport_set_use_xr(RID p_viewport, bool p_use_xr) {
@@ -652,7 +652,7 @@ void RendererViewport::viewport_set_use_xr(RID p_viewport, bool p_use_xr) {
 
 	viewport->use_xr = p_use_xr;
 	if (viewport->render_buffers.is_valid()) {
-		RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, viewport->size.width, viewport->size.height, viewport->fsr_upscale_sharpness, viewport->msaa, viewport->screen_space_aa, viewport->use_debanding, viewport->get_view_count());
+		RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, viewport->size.width, viewport->size.height, viewport->fsr_upscale_sharpness, viewport->fsr_upscale_mipmap_bias, viewport->msaa, viewport->screen_space_aa, viewport->use_debanding, viewport->get_view_count());
 	}
 }
 
@@ -679,7 +679,7 @@ void RendererViewport::viewport_set_size(RID p_viewport, int p_width, int p_heig
 
 	float scale_factor;
 
-	switch (viewport->fsr_quality_mode) {
+	switch (viewport->fsr_upscale_quality_mode) {
 		case RS::VIEWPORT_FSR_UPSCALE_DISABLED:
 			scale_factor = 1.0f;
 			break;
@@ -698,6 +698,10 @@ void RendererViewport::viewport_set_size(RID p_viewport, int p_width, int p_heig
 
 		case RS::VIEWPORT_FSR_UPSCALE_ULTRA_QUALITY:
 			scale_factor = 1.3f;
+			break;
+		
+		case RS::VIEWPORT_FSR_UPSCALE_CUSTOM:
+			scale_factor = 1.0f / viewport->fsr_upscale_custom_quality;
 			break;
 
 		default:
@@ -718,7 +722,7 @@ void RendererViewport::viewport_set_size(RID p_viewport, int p_width, int p_heig
 			RSG::scene->free(viewport->render_buffers);
 			viewport->render_buffers = RID();
 		} else {
-			RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, p_width, p_height, viewport->fsr_upscale_sharpness, viewport->msaa, viewport->screen_space_aa, viewport->use_debanding, view_count);
+			RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, p_width, p_height, viewport->fsr_upscale_sharpness, viewport->fsr_upscale_mipmap_bias, viewport->msaa, viewport->screen_space_aa, viewport->use_debanding, view_count);
 		}
 	}
 
@@ -749,12 +753,23 @@ void RendererViewport::viewport_set_fsr_upscale_quality(RID p_viewport, RS::View
 	Viewport *viewport = viewport_owner.getornull(p_viewport);
 	ERR_FAIL_COND(!viewport);
 
-	if (!viewport->fsr_enabled) {
-		viewport->fsr_quality_mode = RS::VIEWPORT_FSR_UPSCALE_DISABLED;
+	if (!viewport->fsr_upscale_enabled) {
+		viewport->fsr_upscale_quality_mode = RS::VIEWPORT_FSR_UPSCALE_DISABLED;
 	} else {
-		viewport->fsr_quality_mode = p_quality_mode;
+		viewport->fsr_upscale_quality_mode = p_quality_mode;
 
 		// Calculate internal resolution
+		viewport_set_size(p_viewport, viewport->size.x, viewport->size.y);
+	}
+}
+
+void RendererViewport::viewport_set_fsr_upscale_custom_quality(RID p_viewport, float p_custom_quality) {
+	Viewport *viewport = viewport_owner.getornull(p_viewport);
+	ERR_FAIL_COND(!viewport);
+
+
+	if (viewport->fsr_upscale_enabled) {
+		viewport->fsr_upscale_custom_quality = p_custom_quality;
 		viewport_set_size(p_viewport, viewport->size.x, viewport->size.y);
 	}
 }
@@ -763,9 +778,25 @@ void RendererViewport::viewport_set_fsr_upscale_sharpness(RID p_viewport, float 
 	Viewport *viewport = viewport_owner.getornull(p_viewport);
 	ERR_FAIL_COND(!viewport);
 
-	if (viewport->fsr_enabled) {
+	if (viewport->fsr_upscale_enabled) {
 		viewport->fsr_upscale_sharpness = p_sharpness;
-		RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, viewport->size.width, viewport->size.height, viewport->fsr_upscale_sharpness, viewport->msaa, viewport->screen_space_aa, viewport->use_debanding, viewport->get_view_count());
+
+		if (viewport->render_buffers.is_valid()) {
+			RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, viewport->size.width, viewport->size.height, viewport->fsr_upscale_sharpness, viewport->fsr_upscale_mipmap_bias, viewport->msaa, viewport->screen_space_aa, viewport->use_debanding, viewport->get_view_count());
+		}
+	}
+}
+
+void RendererViewport::viewport_set_fsr_upscale_mipmap_bias(RID p_viewport, float p_mipmap_bias) {
+	Viewport *viewport = viewport_owner.getornull(p_viewport);
+	ERR_FAIL_COND(!viewport);
+
+	if (viewport->fsr_upscale_enabled) {
+		viewport->fsr_upscale_mipmap_bias = p_mipmap_bias;
+
+		if (viewport->render_buffers.is_valid()) {
+			RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, viewport->size.width, viewport->size.height, viewport->fsr_upscale_sharpness, viewport->fsr_upscale_mipmap_bias, viewport->msaa, viewport->screen_space_aa, viewport->use_debanding, viewport->get_view_count());
+		}
 	}
 }
 
@@ -976,7 +1007,7 @@ void RendererViewport::viewport_set_msaa(RID p_viewport, RS::ViewportMSAA p_msaa
 	}
 	viewport->msaa = p_msaa;
 	if (viewport->render_buffers.is_valid()) {
-		RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, viewport->size.width, viewport->size.height, viewport->fsr_upscale_sharpness, p_msaa, viewport->screen_space_aa, viewport->use_debanding, viewport->get_view_count());
+		RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, viewport->size.width, viewport->size.height, viewport->fsr_upscale_sharpness, viewport->fsr_upscale_mipmap_bias, p_msaa, viewport->screen_space_aa, viewport->use_debanding, viewport->get_view_count());
 	}
 }
 
@@ -989,7 +1020,7 @@ void RendererViewport::viewport_set_screen_space_aa(RID p_viewport, RS::Viewport
 	}
 	viewport->screen_space_aa = p_mode;
 	if (viewport->render_buffers.is_valid()) {
-		RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, viewport->size.width, viewport->size.height, viewport->fsr_upscale_sharpness, viewport->msaa, p_mode, viewport->use_debanding, viewport->get_view_count());
+		RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, viewport->size.width, viewport->size.height, viewport->fsr_upscale_sharpness, viewport->fsr_upscale_mipmap_bias, viewport->msaa, p_mode, viewport->use_debanding, viewport->get_view_count());
 	}
 }
 
@@ -1002,7 +1033,7 @@ void RendererViewport::viewport_set_use_debanding(RID p_viewport, bool p_use_deb
 	}
 	viewport->use_debanding = p_use_debanding;
 	if (viewport->render_buffers.is_valid()) {
-		RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, viewport->size.width, viewport->size.height, viewport->fsr_upscale_sharpness, viewport->msaa, viewport->screen_space_aa, p_use_debanding, viewport->get_view_count());
+		RSG::scene->render_buffers_configure(viewport->render_buffers, viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, viewport->size.width, viewport->size.height, viewport->fsr_upscale_sharpness, viewport->fsr_upscale_mipmap_bias, viewport->msaa, viewport->screen_space_aa, p_use_debanding, viewport->get_view_count());
 	}
 }
 

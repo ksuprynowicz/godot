@@ -2846,6 +2846,20 @@ Viewport::FSRUpscaleQuality Viewport::get_fsr_upscale_quality() const {
 	return fsr_upscale_quality;
 }
 
+void Viewport::set_fsr_upscale_custom_quality(float p_fsr_custom_quality) {
+	ERR_FAIL_COND(!((p_fsr_custom_quality >= 0.1f) && (p_fsr_custom_quality <= 1.0f)));
+	if (fsr_upscale_custom_quality == p_fsr_custom_quality) {
+		return;
+	}
+
+	fsr_upscale_custom_quality = p_fsr_custom_quality;
+	RS::get_singleton()->viewport_set_fsr_upscale_custom_quality(viewport, p_fsr_custom_quality);
+}
+
+float Viewport::get_fsr_upscale_custom_quality() const {
+	return fsr_upscale_custom_quality;
+}
+
 void Viewport::set_fsr_upscale_sharpness(float p_fsr_upscale_sharpness) {
 	if (fsr_upscale_sharpness == p_fsr_upscale_sharpness) {
 		return;
@@ -2863,6 +2877,19 @@ void Viewport::set_fsr_upscale_sharpness(float p_fsr_upscale_sharpness) {
 
 float Viewport::get_fsr_upscale_sharpness() const {
 	return fsr_upscale_sharpness;
+}
+
+void Viewport::set_fsr_upscale_mipmap_bias(float p_fsr_upscale_mipmap_bias) {
+	if (fsr_upscale_mipmap_bias == p_fsr_upscale_mipmap_bias) {
+		return;
+	}
+
+	fsr_upscale_mipmap_bias = p_fsr_upscale_mipmap_bias;
+	RS::get_singleton()->viewport_set_fsr_upscale_mipmap_bias(viewport, p_fsr_upscale_mipmap_bias);
+}
+
+float Viewport::get_fsr_upscale_mipmap_bias() const {
+	return fsr_upscale_mipmap_bias;
 }
 
 void Viewport::set_use_debanding(bool p_use_debanding) {
@@ -3534,8 +3561,14 @@ void Viewport::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_fsr_upscale_quality", "fsr_upscale_quality"), &Viewport::set_fsr_upscale_quality);
 	ClassDB::bind_method(D_METHOD("get_fsr_upscale_quality"), &Viewport::get_fsr_upscale_quality);
 
+	ClassDB::bind_method(D_METHOD("set_fsr_upscale_custom_quality", "fsr_upscale_custom_quality"), &Viewport::set_fsr_upscale_custom_quality);
+	ClassDB::bind_method(D_METHOD("get_fsr_upscale_custom_quality"), &Viewport::get_fsr_upscale_custom_quality);
+
 	ClassDB::bind_method(D_METHOD("set_fsr_upscale_sharpness", "fsr_upscale_sharpness"), &Viewport::set_fsr_upscale_sharpness);
 	ClassDB::bind_method(D_METHOD("get_fsr_upscale_sharpness"), &Viewport::get_fsr_upscale_sharpness);
+
+	ClassDB::bind_method(D_METHOD("set_fsr_upscale_mipmap_bias", "fsr_upscale_mipmap_bias"), &Viewport::set_fsr_upscale_mipmap_bias);
+	ClassDB::bind_method(D_METHOD("get_fsr_upscale_mipmap_bias"), &Viewport::get_fsr_upscale_mipmap_bias);
 
 	ClassDB::bind_method(D_METHOD("set_use_debanding", "enable"), &Viewport::set_use_debanding);
 	ClassDB::bind_method(D_METHOD("is_using_debanding"), &Viewport::is_using_debanding);
@@ -3651,8 +3684,10 @@ void Viewport::_bind_methods() {
 	ADD_GROUP("Rendering", "");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "msaa", PROPERTY_HINT_ENUM, String::utf8("Disabled (Fastest),2× (Fast),4× (Average),8× (Slow),16× (Slower)")), "set_msaa", "get_msaa");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "screen_space_aa", PROPERTY_HINT_ENUM, "Disabled (Fastest),FXAA (Fast)"), "set_screen_space_aa", "get_screen_space_aa");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fsr_upscale_quality", PROPERTY_HINT_ENUM, "Disabled (Slowest),Performance (Fastest),Balanced (Fast),Quality (Medium),Ultra Quality (Slow)"), "set_fsr_upscale_quality", "get_fsr_upscale_quality");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fsr_upscale_quality", PROPERTY_HINT_ENUM, "Disabled (Slowest),Performance (Fastest),Balanced (Fast),Quality (Medium),Ultra Quality (Slow),Custom"), "set_fsr_upscale_quality", "get_fsr_upscale_quality");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fsr_upscale_custom_quality", PROPERTY_HINT_RANGE, "0.1,1.0,0.01"), "set_fsr_upscale_custom_quality", "get_fsr_upscale_custom_quality");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fsr_upscale_sharpness", PROPERTY_HINT_RANGE, "0,2,0.1"), "set_fsr_upscale_sharpness", "get_fsr_upscale_sharpness");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fsr_upscale_mipmap_bias", PROPERTY_HINT_RANGE, "-1,1,0.05"), "set_fsr_upscale_mipmap_bias", "get_fsr_upscale_mipmap_bias");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_debanding"), "set_use_debanding", "is_using_debanding");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_occlusion_culling"), "set_use_occlusion_culling", "is_using_occlusion_culling");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_threshold", PROPERTY_HINT_RANGE, "0,1024,0.1"), "set_lod_threshold", "get_lod_threshold");
@@ -3709,6 +3744,7 @@ void Viewport::_bind_methods() {
 	BIND_ENUM_CONSTANT(FSR_UPSCALE_BALANCED);
 	BIND_ENUM_CONSTANT(FSR_UPSCALE_QUALITY);
 	BIND_ENUM_CONSTANT(FSR_UPSCALE_ULTRA_QUALITY);
+	BIND_ENUM_CONSTANT(FSR_UPSCALE_CUSTOM);
 
 	BIND_ENUM_CONSTANT(RENDER_INFO_OBJECTS_IN_FRAME);
 	BIND_ENUM_CONSTANT(RENDER_INFO_PRIMITIVES_IN_FRAME);
