@@ -1067,6 +1067,17 @@ Node *SceneTree::get_edited_scene_root() const {
 void SceneTree::set_current_scene(Node *p_scene) {
 	ERR_FAIL_COND(p_scene && p_scene->get_parent() != root);
 	current_scene = p_scene;
+
+	if (p_scene->get_class() == "Node3D") {
+		Viewport::FSRUpscaleQuality fsr_quality = (Viewport::FSRUpscaleQuality)(int)GLOBAL_GET("rendering/vulkan/rendering/fsr_upscale_quality");
+		root->set_fsr_upscale_quality(fsr_quality);
+
+		float fsr_sharpness = GLOBAL_GET("rendering/vulkan/rendering/fsr_upscale_sharpness");
+		root->set_fsr_upscale_sharpness(fsr_sharpness);
+
+		float fsr_custom_quality = GLOBAL_GET("rendering/vulkan/rendering/fsr_upscale_custom_quality");
+		root->set_fsr_upscale_custom_quality(fsr_custom_quality);
+	}
 }
 
 Node *SceneTree::get_current_scene() const {
@@ -1122,6 +1133,17 @@ Error SceneTree::reload_current_scene() {
 void SceneTree::add_current_scene(Node *p_current) {
 	current_scene = p_current;
 	root->add_child(p_current);
+
+	if (p_current->get_class() == "Node3D") {
+		Viewport::FSRUpscaleQuality fsr_quality = (Viewport::FSRUpscaleQuality)(int)GLOBAL_GET("rendering/vulkan/rendering/fsr_upscale_quality");
+		root->set_fsr_upscale_quality(fsr_quality);
+
+		float fsr_sharpness = GLOBAL_GET("rendering/vulkan/rendering/fsr_upscale_sharpness");
+		root->set_fsr_upscale_sharpness(fsr_sharpness);
+
+		float fsr_custom_quality = GLOBAL_GET("rendering/vulkan/rendering/fsr_upscale_custom_quality");
+		root->set_fsr_upscale_custom_quality(fsr_custom_quality);
+	}
 }
 
 Ref<SceneTreeTimer> SceneTree::create_timer(double p_delay_sec, bool p_process_always) {
