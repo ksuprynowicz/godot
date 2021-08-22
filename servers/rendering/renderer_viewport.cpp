@@ -716,7 +716,7 @@ void RendererViewport::viewport_set_size(RID p_viewport, int p_width, int p_heig
 	viewport->internal_size = Size2(render_width, render_height);
 
 	uint32_t view_count = viewport->get_view_count();
-	RSG::storage->render_target_set_size(viewport->render_target, viewport->internal_size.width, viewport->internal_size.height, view_count);
+	RSG::storage->render_target_set_size(viewport->render_target, viewport->size.width, viewport->size.height, view_count);
 	if (viewport->render_buffers.is_valid()) {
 		if (viewport->internal_size.width == 0 || viewport->internal_size.height == 0) {
 			RSG::scene->free(viewport->render_buffers);
