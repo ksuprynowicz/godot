@@ -45,6 +45,7 @@
 #include "servers/rendering/renderer_rd/shaders/cubemap_filter_raster.glsl.gen.h"
 #include "servers/rendering/renderer_rd/shaders/cubemap_roughness.glsl.gen.h"
 #include "servers/rendering/renderer_rd/shaders/cubemap_roughness_raster.glsl.gen.h"
+#include "servers/rendering/renderer_rd/shaders/fsr_upscale.glsl.gen.h"
 #include "servers/rendering/renderer_rd/shaders/luminance_reduce.glsl.gen.h"
 #include "servers/rendering/renderer_rd/shaders/luminance_reduce_raster.glsl.gen.h"
 #include "servers/rendering/renderer_rd/shaders/resolve.glsl.gen.h"
@@ -67,7 +68,26 @@
 
 class EffectsRD {
 private:
-	bool prefer_raster_effects;
+
+	enum FSRUpscalePass {
+		FSR_UPSCALE_PASS_EASU = 0,
+		FSR_UPSCALE_PASS_RCAS = 1
+	};
+
+	struct FSRUpscalePushConstant {
+		float resolution_width, resolution_height;
+		float upscaled_width, upscaled_height;
+		float sharpness;
+		int pass;
+		int _unused0, _unused1;
+	};
+
+	struct FSRUpscale {
+		FSRUpscalePushConstant push_constant;
+		FsrUpscaleShaderRD shader;
+		RID shader_version;
+		RID pipeline;
+	} FSR_upscale;
 
 	enum BlurRasterMode {
 		BLUR_MIPMAP,
@@ -752,8 +772,10 @@ private:
 	RID _get_compute_uniform_set_from_image_pair(RID p_texture, RID p_texture2);
 
 public:
+	bool prefer_raster_effects;
 	bool get_prefer_raster_effects();
 
+	void fsr_upscale(RID p_source_rd_texture, RID p_secondary_texture, RID p_destination_texture, const Size2i &p_internal_size, const Size2i &p_size, float p_fsr_upscale_sharpness);
 	void copy_to_fb_rect(RID p_source_rd_texture, RID p_dest_framebuffer, const Rect2i &p_rect, bool p_flip_y = false, bool p_force_luminance = false, bool p_alpha_to_zero = false, bool p_srgb = false, RID p_secondary = RID());
 	void copy_to_rect(RID p_source_rd_texture, RID p_dest_texture, const Rect2i &p_rect, bool p_flip_y = false, bool p_force_luminance = false, bool p_all_source = false, bool p_8_bit_dst = false, bool p_alpha_to_one = false);
 	void copy_cubemap_to_panorama(RID p_source_cube, RID p_dest_panorama, const Size2i &p_panorama_size, float p_lod, bool p_is_array);
