@@ -128,6 +128,10 @@ void AnimationNodeBlendTreeEditor::_update_graph() {
 		Ref<AnimationNode> agnode = blend_tree->get_node(E);
 		ERR_CONTINUE(!agnode.is_valid());
 
+		if (agnode.is_null()) {
+			continue;
+		}
+
 		node->set_position_offset(blend_tree->get_node_position(E) * EDSCALE);
 
 		node->set_title(agnode->get_caption());
