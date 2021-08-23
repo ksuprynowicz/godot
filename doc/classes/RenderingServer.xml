@@ -3031,6 +3031,27 @@
 				If [code]true[/code], rendering of a viewport's environment is disabled.
 			</description>
 		</method>
+		<method name="viewport_set_fsr_upscale_custom_quality">
+			<return type="void" />
+			<argument index="0" name="viewport" type="RID" />
+			<argument index="1" name="custom_quality" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="viewport_set_fsr_upscale_quality">
+			<return type="void" />
+			<argument index="0" name="viewport" type="RID" />
+			<argument index="1" name="quality_mode" type="int" enum="RenderingServer.ViewportFSRUpscaleQualityMode" />
+			<description>
+			</description>
+		</method>
+		<method name="viewport_set_fsr_upscale_sharpness">
+			<return type="void" />
+			<argument index="0" name="viewport" type="RID" />
+			<argument index="1" name="sharpness" type="float" />
+			<description>
+			</description>
+		</method>
 		<method name="viewport_set_global_canvas_transform">
 			<return type="void" />
 			<argument index="0" name="viewport" type="RID" />

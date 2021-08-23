@@ -2144,6 +2144,9 @@ void RenderingServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("viewport_attach_to_screen", "viewport", "rect", "screen"), &RenderingServer::viewport_attach_to_screen, DEFVAL(Rect2()), DEFVAL(DisplayServer::MAIN_WINDOW_ID));
 	ClassDB::bind_method(D_METHOD("viewport_set_render_direct_to_screen", "viewport", "enabled"), &RenderingServer::viewport_set_render_direct_to_screen);
 
+	ClassDB::bind_method(D_METHOD("viewport_set_fsr_upscale_quality", "viewport", "quality_mode"), &RenderingServer::viewport_set_fsr_upscale_quality);
+	ClassDB::bind_method(D_METHOD("viewport_set_fsr_upscale_custom_quality", "viewport", "custom_quality"), &RenderingServer::viewport_set_fsr_upscale_custom_quality);
+	ClassDB::bind_method(D_METHOD("viewport_set_fsr_upscale_sharpness", "viewport", "sharpness"), &RenderingServer::viewport_set_fsr_upscale_sharpness);
 	ClassDB::bind_method(D_METHOD("viewport_set_update_mode", "viewport", "update_mode"), &RenderingServer::viewport_set_update_mode);
 	ClassDB::bind_method(D_METHOD("viewport_set_clear_mode", "viewport", "clear_mode"), &RenderingServer::viewport_set_clear_mode);
 	ClassDB::bind_method(D_METHOD("viewport_get_texture", "viewport"), &RenderingServer::viewport_get_texture);
@@ -2854,6 +2857,22 @@ RenderingServer::RenderingServer() {
 	GLOBAL_DEF("rendering/anti_aliasing/screen_space_roughness_limiter/limit", 0.18);
 	ProjectSettings::get_singleton()->set_custom_property_info("rendering/anti_aliasing/screen_space_roughness_limiter/amount", PropertyInfo(Variant::FLOAT, "rendering/anti_aliasing/screen_space_roughness_limiter/amount", PROPERTY_HINT_RANGE, "0.01,4.0,0.01"));
 	ProjectSettings::get_singleton()->set_custom_property_info("rendering/anti_aliasing/screen_space_roughness_limiter/limit", PropertyInfo(Variant::FLOAT, "rendering/anti_aliasing/screen_space_roughness_limiter/limit", PROPERTY_HINT_RANGE, "0.01,1.0,0.01"));
+
+	GLOBAL_DEF_RST("rendering/upscaling/fsr_upscale_quality", 0);
+	GLOBAL_DEF_RST("rendering/upscaling/fsr_upscale_custom_quality", 1.0f);
+	GLOBAL_DEF_RST("rendering/upscaling/fsr_upscale_sharpness", 0.2f);
+	ProjectSettings::get_singleton()->set_custom_property_info("rendering/upscaling/fsr_upscale_quality",
+			PropertyInfo(Variant::INT,
+					"rendering/upscaling/fsr_upscale_quality",
+					PROPERTY_HINT_ENUM, "Disabled (Slowest),Performance (Fast), Balanced (Normal), Quality (Slow), Ultra Quality (Slowest), Custom"));
+	ProjectSettings::get_singleton()->set_custom_property_info("rendering/upscaling/fsr_upscale_custom_quality",
+			PropertyInfo(Variant::FLOAT,
+					"rendering/upscaling/fsr_upscale_custom_quality",
+					PROPERTY_HINT_RANGE, "0.1,1,0.01"));
+	ProjectSettings::get_singleton()->set_custom_property_info("rendering/upscaling/fsr_upscale_sharpness",
+			PropertyInfo(Variant::FLOAT,
+					"rendering/upscaling/fsr_upscale_sharpness",
+					PROPERTY_HINT_RANGE, "0,2,0.1"));
 
 	GLOBAL_DEF("rendering/textures/decals/filter", DECAL_FILTER_LINEAR_MIPMAPS);
 	ProjectSettings::get_singleton()->set_custom_property_info("rendering/textures/decals/filter", PropertyInfo(Variant::INT, "rendering/textures/decals/filter", PROPERTY_HINT_ENUM, "Nearest (Fast),Nearest+Mipmaps,Linear,Linear+Mipmaps,Linear+Mipmaps Anisotropic (Slow)"));
