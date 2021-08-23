@@ -124,7 +124,7 @@ void main() {
 
 	mat3 world_normal_matrix;
 	if (bool(draw_call.flags & INSTANCE_FLAGS_NON_UNIFORM_SCALE)) {
-		world_normal_matrix = inverse(mat3(world_matrix));
+		world_normal_matrix = transpose(inverse(mat3(world_matrix)));
 	} else {
 		world_normal_matrix = mat3(world_matrix);
 	}
@@ -847,7 +847,7 @@ void main() {
 
 #ifdef NORMAL_USED
 	if (scene_data.roughness_limiter_enabled) {
-		//http://www.jp.square-enix.com/tech/library/pdf/ImprovedGeometricSpecularAA.pdf
+		//https://www.jp.square-enix.com/tech/library/pdf/ImprovedGeometricSpecularAA.pdf
 		float roughness2 = roughness * roughness;
 		vec3 dndu = dFdx(normal), dndv = dFdy(normal);
 		float variance = scene_data.roughness_limiter_amount * (dot(dndu, dndu) + dot(dndv, dndv));

@@ -571,8 +571,6 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 	List<String>::Element *I = args.front();
 
-	I = args.front();
-
 	while (I) {
 		I->get() = unescape_cmdline(I->get().strip_edges());
 		I = I->next();
@@ -2203,7 +2201,7 @@ bool Main::start() {
 			//standard helpers that can be changed from main config
 
 			String stretch_mode = GLOBAL_DEF_BASIC("display/window/stretch/mode", "disabled");
-			String stretch_aspect = GLOBAL_DEF_BASIC("display/window/stretch/aspect", "ignore");
+			String stretch_aspect = GLOBAL_DEF_BASIC("display/window/stretch/aspect", "keep");
 			Size2i stretch_size = Size2i(GLOBAL_DEF_BASIC("display/window/size/width", 0),
 					GLOBAL_DEF_BASIC("display/window/size/height", 0));
 
@@ -2242,6 +2240,10 @@ bool Main::start() {
 			DisplayServer::get_singleton()->window_set_title(appname);
 #endif
 
+			// Define a very small minimum window size to prevent bugs such as GH-37242.
+			// It can still be overridden by the user in a script.
+			DisplayServer::get_singleton()->window_set_min_size(Size2i(64, 64));
+
 			bool snap_controls = GLOBAL_DEF("gui/common/snap_controls_to_pixels", true);
 			sml->get_root()->set_snap_controls_to_pixels(snap_controls);
 
@@ -2262,7 +2264,7 @@ bool Main::start() {
 							"display/window/stretch/mode",
 							PROPERTY_HINT_ENUM,
 							"disabled,canvas_items,viewport"));
-			GLOBAL_DEF_BASIC("display/window/stretch/aspect", "ignore");
+			GLOBAL_DEF_BASIC("display/window/stretch/aspect", "keep");
 			ProjectSettings::get_singleton()->set_custom_property_info("display/window/stretch/aspect",
 					PropertyInfo(Variant::STRING,
 							"display/window/stretch/aspect",

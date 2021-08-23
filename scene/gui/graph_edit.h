@@ -62,8 +62,6 @@ class GraphEditMinimap : public Control {
 	GraphEdit *ge;
 
 protected:
-	static void _bind_methods();
-
 public:
 	GraphEditMinimap(GraphEdit *p_edit);
 
@@ -88,7 +86,7 @@ private:
 	Vector2 _convert_from_graph_position(const Vector2 &p_position);
 	Vector2 _convert_to_graph_position(const Vector2 &p_position);
 
-	void _gui_input(const Ref<InputEvent> &p_ev);
+	virtual void gui_input(const Ref<InputEvent> &p_ev) override;
 
 	void _adjust_graph_scroll(const Vector2 &p_offset);
 };
@@ -169,9 +167,8 @@ private:
 	float lines_thickness = 2.0f;
 	bool lines_antialiased = true;
 
-	void _bake_segment2d(Vector<Vector2> &points, Vector<Color> &colors, float p_begin, float p_end, const Vector2 &p_a, const Vector2 &p_out, const Vector2 &p_b, const Vector2 &p_in, int p_depth, int p_min_depth, int p_max_depth, float p_tol, const Color &p_color, const Color &p_to_color, int &lines) const;
-
-	void _draw_cos_line(CanvasItem *p_where, const Vector2 &p_from, const Vector2 &p_to, const Color &p_color, const Color &p_to_color, float p_width, float p_bezier_ratio = 1.0);
+	PackedVector2Array get_connection_line(const Vector2 &p_from, const Vector2 &p_to);
+	void _draw_connection_line(CanvasItem *p_where, const Vector2 &p_from, const Vector2 &p_to, const Color &p_color, const Color &p_to_color, float p_width, float p_zoom);
 
 	void _graph_node_raised(Node *p_gn);
 	void _graph_node_moved(Node *p_gn);
@@ -179,7 +176,7 @@ private:
 
 	void _update_scroll();
 	void _scroll_moved(double);
-	void _gui_input(const Ref<InputEvent> &p_ev);
+	virtual void gui_input(const Ref<InputEvent> &p_ev) override;
 
 	Control *connections_layer;
 	GraphEditFilter *top_layer;
@@ -255,6 +252,8 @@ protected:
 	virtual void add_child_notify(Node *p_child) override;
 	virtual void remove_child_notify(Node *p_child) override;
 	void _notification(int p_what);
+
+	GDVIRTUAL2RC(Vector<Vector2>, _get_connection_line, Vector2, Vector2)
 
 public:
 	Error connect_node(const StringName &p_from, int p_from_port, const StringName &p_to, int p_to_port);

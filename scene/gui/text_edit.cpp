@@ -1305,7 +1305,7 @@ void TextEdit::_notification(int p_what) {
 	}
 }
 
-void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
+void TextEdit::gui_input(const Ref<InputEvent> &p_gui_input) {
 	ERR_FAIL_COND(p_gui_input.is_null());
 
 	double prev_v_scroll = v_scroll->get_value();
@@ -2150,7 +2150,6 @@ void TextEdit::_delete(bool p_word, bool p_all_to_right) {
 		next_column = column;
 	} else {
 		// Delete one character
-		next_column = caret.column < curline_len ? (caret.column + 1) : 0;
 		if (caret_mid_grapheme_enabled) {
 			next_column = caret.column < curline_len ? (caret.column + 1) : 0;
 		} else {
@@ -2768,48 +2767,38 @@ Point2i TextEdit::get_next_visible_line_index_offset_from(int p_line_from, int p
 
 // Overridable actions
 void TextEdit::handle_unicode_input(const uint32_t p_unicode) {
-	ScriptInstance *si = get_script_instance();
-	if (si && si->has_method("_handle_unicode_input")) {
-		si->call("_handle_unicode_input", p_unicode);
+	if (GDVIRTUAL_CALL(_handle_unicode_input, p_unicode)) {
 		return;
 	}
-	_handle_unicode_input(p_unicode);
+	_handle_unicode_input_internal(p_unicode);
 }
 
 void TextEdit::backspace() {
-	ScriptInstance *si = get_script_instance();
-	if (si && si->has_method("_backspace")) {
-		si->call("_backspace");
+	if (GDVIRTUAL_CALL(_backspace)) {
 		return;
 	}
-	_backspace();
+	_backspace_internal();
 }
 
 void TextEdit::cut() {
-	ScriptInstance *si = get_script_instance();
-	if (si && si->has_method("_cut")) {
-		si->call("_cut");
+	if (GDVIRTUAL_CALL(_cut)) {
 		return;
 	}
-	_cut();
+	_cut_internal();
 }
 
 void TextEdit::copy() {
-	ScriptInstance *si = get_script_instance();
-	if (si && si->has_method("_copy")) {
-		si->call("_copy");
+	if (GDVIRTUAL_CALL(_copy)) {
 		return;
 	}
-	_copy();
+	_copy_internal();
 }
 
 void TextEdit::paste() {
-	ScriptInstance *si = get_script_instance();
-	if (si && si->has_method("_paste")) {
-		si->call("_paste");
+	if (GDVIRTUAL_CALL(_paste)) {
 		return;
 	}
-	_paste();
+	_paste_internal();
 }
 
 // Context menu.
@@ -4377,7 +4366,7 @@ bool TextEdit::is_drawing_spaces() const {
 
 void TextEdit::_bind_methods() {
 	/*Internal. */
-	ClassDB::bind_method(D_METHOD("_gui_input"), &TextEdit::_gui_input);
+
 	ClassDB::bind_method(D_METHOD("_text_changed_emit"), &TextEdit::_text_changed_emit);
 
 	/* Text */
@@ -4452,12 +4441,11 @@ void TextEdit::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("copy"), &TextEdit::copy);
 	ClassDB::bind_method(D_METHOD("paste"), &TextEdit::paste);
 
-	BIND_VMETHOD(MethodInfo("_handle_unicode_input", PropertyInfo(Variant::INT, "unicode")))
-	BIND_VMETHOD(MethodInfo("_backspace"));
-
-	BIND_VMETHOD(MethodInfo("_cut"));
-	BIND_VMETHOD(MethodInfo("_copy"));
-	BIND_VMETHOD(MethodInfo("_paste"));
+	GDVIRTUAL_BIND(_handle_unicode_input, "unicode_char")
+	GDVIRTUAL_BIND(_backspace)
+	GDVIRTUAL_BIND(_cut)
+	GDVIRTUAL_BIND(_copy)
+	GDVIRTUAL_BIND(_paste)
 
 	// Context Menu
 	BIND_ENUM_CONSTANT(MENU_CUT);
@@ -4884,7 +4872,7 @@ void TextEdit::_set_symbol_lookup_word(const String &p_symbol) {
 /* Text manipulation */
 
 // Overridable actions
-void TextEdit::_handle_unicode_input(const uint32_t p_unicode) {
+void TextEdit::_handle_unicode_input_internal(const uint32_t p_unicode) {
 	if (!editable) {
 		return;
 	}
@@ -4915,7 +4903,7 @@ void TextEdit::_handle_unicode_input(const uint32_t p_unicode) {
 	}
 }
 
-void TextEdit::_backspace() {
+void TextEdit::_backspace_internal() {
 	if (!editable) {
 		return;
 	}
@@ -4946,7 +4934,7 @@ void TextEdit::_backspace() {
 	set_caret_column(prev_column);
 }
 
-void TextEdit::_cut() {
+void TextEdit::_cut_internal() {
 	if (!editable) {
 		return;
 	}
@@ -4976,7 +4964,7 @@ void TextEdit::_cut() {
 	cut_copy_line = clipboard;
 }
 
-void TextEdit::_copy() {
+void TextEdit::_copy_internal() {
 	if (has_selection()) {
 		DisplayServer::get_singleton()->clipboard_set(get_selected_text());
 		cut_copy_line = "";
@@ -4991,7 +4979,7 @@ void TextEdit::_copy() {
 	}
 }
 
-void TextEdit::_paste() {
+void TextEdit::_paste_internal() {
 	if (!editable) {
 		return;
 	}

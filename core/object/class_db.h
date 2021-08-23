@@ -372,7 +372,7 @@ public:
 	static bool get_method_info(const StringName &p_class, const StringName &p_method, MethodInfo *r_info, bool p_no_inheritance = false, bool p_exclude_from_properties = false);
 	static MethodBind *get_method(const StringName &p_class, const StringName &p_name);
 
-	static void add_virtual_method(const StringName &p_class, const MethodInfo &p_method, bool p_virtual = true);
+	static void add_virtual_method(const StringName &p_class, const MethodInfo &p_method, bool p_virtual = true, const Vector<String> &p_arg_names = Vector<String>(), bool p_object_core = false);
 	static void get_virtual_methods(const StringName &p_class, List<MethodInfo> *p_methods, bool p_no_inheritance = false);
 
 	static void bind_integer_constant(const StringName &p_class, const StringName &p_enum, const StringName &p_name, int p_constant);
@@ -422,17 +422,6 @@ public:
 
 #define BIND_ENUM_CONSTANT(m_constant) \
 	::ClassDB::bind_integer_constant(get_class_static(), StringName(), #m_constant, m_constant);
-
-#endif
-
-#ifdef TOOLS_ENABLED
-
-#define BIND_VMETHOD(m_method) \
-	::ClassDB::add_virtual_method(get_class_static(), m_method);
-
-#else
-
-#define BIND_VMETHOD(m_method)
 
 #endif
 

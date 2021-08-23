@@ -54,17 +54,17 @@
 /*** SYNTAX HIGHLIGHTER ****/
 
 String EditorSyntaxHighlighter::_get_name() const {
-	ScriptInstance *si = get_script_instance();
-	if (si && si->has_method("_get_name")) {
-		return si->call("_get_name");
+	String ret;
+	if (GDVIRTUAL_CALL(_get_name, ret)) {
+		return ret;
 	}
 	return "Unnamed";
 }
 
 Array EditorSyntaxHighlighter::_get_supported_languages() const {
-	ScriptInstance *si = get_script_instance();
-	if (si && si->has_method("_get_supported_languages")) {
-		return si->call("_get_supported_languages");
+	Array ret;
+	if (GDVIRTUAL_CALL(_get_supported_languages, ret)) {
+		return ret;
 	}
 	return Array();
 }
@@ -81,9 +81,8 @@ Ref<EditorSyntaxHighlighter> EditorSyntaxHighlighter::_create() const {
 void EditorSyntaxHighlighter::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_get_edited_resource"), &EditorSyntaxHighlighter::_get_edited_resource);
 
-	BIND_VMETHOD(MethodInfo(Variant::STRING, "_get_name"));
-	BIND_VMETHOD(MethodInfo(Variant::ARRAY, "_get_supported_languages"));
-	BIND_VMETHOD(MethodInfo(Variant::ARRAY, "_get_supported_extentions"));
+	GDVIRTUAL_BIND(_get_name)
+	GDVIRTUAL_BIND(_get_supported_languages)
 }
 
 ////
@@ -223,8 +222,6 @@ void ScriptEditorBase::_bind_methods() {
 	// TODO: This signal is no use for VisualScript.
 	ADD_SIGNAL(MethodInfo("search_in_files_requested", PropertyInfo(Variant::STRING, "text")));
 	ADD_SIGNAL(MethodInfo("replace_in_files_requested", PropertyInfo(Variant::STRING, "text")));
-
-	BIND_VMETHOD(MethodInfo("_add_syntax_highlighter", PropertyInfo(Variant::OBJECT, "highlighter")));
 }
 
 static bool _is_built_in_script(Script *p_script) {
@@ -319,7 +316,7 @@ void ScriptEditorQuickOpen::_sbox_input(const Ref<InputEvent> &p_ie) {
 								k->get_keycode() == KEY_DOWN ||
 								k->get_keycode() == KEY_PAGEUP ||
 								k->get_keycode() == KEY_PAGEDOWN)) {
-		search_options->call("_gui_input", k);
+		search_options->gui_input(k);
 		search_box->accept_event();
 	}
 }
@@ -2731,7 +2728,7 @@ void ScriptEditor::drop_data_fw(const Point2 &p_point, const Variant &p_data, Co
 	}
 }
 
-void ScriptEditor::_unhandled_key_input(const Ref<InputEvent> &p_event) {
+void ScriptEditor::unhandled_key_input(const Ref<InputEvent> &p_event) {
 	ERR_FAIL_COND(p_event.is_null());
 
 	if (!is_visible_in_tree() || !p_event->is_pressed() || p_event->is_echo()) {
@@ -3275,7 +3272,7 @@ void ScriptEditor::_bind_methods() {
 	ClassDB::bind_method("_update_script_connections", &ScriptEditor::_update_script_connections);
 	ClassDB::bind_method("_help_class_open", &ScriptEditor::_help_class_open);
 	ClassDB::bind_method("_live_auto_reload_running_scripts", &ScriptEditor::_live_auto_reload_running_scripts);
-	ClassDB::bind_method("_unhandled_key_input", &ScriptEditor::_unhandled_key_input);
+
 	ClassDB::bind_method("_update_members_overview", &ScriptEditor::_update_members_overview);
 	ClassDB::bind_method("_update_recent_scripts", &ScriptEditor::_update_recent_scripts);
 

@@ -102,11 +102,12 @@ private:
 
 	Map<StringName, Variant> cache;
 
+	GDVIRTUAL0(_update_property)
 protected:
 	void _notification(int p_what);
 	static void _bind_methods();
 
-	void _gui_input(const Ref<InputEvent> &p_event);
+	virtual void gui_input(const Ref<InputEvent> &p_event) override;
 
 public:
 	void emit_changed(const StringName &p_property, const Variant &p_value, const StringName &p_field = StringName(), bool p_changing = false);
@@ -192,6 +193,12 @@ class EditorInspectorPlugin : public RefCounted {
 protected:
 	static void _bind_methods();
 
+	GDVIRTUAL1RC(bool, _can_handle, Variant)
+	GDVIRTUAL0(_parse_begin)
+	GDVIRTUAL2(_parse_category, Object *, String)
+	GDVIRTUAL7R(bool, _parse_property, Object *, int, String, int, String, int, bool)
+	GDVIRTUAL0(_parse_end)
+
 public:
 	void add_custom_control(Control *control);
 	void add_property_editor(const String &p_for_property, Control *p_prop);
@@ -245,7 +252,7 @@ class EditorInspectorSection : public Container {
 protected:
 	void _notification(int p_what);
 	static void _bind_methods();
-	void _gui_input(const Ref<InputEvent> &p_event);
+	virtual void gui_input(const Ref<InputEvent> &p_event) override;
 
 public:
 	virtual Size2 get_minimum_size() const override;
