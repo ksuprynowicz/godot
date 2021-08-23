@@ -29,9 +29,11 @@
 /*************************************************************************/
 
 #include "animation.h"
-#include "scene/scene_string_names.h"
 
 #include "core/math/geometry_3d.h"
+#include "scene/scene_string_names.h"
+
+#include <cstdint>
 
 bool Animation::_set(const StringName &p_name, const Variant &p_value) {
 	String name = p_name;
@@ -79,17 +81,18 @@ bool Animation::_set(const StringName &p_name, const Variant &p_value) {
 				TransformTrack *tt = static_cast<TransformTrack *>(tracks[track]);
 				Vector<real_t> values = p_value;
 				int vcount = values.size();
+				int64_t transform3d_size = sizeof(Transform3D) / sizeof(real_t);
+				ERR_FAIL_COND_V(vcount % transform3d_size, false);
 				ERR_FAIL_COND_V(vcount % 12, false); // should be multiple of 12
 
 				const real_t *r = values.ptr();
 
-				int transform3d_size = (int)sizeof(Transform3D);
+				int64_t count = vcount / transform3d_size;
+				tt->transforms.resize(count);
 
-				tt->transforms.resize(vcount / transform3d_size);
-
-				for (int i = 0; i < (vcount / transform3d_size); i++) {
+				for (int i = 0; i < count; i++) {
 					TKey<TransformKey> &tk = tt->transforms.write[i];
-					const real_t *ofs = &r[i * 12];
+					const real_t *ofs = &r[i * transform3d_size];
 					tk.time = ofs[0];
 					tk.transition = ofs[1];
 
