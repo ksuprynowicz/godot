@@ -3080,6 +3080,15 @@ void Viewport::pass_mouse_focus_to(Viewport *p_viewport, Control *p_control) {
 	}
 }
 
+void Viewport::_validate_property(PropertyInfo &property) const {
+	if (property.name == "fsr_upscale_quality" || property.name == "fsr_upscale_sharpness" || property.name == "fsr_upscale_custom_quality") {
+		bool is_mobile = (bool)GLOBAL_GET("rendering/vulkan/rendering/back_end");
+		if (is_mobile) {
+			property.usage = PROPERTY_USAGE_NOEDITOR | PROPERTY_USAGE_INTERNAL;
+		}
+	}
+}
+
 void Viewport::set_sdf_oversize(SDFOversize p_sdf_oversize) {
 	ERR_FAIL_INDEX(p_sdf_oversize, SDF_OVERSIZE_MAX);
 	sdf_oversize = p_sdf_oversize;
