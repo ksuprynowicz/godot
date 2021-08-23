@@ -3038,13 +3038,6 @@
 			<description>
 			</description>
 		</method>
-		<method name="viewport_set_fsr_upscale_mipmap_bias">
-			<return type="void" />
-			<argument index="0" name="viewport" type="RID" />
-			<argument index="1" name="mipmap_bias" type="float" />
-			<description>
-			</description>
-		</method>
 		<method name="viewport_set_fsr_upscale_quality">
 			<return type="void" />
 			<argument index="0" name="viewport" type="RID" />

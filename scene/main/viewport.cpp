@@ -3824,6 +3824,15 @@ Viewport::Viewport() {
 	ProjectSettings::get_singleton()->set_custom_property_info("gui/timers/tooltip_delay_sec", PropertyInfo(Variant::FLOAT, "gui/timers/tooltip_delay_sec", PROPERTY_HINT_RANGE, "0,5,0.01,or_greater")); // No negative numbers
 
 	set_sdf_oversize(sdf_oversize); //set to server
+
+	FSRUpscaleQuality fsr_quality = (FSRUpscaleQuality)(int)GLOBAL_GET("rendering/upscaling/fsr_upscale_quality");
+	set_fsr_upscale_quality(fsr_quality);
+
+	float fsr_sharpness = GLOBAL_GET("rendering/upscaling/fsr_upscale_sharpness");
+	set_fsr_upscale_sharpness(fsr_sharpness);
+
+	float fsr_custom_quality = GLOBAL_GET("rendering/upscaling/fsr_upscale_custom_quality");
+	set_fsr_upscale_custom_quality(fsr_custom_quality);
 }
 
 Viewport::~Viewport() {
