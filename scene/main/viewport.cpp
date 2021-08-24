@@ -52,6 +52,7 @@
 #include "scene/resources/text_line.h"
 #include "scene/resources/world_2d.h"
 #include "scene/scene_string_names.h"
+#include "servers/rendering/rendering_server_globals.h"
 
 void ViewportTexture::setup_local_to_scene() {
 	if (vp) {
@@ -3095,8 +3096,7 @@ void Viewport::pass_mouse_focus_to(Viewport *p_viewport, Control *p_control) {
 
 void Viewport::_validate_property(PropertyInfo &property) const {
 	if (property.name == "fsr_upscale_quality" || property.name == "fsr_upscale_sharpness" || property.name == "fsr_upscale_custom_quality" || property.name == "fsr_upscale_mipmap_bias") {
-		bool is_mobile = (bool)GLOBAL_GET("rendering/vulkan/rendering/back_end");
-		if (is_mobile) {
+		if (RSG::rasterizer->is_low_end()) {
 			property.usage = PROPERTY_USAGE_NOEDITOR | PROPERTY_USAGE_INTERNAL;
 		}
 	}

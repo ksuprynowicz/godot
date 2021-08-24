@@ -1929,7 +1929,7 @@ EffectsRD::EffectsRD(bool p_prefer_raster_effects) {
 	{
 		Vector<String> FSR_upscale_modes;
 
-		if (RD::get_singleton()->get_device_capabilities()->supports_fsr_upscale_normal) {
+		if (RD::get_singleton()->get_device_capabilities()->supports_fsr_upscale_half_float) {
 			FSR_upscale_modes.push_back("\n#define MODE_FSR_UPSCALE_NORMAL\n");
 		} else {
 			FSR_upscale_modes.push_back("\n#define MODE_FSR_UPSCALE_FALLBACK\n");

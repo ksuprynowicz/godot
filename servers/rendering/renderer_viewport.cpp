@@ -638,8 +638,7 @@ void RendererViewport::viewport_initialize(RID p_rid) {
 	viewport->shadow_atlas = RSG::scene->shadow_atlas_create();
 	viewport->viewport_render_direct_to_screen = false;
 
-	bool is_mobile_renderer = (bool)GLOBAL_GET("rendering/vulkan/rendering/back_end");
-	viewport->fsr_upscale_enabled = !is_mobile_renderer && !viewport->disable_3d;
+	viewport->fsr_upscale_enabled = !RSG::rasterizer->is_low_end() && !viewport->disable_3d;
 }
 
 void RendererViewport::viewport_set_use_xr(RID p_viewport, bool p_use_xr) {
