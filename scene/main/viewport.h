@@ -601,7 +601,7 @@ public:
 
 	void pass_mouse_focus_to(Viewport *p_viewport, Control *p_control);
 
-	void _validate_property(PropertyInfo &property) const;
+	void _validate_property(PropertyInfo &property) const override;
 
 #ifndef _3D_DISABLED
 	bool use_xr = false;

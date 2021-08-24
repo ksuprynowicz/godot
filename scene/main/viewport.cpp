@@ -3673,7 +3673,7 @@ void Viewport::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "fsr_upscale_quality", PROPERTY_HINT_ENUM, "Disabled (Slowest),Performance (Fastest),Balanced (Fast),Quality (Medium),Ultra Quality (Slow),Custom"), "set_fsr_upscale_quality", "get_fsr_upscale_quality");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fsr_upscale_custom_quality", PROPERTY_HINT_RANGE, "0.1,1.0,0.01"), "set_fsr_upscale_custom_quality", "get_fsr_upscale_custom_quality");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fsr_upscale_sharpness", PROPERTY_HINT_RANGE, "0,2,0.1"), "set_fsr_upscale_sharpness", "get_fsr_upscale_sharpness");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fsr_upscale_mipmap_bias", PROPERTY_HINT_RANGE, "-1,1,0.1"), "set_fsr_upscale_mipmap_bias", "get_fsr_upscale_mipmap_bias");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fsr_upscale_mipmap_bias", PROPERTY_HINT_RANGE, "-2,2,0.1"), "set_fsr_upscale_mipmap_bias", "get_fsr_upscale_mipmap_bias");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_debanding"), "set_use_debanding", "is_using_debanding");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_occlusion_culling"), "set_use_occlusion_culling", "is_using_occlusion_culling");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_threshold", PROPERTY_HINT_RANGE, "0,1024,0.1"), "set_lod_threshold", "get_lod_threshold");

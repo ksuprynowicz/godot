@@ -2885,7 +2885,7 @@ RenderingServer::RenderingServer() {
 	ProjectSettings::get_singleton()->set_custom_property_info("rendering/upscaling/fsr_upscale_mipmap_bias",
 			PropertyInfo(Variant::FLOAT,
 					"rendering/upscaling/fsr_upscale_mipmap_bias",
-					PROPERTY_HINT_RANGE, "-1,1,0.1"));
+					PROPERTY_HINT_RANGE, "-2,2,0.1"));
 
 	GLOBAL_DEF("rendering/textures/decals/filter", DECAL_FILTER_LINEAR_MIPMAPS);
 	ProjectSettings::get_singleton()->set_custom_property_info("rendering/textures/decals/filter", PropertyInfo(Variant::INT, "rendering/textures/decals/filter", PROPERTY_HINT_ENUM, "Nearest (Fast),Nearest+Mipmaps,Linear,Linear+Mipmaps,Linear+Mipmaps Anisotropic (Slow)"));
