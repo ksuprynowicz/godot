@@ -478,7 +478,6 @@ private:
 					initial_settings["application/config/name"] = project_name->get_text().strip_edges();
 					initial_settings["application/config/icon"] = "res://icon.png";
 					initial_settings["rendering/environment/defaults/default_environment"] = "res://default_env.tres";
-					initial_settings["application/config/resolution"] = Vector2i{ 0, 0 };
 
 					if (ProjectSettings::get_singleton()->save_custom(dir.plus_file("project.godot"), initial_settings, Vector<String>(), false) != OK) {
 						set_message(TTR("Couldn't create project.godot in project path."), MESSAGE_ERROR);

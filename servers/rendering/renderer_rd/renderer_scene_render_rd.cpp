@@ -1501,8 +1501,6 @@ void RendererSceneRenderRD::_allocate_blur_textures(RenderBuffers *rb) {
 	tf.mipmaps--;
 	rb->blur[1].texture = RD::get_singleton()->texture_create(tf, RD::TextureView());
 
-	// FINISH blur
-
 	int base_width = rb->width;
 	int base_height = rb->height;
 

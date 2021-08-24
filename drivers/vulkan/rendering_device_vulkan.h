@@ -137,7 +137,6 @@ class RenderingDeviceVulkan : public RenderingDevice {
 		uint32_t depth = 0;
 		uint32_t layers = 0;
 		uint32_t mipmaps = 0;
-		float mipBias = 0.0f;
 		uint32_t usage_flags = 0;
 		uint32_t base_mipmap = 0;
 		uint32_t base_layer = 0;
