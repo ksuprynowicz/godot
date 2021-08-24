@@ -762,6 +762,20 @@ public:
 	virtual void viewport_attach_to_screen(RID p_viewport, const Rect2 &p_rect = Rect2(), DisplayServer::WindowID p_screen = DisplayServer::MAIN_WINDOW_ID) = 0;
 	virtual void viewport_set_render_direct_to_screen(RID p_viewport, bool p_enable) = 0;
 
+	enum ViewportFSRUpscaleQualityMode {
+		VIEWPORT_FSR_UPSCALE_DISABLED,
+		VIEWPORT_FSR_UPSCALE_PERFORMANCE,
+		VIEWPORT_FSR_UPSCALE_BALANCED,
+		VIEWPORT_FSR_UPSCALE_QUALITY,
+		VIEWPORT_FSR_UPSCALE_ULTRA_QUALITY,
+		VIEWPORT_FSR_UPSCALE_CUSTOM
+	};
+
+	virtual void viewport_set_fsr_upscale_quality(RID p_viewport, ViewportFSRUpscaleQualityMode p_quality_mode) = 0;
+	virtual void viewport_set_fsr_upscale_custom_quality(RID p_viewport, float p_fsr_upscale_quality) = 0;
+	virtual void viewport_set_fsr_upscale_sharpness(RID p_viewport, float p_fsr_upscale_sharpness) = 0;
+	virtual void viewport_set_fsr_upscale_mipmap_bias(RID p_viewport, float p_fsr_upscale_mipmap_bias) = 0;
+
 	enum ViewportUpdateMode {
 		VIEWPORT_UPDATE_DISABLED,
 		VIEWPORT_UPDATE_ONCE, //then goes to disabled, must be manually updated
@@ -1533,6 +1547,7 @@ VARIANT_ENUM_CAST(RenderingServer::ParticlesDrawOrder);
 VARIANT_ENUM_CAST(RenderingServer::ParticlesEmitFlags);
 VARIANT_ENUM_CAST(RenderingServer::ParticlesCollisionType);
 VARIANT_ENUM_CAST(RenderingServer::ParticlesCollisionHeightfieldResolution);
+VARIANT_ENUM_CAST(RenderingServer::ViewportFSRUpscaleQualityMode);
 VARIANT_ENUM_CAST(RenderingServer::ViewportUpdateMode);
 VARIANT_ENUM_CAST(RenderingServer::ViewportClearMode);
 VARIANT_ENUM_CAST(RenderingServer::ViewportMSAA);
