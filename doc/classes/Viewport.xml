@@ -187,17 +187,17 @@
 		<member name="disable_3d" type="bool" setter="set_disable_3d" getter="is_3d_disabled" default="false">
 			Disable 3D rendering (but keep 2D rendering).
 		</member>
-		<member name="fsr_upscale_quality" type="int" setter="set_fsr_upscale_quality" getter="get_fsr_upscale_quality" enum="Viewport.FSRUpscaleQuality" default="0">
-			Sets the FidelityFX Super Resolution 1.0 quality. FidelityFX Super Resolution 1.0 is an upscaling technology that produces high quality images at fast framerates.
-		</member>
-		<member name="fsr_upscale_sharpness" type="float" setter="set_fsr_upscale_sharpness" getter="get_fsr_upscale_sharpness" default="0.2">
-			Determins how sharp the upscaled image should be. Sharpness halves with every whole number. Values go from 0.0 (sharpest) to 2.0. Values above 2.0 won't make a visible difference.
-		</member>
 		<member name="fsr_upscale_custom_quality" type="float" setter="set_fsr_upscale_custom_quality" getter="get_fsr_upscale_custom_quality" default="1.0">
 			Manually sets the internal scale factor for FidelityFX Super Resolution 1.0.
 		</member>
 		<member name="fsr_upscale_mipmap_bias" type="float" setter="set_fsr_upscale_mipmap_bias" getter="get_fsr_upscale_mipmap_bias" default="0.0">
 			Affects the final texture sharpness. Negitive values make textures sharper, while positive values make textures blurrier.
+		</member>
+		<member name="fsr_upscale_quality" type="int" setter="set_fsr_upscale_quality" getter="get_fsr_upscale_quality" enum="Viewport.FSRUpscaleQuality" default="0">
+			Sets the FidelityFX Super Resolution 1.0 quality. FidelityFX Super Resolution 1.0 is an upscaling technology that produces high quality images at fast framerates.
+		</member>
+		<member name="fsr_upscale_sharpness" type="float" setter="set_fsr_upscale_sharpness" getter="get_fsr_upscale_sharpness" default="0.2">
+			Determins how sharp the upscaled image should be. Sharpness halves with every whole number. Values go from 0.0 (sharpest) to 2.0. Values above 2.0 won't make a visible difference.
 		</member>
 		<member name="global_canvas_transform" type="Transform2D" setter="set_global_canvas_transform" getter="get_global_canvas_transform">
 			The global canvas transform of the viewport. The canvas transform is relative to this.
