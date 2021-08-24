@@ -29,6 +29,10 @@ def include_file_in_rd_header(filename, header_data, depth):
 
     while line:
 
+        index = line.find("//")
+        if index != -1:
+            line = line[:index]
+
         if line.find("#[vertex]") != -1:
             header_data.reading = "vertex"
             line = fs.readline()
