@@ -3038,6 +3038,13 @@
 			<description>
 			</description>
 		</method>
+		<method name="viewport_set_fsr_upscale_mipmap_bias">
+			<return type="void" />
+			<argument index="0" name="viewport" type="RID" />
+			<argument index="1" name="mipmap_bias" type="float" />
+			<description>
+			</description>
+		</method>
 		<method name="viewport_set_fsr_upscale_quality">
 			<return type="void" />
 			<argument index="0" name="viewport" type="RID" />
@@ -3766,6 +3773,18 @@
 		<constant name="PARTICLES_COLLISION_HEIGHTFIELD_RESOLUTION_8192" value="5" enum="ParticlesCollisionHeightfieldResolution">
 		</constant>
 		<constant name="PARTICLES_COLLISION_HEIGHTFIELD_RESOLUTION_MAX" value="6" enum="ParticlesCollisionHeightfieldResolution">
+		</constant>
+		<constant name="VIEWPORT_FSR_UPSCALE_DISABLED" value="0" enum="ViewportFSRUpscaleQualityMode">
+		</constant>
+		<constant name="VIEWPORT_FSR_UPSCALE_ULTRA_QUALITY" value="4" enum="ViewportFSRUpscaleQualityMode">
+		</constant>
+		<constant name="VIEWPORT_FSR_UPSCALE_QUALITY" value="3" enum="ViewportFSRUpscaleQualityMode">
+		</constant>
+		<constant name="VIEWPORT_FSR_UPSCALE_BALANCED" value="2" enum="ViewportFSRUpscaleQualityMode">
+		</constant>
+		<constant name="VIEWPORT_FSR_UPSCALE_PERFORMANCE" value="1" enum="ViewportFSRUpscaleQualityMode">
+		</constant>
+		<constant name="VIEWPORT_FSR_UPSCALE_CUSTOM" value="5" enum="ViewportFSRUpscaleQualityMode">
 		</constant>
 		<constant name="VIEWPORT_UPDATE_DISABLED" value="0" enum="ViewportUpdateMode">
 			Do not update the viewport.

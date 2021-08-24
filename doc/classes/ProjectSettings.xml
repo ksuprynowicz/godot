@@ -1755,6 +1755,8 @@
 		</member>
 		<member name="rendering/upscaling/fsr_upscale_custom_quality" type="float" setter="" getter="" default="1.0">
 		</member>
+		<member name="rendering/upscaling/fsr_upscale_mipmap_bias" type="float" setter="" getter="" default="0.0">
+		</member>
 		<member name="rendering/upscaling/fsr_upscale_quality" type="int" setter="" getter="" default="0">
 		</member>
 		<member name="rendering/upscaling/fsr_upscale_sharpness" type="float" setter="" getter="" default="0.2">

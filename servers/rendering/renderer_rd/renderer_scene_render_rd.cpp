@@ -2617,8 +2617,14 @@ bool RendererSceneRenderRD::_render_buffers_can_be_storage() {
 	return true;
 }
 
-void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p_render_target, int p_internal_width, int p_internal_height, int p_width, int p_height, float p_fsr_upscale_sharpness, RS::ViewportMSAA p_msaa, RenderingServer::ViewportScreenSpaceAA p_screen_space_aa, bool p_use_debanding, uint32_t p_view_count) {
+void RendererSceneRenderRD::render_buffers_configure(RID p_render_buffers, RID p_render_target, int p_internal_width, int p_internal_height, int p_width, int p_height, float p_fsr_upscale_sharpness, float p_fsr_upscale_mipmap_bias, RS::ViewportMSAA p_msaa, RenderingServer::ViewportScreenSpaceAA p_screen_space_aa, bool p_use_debanding, uint32_t p_view_count) {
 	ERR_FAIL_COND_MSG(p_view_count == 0, "Must have at least 1 view");
+
+	if (p_width != p_internal_width) {
+		float fsr_mipmap_bias = -log2f(p_width / p_internal_width) + p_fsr_upscale_mipmap_bias;
+		storage->sampler_rd_configure_custom(fsr_mipmap_bias);
+		update_uniform_sets();
+	}
 
 	if (!_render_buffers_can_be_storage()) {
 		p_internal_height = p_height;

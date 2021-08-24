@@ -55,8 +55,9 @@ public:
 		RID scenario;
 
 		RS::ViewportFSRUpscaleQualityMode fsr_upscale_quality_mode;
-		float fsr_upscale_custom_quality;
-		float fsr_upscale_sharpness;
+		float fsr_upscale_custom_quality = 1.0f;
+		float fsr_upscale_sharpness = 0.2f;
+		float fsr_upscale_mipmap_bias = 0.0f;
 		bool fsr_upscale_enabled;
 		RS::ViewportUpdateMode update_mode;
 		RID render_target;

@@ -539,6 +539,7 @@ public:
 	FUNC2(viewport_set_fsr_upscale_quality, RID, ViewportFSRUpscaleQualityMode)
 	FUNC2(viewport_set_fsr_upscale_custom_quality, RID, float)
 	FUNC2(viewport_set_fsr_upscale_sharpness, RID, float)
+	FUNC2(viewport_set_fsr_upscale_mipmap_bias, RID, float)
 
 	FUNC2(viewport_set_update_mode, RID, ViewportUpdateMode)
 

@@ -190,6 +190,9 @@
 		<member name="fsr_upscale_custom_quality" type="float" setter="set_fsr_upscale_custom_quality" getter="get_fsr_upscale_custom_quality" default="1.0">
 			Manually sets the internal scale factor for FidelityFX Super Resolution 1.0.
 		</member>
+		<member name="fsr_upscale_mipmap_bias" type="float" setter="set_fsr_upscale_mipmap_bias" getter="get_fsr_upscale_mipmap_bias" default="0.0">
+			Affects the final texture sharpness. Negitive values make textures sharper, while positive values make textures blurrier.
+		</member>
 		<member name="fsr_upscale_quality" type="int" setter="set_fsr_upscale_quality" getter="get_fsr_upscale_quality" enum="Viewport.FSRUpscaleQuality" default="0">
 			Sets the FidelityFX Super Resolution 1.0 quality. FidelityFX Super Resolution 1.0 is an upscaling technology that produces high quality images at fast framerates.
 		</member>

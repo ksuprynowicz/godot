@@ -295,6 +295,7 @@ private:
 	FSRUpscaleQuality fsr_upscale_quality = FSR_UPSCALE_DISABLED;
 	float fsr_upscale_custom_quality = 1.0f;
 	float fsr_upscale_sharpness = 0.2f;
+	float fsr_upscale_mipmap_bias = 0.0f;
 	bool use_debanding = false;
 	float lod_threshold = 1.0;
 	bool use_occlusion_culling = false;
@@ -517,6 +518,9 @@ public:
 
 	void set_fsr_upscale_sharpness(float p_fsr_upscale_sharpness);
 	float get_fsr_upscale_sharpness() const;
+
+	void set_fsr_upscale_mipmap_bias(float p_fsr_upscale_mipmap_bias);
+	float get_fsr_upscale_mipmap_bias() const;
 
 	void set_use_debanding(bool p_use_debanding);
 	bool is_using_debanding() const;
