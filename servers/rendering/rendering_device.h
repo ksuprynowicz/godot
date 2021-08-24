@@ -606,7 +606,6 @@ public:
 	};
 
 	virtual RID sampler_create(const SamplerState &p_state) = 0;
-	virtual void sampler_update(const RID p_sampler, const SamplerState &p_state) = 0;
 
 	/**********************/
 	/**** VERTEX ARRAY ****/

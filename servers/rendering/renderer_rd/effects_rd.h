@@ -68,6 +68,8 @@
 
 class EffectsRD {
 private:
+	bool prefer_raster_effects;
+
 	enum FSRUpscalePass {
 		FSR_UPSCALE_PASS_EASU = 0,
 		FSR_UPSCALE_PASS_RCAS = 1
@@ -771,7 +773,6 @@ private:
 	RID _get_compute_uniform_set_from_image_pair(RID p_texture, RID p_texture2);
 
 public:
-	bool prefer_raster_effects;
 	bool get_prefer_raster_effects();
 
 	void fsr_upscale(RID p_source_rd_texture, RID p_secondary_texture, RID p_destination_texture, const Size2i &p_internal_size, const Size2i &p_size, float p_fsr_upscale_sharpness);

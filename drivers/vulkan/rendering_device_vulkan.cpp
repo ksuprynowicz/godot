@@ -3994,49 +3994,6 @@ RID RenderingDeviceVulkan::sampler_create(const SamplerState &p_state) {
 	return sampler_owner.make_rid(sampler);
 }
 
-void RenderingDeviceVulkan::sampler_update(const RID p_sampler, const SamplerState &p_state) {
-	_THREAD_SAFE_METHOD_
-
-	VkSampler *sampler = sampler_owner.getornull(p_sampler);
-	ERR_FAIL_COND(!sampler);
-
-	vkDestroySampler(device, *sampler, nullptr);
-
-	VkSamplerCreateInfo sampler_create_info;
-	sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	sampler_create_info.pNext = nullptr;
-	sampler_create_info.flags = 0;
-	sampler_create_info.magFilter = p_state.mag_filter == SAMPLER_FILTER_LINEAR ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-	sampler_create_info.minFilter = p_state.min_filter == SAMPLER_FILTER_LINEAR ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-	sampler_create_info.mipmapMode = p_state.mip_filter == SAMPLER_FILTER_LINEAR ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
-
-	ERR_FAIL_INDEX(p_state.repeat_u, SAMPLER_REPEAT_MODE_MAX);
-	sampler_create_info.addressModeU = address_modes[p_state.repeat_u];
-	ERR_FAIL_INDEX(p_state.repeat_v, SAMPLER_REPEAT_MODE_MAX);
-	sampler_create_info.addressModeV = address_modes[p_state.repeat_v];
-	ERR_FAIL_INDEX(p_state.repeat_w, SAMPLER_REPEAT_MODE_MAX);
-	sampler_create_info.addressModeW = address_modes[p_state.repeat_w];
-
-	sampler_create_info.mipLodBias = p_state.lod_bias;
-	sampler_create_info.anisotropyEnable = p_state.use_anisotropy;
-	sampler_create_info.maxAnisotropy = p_state.anisotropy_max;
-	sampler_create_info.compareEnable = p_state.enable_compare;
-
-	ERR_FAIL_INDEX(p_state.compare_op, COMPARE_OP_MAX);
-	sampler_create_info.compareOp = compare_operators[p_state.compare_op];
-
-	sampler_create_info.minLod = p_state.min_lod;
-	sampler_create_info.maxLod = p_state.max_lod;
-
-	ERR_FAIL_INDEX(p_state.border_color, SAMPLER_BORDER_COLOR_MAX);
-	sampler_create_info.borderColor = sampler_border_colors[p_state.border_color];
-
-	sampler_create_info.unnormalizedCoordinates = p_state.unnormalized_uvw;
-
-	VkResult res = vkCreateSampler(device, &sampler_create_info, nullptr, sampler);
-	ERR_FAIL_COND_MSG(res, "vkCreateSampler failed with error " + itos(res) + ".");
-}
-
 /**********************/
 /**** VERTEX ARRAY ****/
 /**********************/
