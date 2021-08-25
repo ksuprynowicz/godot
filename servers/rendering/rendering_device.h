@@ -103,6 +103,7 @@ public:
 
 		// features
 		bool supports_multiview = false; // If true this device supports multiview options
+		bool supports_fsr_upscale_half_float = false; // If true this device supports FSR upscaling in half float mode, otherwise use the fallback mode
 	};
 
 	typedef String (*ShaderSPIRVGetCacheKeyFunction)(const Capabilities *p_capabilities);
