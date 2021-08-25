@@ -52,6 +52,7 @@
 #include "scene/resources/text_line.h"
 #include "scene/resources/world_2d.h"
 #include "scene/scene_string_names.h"
+#include "servers/rendering/rendering_server_globals.h"
 
 void ViewportTexture::setup_local_to_scene() {
 	if (vp) {
@@ -2809,6 +2810,66 @@ Viewport::ScreenSpaceAA Viewport::get_screen_space_aa() const {
 	return screen_space_aa;
 }
 
+void Viewport::set_fsr_upscale_quality(FSRUpscaleQuality p_fsr_upscale_quality) {
+	ERR_FAIL_INDEX(p_fsr_upscale_quality, FSR_UPSCALE_MAX);
+	if (fsr_upscale_quality == p_fsr_upscale_quality) {
+		return;
+	}
+
+	fsr_upscale_quality = p_fsr_upscale_quality;
+	RS::get_singleton()->viewport_set_fsr_upscale_quality(viewport, RS::ViewportFSRUpscaleQualityMode(p_fsr_upscale_quality));
+}
+
+Viewport::FSRUpscaleQuality Viewport::get_fsr_upscale_quality() const {
+	return fsr_upscale_quality;
+}
+
+void Viewport::set_fsr_upscale_custom_quality(float p_fsr_custom_quality) {
+	ERR_FAIL_COND(!((p_fsr_custom_quality >= 0.1f) && (p_fsr_custom_quality <= 1.0f)));
+	if (fsr_upscale_custom_quality == p_fsr_custom_quality) {
+		return;
+	}
+
+	fsr_upscale_custom_quality = p_fsr_custom_quality;
+	RS::get_singleton()->viewport_set_fsr_upscale_custom_quality(viewport, p_fsr_custom_quality);
+}
+
+float Viewport::get_fsr_upscale_custom_quality() const {
+	return fsr_upscale_custom_quality;
+}
+
+void Viewport::set_fsr_upscale_sharpness(float p_fsr_upscale_sharpness) {
+	if (fsr_upscale_sharpness == p_fsr_upscale_sharpness) {
+		return;
+	}
+
+	if (p_fsr_upscale_sharpness > 2.0f) {
+		p_fsr_upscale_sharpness = 2.0f;
+	} else if (p_fsr_upscale_sharpness < 0.0f) {
+		p_fsr_upscale_sharpness = 0.0f;
+	}
+
+	fsr_upscale_sharpness = p_fsr_upscale_sharpness;
+	RS::get_singleton()->viewport_set_fsr_upscale_sharpness(viewport, p_fsr_upscale_sharpness);
+}
+
+float Viewport::get_fsr_upscale_sharpness() const {
+	return fsr_upscale_sharpness;
+}
+
+void Viewport::set_fsr_upscale_mipmap_bias(float p_fsr_upscale_mipmap_bias) {
+	if (fsr_upscale_mipmap_bias == p_fsr_upscale_mipmap_bias) {
+		return;
+	}
+
+	fsr_upscale_mipmap_bias = p_fsr_upscale_mipmap_bias;
+	RS::get_singleton()->viewport_set_fsr_upscale_mipmap_bias(viewport, p_fsr_upscale_mipmap_bias);
+}
+
+float Viewport::get_fsr_upscale_mipmap_bias() const {
+	return fsr_upscale_mipmap_bias;
+}
+
 void Viewport::set_use_debanding(bool p_use_debanding) {
 	if (use_debanding == p_use_debanding) {
 		return;
@@ -3030,6 +3091,14 @@ void Viewport::pass_mouse_focus_to(Viewport *p_viewport, Control *p_control) {
 		gui.mouse_focus = nullptr;
 		gui.forced_mouse_focus = false;
 		gui.mouse_focus_mask = 0;
+	}
+}
+
+void Viewport::_validate_property(PropertyInfo &property) const {
+	if (property.name == "fsr_upscale_quality" || property.name == "fsr_upscale_sharpness" || property.name == "fsr_upscale_custom_quality" || property.name == "fsr_upscale_mipmap_bias") {
+		if (RSG::rasterizer->is_low_end()) {
+			property.usage = PROPERTY_USAGE_NOEDITOR | PROPERTY_USAGE_INTERNAL;
+		}
 	}
 }
 
@@ -3475,6 +3544,18 @@ void Viewport::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_screen_space_aa", "screen_space_aa"), &Viewport::set_screen_space_aa);
 	ClassDB::bind_method(D_METHOD("get_screen_space_aa"), &Viewport::get_screen_space_aa);
 
+	ClassDB::bind_method(D_METHOD("set_fsr_upscale_quality", "fsr_upscale_quality"), &Viewport::set_fsr_upscale_quality);
+	ClassDB::bind_method(D_METHOD("get_fsr_upscale_quality"), &Viewport::get_fsr_upscale_quality);
+
+	ClassDB::bind_method(D_METHOD("set_fsr_upscale_custom_quality", "fsr_upscale_custom_quality"), &Viewport::set_fsr_upscale_custom_quality);
+	ClassDB::bind_method(D_METHOD("get_fsr_upscale_custom_quality"), &Viewport::get_fsr_upscale_custom_quality);
+
+	ClassDB::bind_method(D_METHOD("set_fsr_upscale_sharpness", "fsr_upscale_sharpness"), &Viewport::set_fsr_upscale_sharpness);
+	ClassDB::bind_method(D_METHOD("get_fsr_upscale_sharpness"), &Viewport::get_fsr_upscale_sharpness);
+
+	ClassDB::bind_method(D_METHOD("set_fsr_upscale_mipmap_bias", "fsr_upscale_mipmap_bias"), &Viewport::set_fsr_upscale_mipmap_bias);
+	ClassDB::bind_method(D_METHOD("get_fsr_upscale_mipmap_bias"), &Viewport::get_fsr_upscale_mipmap_bias);
+
 	ClassDB::bind_method(D_METHOD("set_use_debanding", "enable"), &Viewport::set_use_debanding);
 	ClassDB::bind_method(D_METHOD("is_using_debanding"), &Viewport::is_using_debanding);
 
@@ -3593,6 +3674,11 @@ void Viewport::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "use_occlusion_culling"), "set_use_occlusion_culling", "is_using_occlusion_culling");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lod_threshold", PROPERTY_HINT_RANGE, "0,1024,0.1"), "set_lod_threshold", "get_lod_threshold");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "debug_draw", PROPERTY_HINT_ENUM, "Disabled,Unshaded,Overdraw,Wireframe"), "set_debug_draw", "get_debug_draw");
+	ADD_GROUP("Upscaling", "");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fsr_upscale_mipmap_bias", PROPERTY_HINT_RANGE, "-2,2,0.1"), "set_fsr_upscale_mipmap_bias", "get_fsr_upscale_mipmap_bias");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "fsr_upscale_quality", PROPERTY_HINT_ENUM, "Disabled (Slowest),Performance (Fastest),Balanced (Fast),Quality (Medium),Ultra Quality (Slow),Custom"), "set_fsr_upscale_quality", "get_fsr_upscale_quality");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fsr_upscale_custom_quality", PROPERTY_HINT_RANGE, "0.1,1.0,0.01"), "set_fsr_upscale_custom_quality", "get_fsr_upscale_custom_quality");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fsr_upscale_sharpness", PROPERTY_HINT_RANGE, "0,2,0.1"), "set_fsr_upscale_sharpness", "get_fsr_upscale_sharpness");
 	ADD_GROUP("Canvas Items", "canvas_item_");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "canvas_item_default_texture_filter", PROPERTY_HINT_ENUM, "Nearest,Linear,Linear Mipmap,Nearest Mipmap"), "set_default_canvas_item_texture_filter", "get_default_canvas_item_texture_filter");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "canvas_item_default_texture_repeat", PROPERTY_HINT_ENUM, "Disabled,Enabled,Mirror"), "set_default_canvas_item_texture_repeat", "get_default_canvas_item_texture_repeat");
@@ -3639,6 +3725,13 @@ void Viewport::_bind_methods() {
 	BIND_ENUM_CONSTANT(SCREEN_SPACE_AA_DISABLED);
 	BIND_ENUM_CONSTANT(SCREEN_SPACE_AA_FXAA);
 	BIND_ENUM_CONSTANT(SCREEN_SPACE_AA_MAX);
+
+	BIND_ENUM_CONSTANT(FSR_UPSCALE_DISABLED);
+	BIND_ENUM_CONSTANT(FSR_UPSCALE_PERFORMANCE);
+	BIND_ENUM_CONSTANT(FSR_UPSCALE_BALANCED);
+	BIND_ENUM_CONSTANT(FSR_UPSCALE_QUALITY);
+	BIND_ENUM_CONSTANT(FSR_UPSCALE_ULTRA_QUALITY);
+	BIND_ENUM_CONSTANT(FSR_UPSCALE_CUSTOM);
 
 	BIND_ENUM_CONSTANT(RENDER_INFO_OBJECTS_IN_FRAME);
 	BIND_ENUM_CONSTANT(RENDER_INFO_PRIMITIVES_IN_FRAME);
@@ -3735,6 +3828,18 @@ Viewport::Viewport() {
 	ProjectSettings::get_singleton()->set_custom_property_info("gui/timers/tooltip_delay_sec", PropertyInfo(Variant::FLOAT, "gui/timers/tooltip_delay_sec", PROPERTY_HINT_RANGE, "0,5,0.01,or_greater")); // No negative numbers
 
 	set_sdf_oversize(sdf_oversize); //set to server
+
+	FSRUpscaleQuality fsr_quality = (FSRUpscaleQuality)(int)GLOBAL_GET("rendering/upscaling/fsr_upscale_quality");
+	set_fsr_upscale_quality(fsr_quality);
+
+	float fsr_sharpness = GLOBAL_GET("rendering/upscaling/fsr_upscale_sharpness");
+	set_fsr_upscale_sharpness(fsr_sharpness);
+
+	float fsr_custom_quality = GLOBAL_GET("rendering/upscaling/fsr_upscale_custom_quality");
+	set_fsr_upscale_custom_quality(fsr_custom_quality);
+
+	float fsr_mipmap_bias = GLOBAL_GET("rendering/upscaling/fsr_upscale_mipmap_bias");
+	set_fsr_upscale_mipmap_bias(fsr_mipmap_bias);
 }
 
 Viewport::~Viewport() {
