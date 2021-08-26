@@ -187,6 +187,18 @@
 		<member name="disable_3d" type="bool" setter="set_disable_3d" getter="is_3d_disabled" default="false">
 			Disable 3D rendering (but keep 2D rendering).
 		</member>
+		<member name="fsr_upscale_custom_quality" type="float" setter="set_fsr_upscale_custom_quality" getter="get_fsr_upscale_custom_quality" default="1.0">
+			Manually sets the internal scale factor for FidelityFX Super Resolution 1.0.
+		</member>
+		<member name="fsr_upscale_mipmap_bias" type="float" setter="set_fsr_upscale_mipmap_bias" getter="get_fsr_upscale_mipmap_bias" default="0.0">
+			Affects the final texture sharpness. Negitive values make textures sharper, while positive values make textures blurrier.
+		</member>
+		<member name="fsr_upscale_quality" type="int" setter="set_fsr_upscale_quality" getter="get_fsr_upscale_quality" enum="Viewport.FSRUpscaleQuality" default="0">
+			Sets the FidelityFX Super Resolution 1.0 quality. FidelityFX Super Resolution 1.0 is an upscaling technology that produces high quality images at fast framerates. When set to FSR_UPSCALE_CUSTOM, the quality is taken from [member fsr_upscale_custom_quality]
+		</member>
+		<member name="fsr_upscale_sharpness" type="float" setter="set_fsr_upscale_sharpness" getter="get_fsr_upscale_sharpness" default="0.2">
+			Determins how sharp the upscaled image should be. Sharpness halves with every whole number. Values go from 0.0 (sharpest) to 2.0. Values above 2.0 won't make a visible difference.
+		</member>
 		<member name="global_canvas_transform" type="Transform2D" setter="set_global_canvas_transform" getter="get_global_canvas_transform">
 			The global canvas transform of the viewport. The canvas transform is relative to this.
 		</member>
@@ -321,6 +333,23 @@
 		</constant>
 		<constant name="SCREEN_SPACE_AA_MAX" value="2" enum="ScreenSpaceAA">
 			Represents the size of the [enum ScreenSpaceAA] enum.
+		</constant>
+		<constant name="FSR_UPSCALE_DISABLED" value="0" enum="FSRUpscaleQuality">
+			Does not perform any upscaling/sharpening and does not apply any render scaling. This provides the best visual quality, but is the slowest (even compared to [constant FSR_UPSCALE_ULTRA_QUALITY]).
+		</constant>
+		<constant name="FSR_UPSCALE_PERFORMANCE" value="1" enum="FSRUpscaleQuality">
+			Renders the viewport at 50% resolution on each axis, then upscales to the viewport's native resolution. For example, when targeting 4K (3840×2160), this will make the viewport render in 1920×1080 then upscale to 3840×2160.
+		</constant>
+		<constant name="FSR_UPSCALE_BALANCED" value="2" enum="FSRUpscaleQuality">
+			Renders the viewport at 59% resolution on each axis, then upscales to the viewport's native resolution. For example, when targeting 4K (3840×2160), this will make the viewport render in 2259×1270 then upscale to 3840×2160.
+		</constant>
+		<constant name="FSR_UPSCALE_QUALITY" value="3" enum="FSRUpscaleQuality">
+			Renders the viewport at 67% resolution on each axis, then upscales to the viewport's native resolution. For example, when targeting 4K (3840×2160), this will make the viewport render in 2560×1440 then upscale to 3840×2160.
+		</constant>
+		<constant name="FSR_UPSCALE_ULTRA_QUALITY" value="4" enum="FSRUpscaleQuality">
+			Renders the viewport at 77% resolution on each axis, then upscales to the viewport's native resolution. For example, when targeting 4K (3840×2160), this will make the viewport render in 2954×1662 then upscale to 3840×2160. This is the highest-quality FSR option, but it brings the lowest performance advantage compared to rendering at the native resolution directly.
+		</constant>
+		<constant name="FSR_UPSCALE_CUSTOM" value="5" enum="FSRUpscaleQuality">
 		</constant>
 		<constant name="RENDER_INFO_OBJECTS_IN_FRAME" value="0" enum="RenderInfo">
 			Amount of objects in frame.
