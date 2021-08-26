@@ -731,8 +731,8 @@ static void _list_available_types(bool p_inherit_only, GDScriptParser::Completio
 	}
 
 	// Autoload singletons
-	Map<StringName, ProjectSettings::AutoloadInfo> autoloads = ProjectSettings::get_singleton()->get_autoload_list();
-	for (const Map<StringName, ProjectSettings::AutoloadInfo>::Element *E = autoloads.front(); E != nullptr; E = E->next()) {
+	List<ProjectSettings::AutoloadInfo> autoloads = ProjectSettings::get_singleton()->get_autoload_list();
+	for (const List<ProjectSettings::AutoloadInfo>::Element *E = autoloads.front(); E != nullptr; E = E->next()) {
 		const ProjectSettings::AutoloadInfo &info = E->get();
 		if (!info.is_singleton || info.path.get_extension().to_lower() != "gd") {
 			continue;
@@ -1086,12 +1086,12 @@ static void _find_identifiers(GDScriptParser::CompletionContext &p_context, bool
 		kwa++;
 	}
 
-	Map<StringName, ProjectSettings::AutoloadInfo> autoloads = ProjectSettings::get_singleton()->get_autoload_list();
-	for (const Map<StringName, ProjectSettings::AutoloadInfo>::Element *E = autoloads.front(); E != nullptr; E = E->next()) {
-		if (!E->value().is_singleton) {
+	List<ProjectSettings::AutoloadInfo> autoloads = ProjectSettings::get_singleton()->get_autoload_list();
+	for (const List<ProjectSettings::AutoloadInfo>::Element *E = autoloads.front(); E != nullptr; E = E->next()) {
+		if (!E->get().is_singleton) {
 			continue;
 		}
-		ScriptCodeCompletionOption option(E->key(), ScriptCodeCompletionOption::KIND_CONSTANT);
+		ScriptCodeCompletionOption option(E->get().name, ScriptCodeCompletionOption::KIND_CONSTANT);
 		r_result.insert(option.display, option);
 	}
 
@@ -1359,12 +1359,12 @@ static bool _guess_expression_type(GDScriptParser::CompletionContext &p_context,
 												r_type = _type_from_variant(GDScriptLanguage::get_singleton()->get_named_globals_map()[which]);
 												found = true;
 											} else {
-												Map<StringName, ProjectSettings::AutoloadInfo> autoloads = ProjectSettings::get_singleton()->get_autoload_list();
+												List<ProjectSettings::AutoloadInfo> autoloads = ProjectSettings::get_singleton()->get_autoload_list();
 
-												for (Map<StringName, ProjectSettings::AutoloadInfo>::Element *E = autoloads.front(); E; E = E->next()) {
-													String name = E->key();
+												for (List<ProjectSettings::AutoloadInfo>::Element *E = autoloads.front(); E; E = E->next()) {
+													String name = E->get().name;
 													if (name == which) {
-														String script = E->value().path;
+														String script = E->get().path;
 
 														if (!script.begins_with("res://")) {
 															script = "res://" + script;
@@ -2660,10 +2660,10 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
 				}
 
 				// Get autoloads.
-				Map<StringName, ProjectSettings::AutoloadInfo> autoloads = ProjectSettings::get_singleton()->get_autoload_list();
+				List<ProjectSettings::AutoloadInfo> autoloads = ProjectSettings::get_singleton()->get_autoload_list();
 
-				for (Map<StringName, ProjectSettings::AutoloadInfo>::Element *E = autoloads.front(); E; E = E->next()) {
-					String path = "/root/" + E->key();
+				for (List<ProjectSettings::AutoloadInfo>::Element *E = autoloads.front(); E; E = E->next()) {
+					String path = "/root/" + E->get().name;
 					ScriptCodeCompletionOption option(path.quote(quote_style), ScriptCodeCompletionOption::KIND_NODE_PATH);
 					options.insert(option.display, option);
 				}

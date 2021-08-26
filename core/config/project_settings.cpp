@@ -1006,17 +1006,23 @@ bool ProjectSettings::has_custom_feature(const String &p_feature) const {
 	return custom_features.has(p_feature);
 }
 
-Map<StringName, ProjectSettings::AutoloadInfo> ProjectSettings::get_autoload_list() const {
-	return autoloads;
+List<ProjectSettings::AutoloadInfo> ProjectSettings::get_autoload_list() const {
+	return autoload_list;
 }
 
 void ProjectSettings::add_autoload(const AutoloadInfo &p_autoload) {
 	ERR_FAIL_COND_MSG(p_autoload.name == StringName(), "Trying to add autoload with no name.");
-	autoloads[p_autoload.name] = p_autoload;
+	List<AutoloadInfo>::Element *elem = autoloads[p_autoload.name];
+	if (elem == nullptr) {
+		autoloads[p_autoload.name] = autoload_list.push_back(p_autoload);
+	} else {
+		elem->set(p_autoload);
+	}
 }
 
 void ProjectSettings::remove_autoload(const StringName &p_autoload) {
 	ERR_FAIL_COND_MSG(!autoloads.has(p_autoload), "Trying to remove non-existent autoload.");
+	autoloads[p_autoload]->erase();
 	autoloads.erase(p_autoload);
 }
 
@@ -1026,7 +1032,7 @@ bool ProjectSettings::has_autoload(const StringName &p_autoload) const {
 
 ProjectSettings::AutoloadInfo ProjectSettings::get_autoload(const StringName &p_name) const {
 	ERR_FAIL_COND_V_MSG(!autoloads.has(p_name), AutoloadInfo(), "Trying to get non-existent autoload.");
-	return autoloads[p_name];
+	return autoloads[p_name]->get();
 }
 
 void ProjectSettings::_bind_methods() {

@@ -91,7 +91,8 @@ protected:
 	Set<String> custom_features;
 	Map<StringName, StringName> feature_overrides;
 
-	Map<StringName, AutoloadInfo> autoloads;
+	Map<StringName, List<AutoloadInfo>::Element *> autoloads;
+	List<AutoloadInfo> autoload_list;
 
 	bool _set(const StringName &p_name, const Variant &p_value);
 	bool _get(const StringName &p_name, Variant &r_ret) const;
@@ -168,7 +169,7 @@ public:
 
 	bool has_custom_feature(const String &p_feature) const;
 
-	Map<StringName, AutoloadInfo> get_autoload_list() const;
+	List<AutoloadInfo> get_autoload_list() const;
 	void add_autoload(const AutoloadInfo &p_autoload);
 	void remove_autoload(const StringName &p_autoload);
 	bool has_autoload(const StringName &p_autoload) const;
