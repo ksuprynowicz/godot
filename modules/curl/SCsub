@@ -187,7 +187,7 @@ if env["builtin_curl"]:
         "CURL_DISABLE_TELNET",
         "CURL_DISABLE_TFTP",
         "CURL_DISABLE_VERBOSE_STRINGS",
-        "CURL_STATICLIB"
+        "CURL_STATICLIB",
         "ENABLE_IPV6",
     ])
     env_curl.Prepend(CPPPATH=["#thirdparty/curl/include/", "#thirdparty/curl/lib/"])
