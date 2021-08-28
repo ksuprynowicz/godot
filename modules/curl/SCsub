@@ -10,21 +10,19 @@ if env["builtin_curl"]:
 
     # Thirdparty source files
     thirdparty_sources = [
-
-        "lib/vauth/cleartext.c"   ,
-        "lib/vauth/cram.c"         ,
-        "lib/vauth/digest.c"       ,
-        "lib/vauth/digest_sspi.c"  ,
-        "lib/vauth/gsasl.c"        ,
-        "lib/vauth/krb5_gssapi.c"  ,
-        "lib/vauth/krb5_sspi.c"    ,
-        "lib/vauth/ntlm.c"         ,
-        "lib/vauth/ntlm_sspi.c"    ,
-        "lib/vauth/oauth2.c"       ,
-        "lib/vauth/spnego_gssapi.c" ,
-        "lib/vauth/spnego_sspi.c"  ,
-        "lib/vauth/vauth.c"    ,
-
+        "lib/vauth/cleartext.c",
+        "lib/vauth/cram.c",
+        "lib/vauth/digest.c",
+        "lib/vauth/digest_sspi.c",
+        "lib/vauth/gsasl.c",
+        "lib/vauth/krb5_gssapi.c",
+        "lib/vauth/krb5_sspi.c",
+        "lib/vauth/ntlm.c",
+        "lib/vauth/ntlm_sspi.c",
+        "lib/vauth/oauth2.c",
+        "lib/vauth/spnego_gssapi.c",
+        "lib/vauth/spnego_sspi.c",
+        "lib/vauth/vauth.c",
         "lib/vtls/bearssl.c",
         "lib/vtls/gskit.c",
         "lib/vtls/gtls.c",
@@ -40,11 +38,9 @@ if env["builtin_curl"]:
         "lib/vtls/sectransp.c",
         "lib/vtls/vtls.c",
         "lib/vtls/wolfssl.c",
-
         "lib/vquic/ngtcp2.c",
         "lib/vquic/quiche.c",
         "lib/vquic/vquic.c",
-
         "lib/altsvc.c",
         "lib/amigaos.c",
         "lib/asyn-ares.c",
@@ -167,29 +163,31 @@ if env["builtin_curl"]:
         "lib/x509asn1.c",
     ]
 
-    env_curl.Append(CPPDEFINES=[
-        "USE_MBEDTLS", 
-        "BUILDING_LIBCURL", 
-        "CURL_DISABLE_CRYPTO_AUTH",
-        "CURL_DISABLE_DICT",
-        "CURL_DISABLE_FILE",
-        "CURL_DISABLE_FTP",
-        "CURL_DISABLE_GOPHER",
-        "CURL_DISABLE_IMAP",
-        "CURL_DISABLE_LDAP",
-        "CURL_DISABLE_LDAPS",
-        "CURL_DISABLE_MQTT",
-        "CURL_DISABLE_POP3",
-        "CURL_DISABLE_PROXY",
-        "CURL_DISABLE_RTSP",
-        "CURL_DISABLE_SMB",
-        "CURL_DISABLE_SMTP",
-        "CURL_DISABLE_TELNET",
-        "CURL_DISABLE_TFTP",
-        "CURL_DISABLE_VERBOSE_STRINGS",
-        "CURL_STATICLIB",
-        "ENABLE_IPV6",
-    ])
+    env_curl.Append(
+        CPPDEFINES=[
+            "USE_MBEDTLS",
+            "BUILDING_LIBCURL",
+            "CURL_DISABLE_CRYPTO_AUTH",
+            "CURL_DISABLE_DICT",
+            "CURL_DISABLE_FILE",
+            "CURL_DISABLE_FTP",
+            "CURL_DISABLE_GOPHER",
+            "CURL_DISABLE_IMAP",
+            "CURL_DISABLE_LDAP",
+            "CURL_DISABLE_LDAPS",
+            "CURL_DISABLE_MQTT",
+            "CURL_DISABLE_POP3",
+            "CURL_DISABLE_PROXY",
+            "CURL_DISABLE_RTSP",
+            "CURL_DISABLE_SMB",
+            "CURL_DISABLE_SMTP",
+            "CURL_DISABLE_TELNET",
+            "CURL_DISABLE_TFTP",
+            "CURL_DISABLE_VERBOSE_STRINGS",
+            "CURL_STATICLIB",
+            "ENABLE_IPV6",
+        ]
+    )
     env_curl.Prepend(CPPPATH=["#thirdparty/curl/include/", "#thirdparty/curl/lib/"])
     if env["builtin_mbedtls"]:
         env_curl.Prepend(CPPPATH=["#thirdparty/mbedtls/include/"])
@@ -209,5 +207,3 @@ if env["builtin_curl"]:
     env.modules_sources += module_obj
 
     env.Depends(module_obj, thirdparty_obj)
-
-
