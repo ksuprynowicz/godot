@@ -191,7 +191,7 @@ if env["builtin_curl"]:
 
     if env["platform"] != "windows":
         env_curl.Append(CPPDEFINES=["HAVE_CONFIG_H"])
-        env_curl.Prepend(CPPPATH=["#modules/curl/include/"])
+        env_curl.Prepend(CPPPATH=["#thirdparty/curl/config/"])
         env_curl.Append(
             CPPDEFINES=[
                 "HAVE_CONFIG_H",
