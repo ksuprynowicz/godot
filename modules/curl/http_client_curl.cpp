@@ -86,6 +86,9 @@ size_t HTTPClientCurl::_write_callback(char *buffer, size_t size, size_t nitems,
 
 curl_slist *HTTPClientCurl::_ip_addr_to_slist(const IPAddress &p_addr) {
     String addr = String(p_addr);
+    if (addr.find(":") != -1) {
+        addr = "["+addr+"]";
+    }
     print_line("addr: " + addr);
     String h = host + ":" + String::num_int64(port) + ":" + addr;
     print_line("resolve host: " + h);
