@@ -201,7 +201,7 @@ RingBuffer<uint8_t> *HTTPClientCurl::_init_upload(CURL *p_chandle, Method p_meth
 		case METHOD_PATCH:
 			break;
 		case METHOD_MAX:
-			break;		
+			break;
 	}
 
 	// Somewhat counter intuitively, the read function is actually used by libcurl to send data,
