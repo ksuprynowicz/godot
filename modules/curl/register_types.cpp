@@ -32,8 +32,6 @@
 #include "core/error/error_macros.h"
 #include "http_client_curl.h"
 
-static bool enet_ok = false;
-
 static bool curl_ok = false;
 
 void register_curl_types() {
