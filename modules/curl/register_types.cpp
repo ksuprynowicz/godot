@@ -38,11 +38,11 @@ static bool curl_ok = false;
 
 void register_curl_types() {
 	CURLcode code = curl_global_init(CURL_GLOBAL_DEFAULT);
-    if (code != CURLE_OK) {
-        ERR_PRINT("Curl initialization failure");
-    } else {
-        curl_ok = true;
-    }
+	if (code != CURLE_OK) {
+		ERR_PRINT("Curl initialization failure");
+	} else {
+		curl_ok = true;
+	}
 
 	GDREGISTER_CLASS(HTTPClientCurl);
 }
