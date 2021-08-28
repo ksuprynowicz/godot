@@ -154,9 +154,9 @@ Error HTTPClientCurl::_poll_curl() {
 				return FAILED;
 			}
 			RequestContext *ctx;
-			CURLcode rc = curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &response_code);
-			if (rc != CURLE_OK) {
-				ERR_PRINT_ONCE("Couldnt get curl status code. RC:" + String::num_int64(rc));
+			CURLcode return_code = curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &response_code);
+			if (return_code != CURLE_OK) {
+				ERR_PRINT_ONCE("Couldnt get curl status code. RC:" + String::num_int64(return_code));
 				return FAILED;
 			}
 			curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &ctx);
@@ -227,9 +227,9 @@ RequestContext *HTTPClientCurl::_create_request_context() {
 Error HTTPClientCurl::_init_dns(CURL *p_chandle, IPAddress p_addr) {
 	// TODO: Support resolving multiple addresses.
 	curl_slist *h = _ip_addr_to_slist(p_addr);
-	CURLcode rc = curl_easy_setopt(p_chandle, CURLOPT_RESOLVE, h);
-	if (rc != CURLE_OK) {
-		ERR_PRINT("failed to initialize dns resolver: " + String::num_int64(rc));
+	CURLcode return_code = curl_easy_setopt(p_chandle, CURLOPT_RESOLVE, h);
+	if (return_code != CURLE_OK) {
+		ERR_PRINT("failed to initialize dns resolver: " + String::num_int64(return_code));
 		return FAILED;
 	}
 	return OK;
@@ -240,9 +240,9 @@ Error HTTPClientCurl::_init_request_headers(CURL *p_chandler, Vector<String> p_h
 		p_ctx->header_list = curl_slist_append(p_ctx->header_list, p_headers[i].ascii().get_data());
 	}
 	if (p_ctx->header_list) {
-		CURLcode rc = curl_easy_setopt(p_chandler, CURLOPT_HTTPHEADER, p_ctx->header_list);
-		if (rc != CURLE_OK) {
-			ERR_PRINT("failed to set request headers: " + String::num_uint64(rc));
+		CURLcode return_code = curl_easy_setopt(p_chandler, CURLOPT_HTTPHEADER, p_ctx->header_list);
+		if (return_code != CURLE_OK) {
+			ERR_PRINT("failed to set request headers: " + String::num_uint64(return_code));
 			return FAILED;
 		}
 	}
