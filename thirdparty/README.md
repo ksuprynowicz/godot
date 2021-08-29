@@ -62,6 +62,7 @@ as it's generated on the user's system.)
 Files extracted from upstream source:
 
 - all .c and .h files in the src, include, and lib directories (and their descendants).
+- derived configuration header
 
 ## cvtt
 
