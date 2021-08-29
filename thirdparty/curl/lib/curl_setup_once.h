@@ -170,7 +170,6 @@ struct timeval {
 #endif
 #endif /* HAVE_RECV */
 
-#if defined(LINUX_ENABLED)
 #if defined(__minix)
 /* Minix doesn't support send on TCP sockets */
 #define swrite(x,y,z) (ssize_t)write((SEND_TYPE_ARG1)(x), \
@@ -200,7 +199,6 @@ struct timeval {
   /* */
 #endif
 #endif /* HAVE_SEND */
-#endif
 
 #if 0
 #if defined(HAVE_RECVFROM)
