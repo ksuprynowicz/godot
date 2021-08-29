@@ -758,8 +758,8 @@
 /* Define to 1 if you need the lber.h header file even with ldap.h */
 #define NEED_LBER_H 1
 
-/* Define to 1 if you need the malloc.h header file even with stdlib.h */
-#define NEED_MALLOC_H 1
+// /* Define to 1 if you need the malloc.h header file even with stdlib.h */
+// #define NEED_MALLOC_H 1
 
 /* Define to 1 if _REENTRANT preprocessor symbol must be defined. */
 #define NEED_REENTRANT 1
