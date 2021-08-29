@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  register_types.cpp                                                   */
+/*  register_types.h                                                     */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,25 +28,10 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "register_types.h"
-#include "core/error/error_macros.h"
-#include "http_client_curl.h"
+#ifndef CURL_REGISTER_TYPES_H
+#define CURL_REGISTER_TYPES_H
 
-static bool curl_ok = false;
+void register_mbedtls_curl_types();
+void unregister_mbedtls_curl_types();
 
-void register_curl_types() {
-	CURLcode code = curl_global_init(CURL_GLOBAL_DEFAULT);
-	if (code != CURLE_OK) {
-		ERR_PRINT("Curl initialization failure");
-	} else {
-		curl_ok = true;
-	}
-
-	GDREGISTER_CLASS(HTTPClientCurl);
-}
-
-void unregister_curl_types() {
-	if (curl_ok) {
-		curl_global_cleanup();
-	}
-}
+#endif // CURL_REGISTER_TYPES_H
