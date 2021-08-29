@@ -408,8 +408,10 @@
 #define HAVE_MEMORY_H 1
 
 #if !defined(WINDOWS_ENABLED)
+#if !defined(OSX_ENABLED)
 /* Define to 1 if you have the MSG_NOSIGNAL flag. */
 #define HAVE_MSG_NOSIGNAL 1
+#endif
 
 /* Define to 1 if you have the <netdb.h> header file. */
 #define HAVE_NETDB_H 1
