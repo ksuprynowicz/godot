@@ -49,6 +49,19 @@ Includes some patches in the `patches` folder which have been sent upstream.
 - Version: git (8b263a18fca98ea371e54227837321c5cdaa1ba7, 2021)
 - License: MPL 2.0
 
+File extracted from a recent Fedora install:
+/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+(It can't be extracted directly from the package,
+as it's generated on the user's system.)
+
+## curl
+- Upstream: https://github.com/curl/curl/tree/curl-7_78_0
+- Version: 7.78.0
+- License: Curl License (Inspired by MIT/X)
+
+Files extracted from upstream source:
+
+- all .c and .h files in the src, include, and lib directories (and their descendants).
 
 ## cvtt
 
