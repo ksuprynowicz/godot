@@ -369,6 +369,10 @@ Error HTTPClientCurl::connect_to_host(const String &p_host, int p_port, bool p_s
 	return OK;
 }
 
+HTTPClientCurl::~HTTPClientCurl() {
+	close();
+}
+
 void HTTPClientCurl::close() {
 	if (curl) {
 		curl_multi_cleanup(curl);

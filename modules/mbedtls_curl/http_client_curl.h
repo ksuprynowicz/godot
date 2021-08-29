@@ -98,6 +98,7 @@ protected:
 	virtual Error _request(IPAddress p_addr, bool p_init_dns);
 
 public:
+	virtual ~HTTPClientCurl() override;
 	static HTTPClient *_create_func();
 
 	virtual Error connect_to_host(const String &p_host, int p_port = -1, bool p_ssl = false, bool p_verify_host = true) override;
