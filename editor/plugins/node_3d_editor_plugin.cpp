@@ -1292,6 +1292,7 @@ void Node3DEditorViewport::_list_select(Ref<InputEventMouseButton> b) {
 		}
 
 		selection_menu->set_position(get_screen_transform().xform(b->get_position()));
+		selection_menu->reset_size();
 		selection_menu->popup();
 	}
 }
@@ -6631,6 +6632,7 @@ void Node3DEditor::unhandled_key_input(const Ref<InputEvent> &p_event) {
 void Node3DEditor::_sun_environ_settings_pressed() {
 	Vector2 pos = sun_environ_settings->get_screen_position() + sun_environ_settings->get_size();
 	sun_environ_popup->set_position(pos - Vector2(sun_environ_popup->get_contents_minimum_size().width / 2, 0));
+	sun_environ_popup->reset_size();
 	sun_environ_popup->popup();
 }
 

@@ -1284,6 +1284,7 @@ void EditorPropertyEasing::_drag_easing(const Ref<InputEvent> &p_ev) {
 
 		if (mb->is_pressed() && mb->get_button_index() == MouseButton::RIGHT) {
 			preset->set_position(easing_draw->get_screen_transform().xform(mb->get_position()));
+			preset->reset_size();
 			preset->popup();
 
 			// Ensure the easing doesn't appear as being dragged
