@@ -31,6 +31,7 @@
 #include "editor_node.h"
 
 #include "core/config/project_settings.h"
+#include "core/error/error_macros.h"
 #include "core/extension/native_extension_manager.h"
 #include "core/input/input.h"
 #include "core/io/config_file.h"
@@ -2888,11 +2889,11 @@ void EditorNode::_screenshot(bool p_use_utc) {
 
 void EditorNode::_save_screenshot(NodePath p_path) {
 	Control *editor_main_control = EditorInterface::get_singleton()->get_editor_main_control();
-	ERR_FAIL_COND_MSG(!editor_main_control, "Cannot get editor main control.");
-	Viewport *viewport = editor_main_control->get_viewport();
-	ERR_FAIL_COND_MSG(!viewport, "Cannot get editor main control viewport.");
-	Ref<ViewportTexture> texture = viewport->get_texture();
-	ERR_FAIL_COND_MSG(texture.is_null(), "Cannot get editor main control viewport texture.");
+	ERR_FAIL_NULL_MSG(editor_main_control, "Cannot get editor main control.");
+	Ref<ViewportTexture> texture;
+	texture.instantiate();
+	texture->set_viewport_path_in_scene(editor_main_control->get_viewport()->get_path());
+	texture->setup_local_to_scene();
 	Ref<Image> img = texture->get_image();
 	ERR_FAIL_COND_MSG(img.is_null(), "Cannot get editor main control viewport texture image.");
 	Error error = img->save_png(p_path);
