@@ -130,6 +130,14 @@
 				Sets the stream of the key identified by [code]key_idx[/code] to value [code]stream[/code]. The [code]track_idx[/code] must be the index of an Audio Track.
 			</description>
 		</method>
+		<method name="bezier_track_get_key_handle_mode" qualifiers="const">
+			<return type="int" />
+			<argument index="0" name="track_idx" type="int" />
+			<argument index="1" name="key_idx" type="int" />
+			<description>
+				Returns the handle mode of the key identified by [code]index[/code]. See [enum HandleMode] for possible values. The [code]track_idx[/code] must be the index of a Bezier Track.
+			</description>
+		</method>
 		<method name="bezier_track_get_key_in_handle" qualifiers="const">
 			<return type="Vector2" />
 			<argument index="0" name="track_idx" type="int" />
@@ -172,6 +180,15 @@
 			<argument index="1" name="time" type="float" />
 			<description>
 				Returns the interpolated value at the given [code]time[/code] (in seconds). The [code]track_idx[/code] must be the index of a Bezier Track.
+			</description>
+		</method>
+		<method name="bezier_track_set_key_handle_mode">
+			<return type="void" />
+			<argument index="0" name="track_idx" type="int" />
+			<argument index="1" name="key_idx" type="int" />
+			<argument index="2" name="key_handle_mode" type="int" enum="Animation.HandleMode" />
+			<description>
+				Changes the handle mode of the keyframe at the given [code]index[/code]. See [enum HandleMode] for possible values. The [code]track_idx[/code] must be the index of a Bezier Track.
 			</description>
 		</method>
 		<method name="bezier_track_set_key_in_handle">
@@ -576,6 +593,12 @@
 		</constant>
 		<constant name="UPDATE_CAPTURE" value="3" enum="UpdateMode">
 			Same as linear interpolation, but also interpolates from the current value (i.e. dynamically at runtime) if the first key isn't at 0 seconds.
+		</constant>
+		<constant name="HANDLE_MODE_FREE" value="0" enum="HandleMode">
+			Assigning the free handle mode to a Bezier Track's keyframe allows you to edit the keyframe's left and right handles independently from one another.
+		</constant>
+		<constant name="HANDLE_MODE_BALANCED" value="1" enum="HandleMode">
+			Assigning the balanced handle mode to a Bezier Track's keyframe makes it so the two handles of the keyframe always stay aligned when changing either the keyframe's left or right handle.
 		</constant>
 	</constants>
 </class>
