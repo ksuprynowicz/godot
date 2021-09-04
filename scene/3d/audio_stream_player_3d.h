@@ -32,6 +32,8 @@
 #define AUDIO_STREAM_PLAYER_3D_H
 
 #include "scene/3d/area_3d.h"
+#include "core/templates/safe_refcount.h"
+#include "modules/resonanceaudio/resonance_audio_wrapper.h"
 #include "scene/3d/node_3d.h"
 #include "scene/3d/velocity_tracker_3d.h"
 #include "servers/audio/audio_filter_sw.h"
@@ -115,6 +117,9 @@ private:
 	OutOfRangeMode out_of_range_mode = OUT_OF_RANGE_MIX;
 
 	float _get_attenuation_db(float p_distance) const;
+
+	// TODO #ifdef guard this
+	AudioSourceId audio_source_id;
 
 protected:
 	void _validate_property(PropertyInfo &property) const override;
