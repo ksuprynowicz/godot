@@ -137,6 +137,7 @@ SceneStringNames::SceneStringNames() {
 
 	_spatial_editor_group = StaticCString::create("_spatial_editor_group");
 	_request_gizmo = StaticCString::create("_request_gizmo");
+	_set_subgizmo_selection = StaticCString::create("_set_subgizmo_selection");
 	_clear_subgizmo_selection = StaticCString::create("_clear_subgizmo_selection");
 
 	offset = StaticCString::create("offset");
