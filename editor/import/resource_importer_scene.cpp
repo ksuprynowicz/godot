@@ -943,6 +943,7 @@ void ResourceImporterScene::get_internal_import_options(InternalImportCategory p
 			r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "generate/shadow_meshes", PROPERTY_HINT_ENUM, "Default,Enable,Disable"), 0));
 			r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "generate/lightmap_uv", PROPERTY_HINT_ENUM, "Default,Enable,Disable"), 0));
 			r_options->push_back(ImportOption(PropertyInfo(Variant::INT, "generate/lods", PROPERTY_HINT_ENUM, "Default,Enable,Disable"), 0));
+			r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, "lods/normal_split_angle", PROPERTY_HINT_RANGE, "0,180,0.1,degrees"), 20.0f));
 		} break;
 		case INTERNAL_IMPORT_CATEGORY_MATERIAL: {
 			r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "use_external/enabled", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_UPDATE_ALL_IF_MODIFIED), false));
@@ -1136,6 +1137,7 @@ void ResourceImporterScene::_generate_meshes(Node *p_node, const Dictionary &p_m
 				//do mesh processing
 
 				bool generate_lods = p_generate_lods;
+				float split_angle = 20.0f;
 				bool create_shadow_meshes = p_create_shadow_meshes;
 				bool bake_lightmaps = p_light_bake_mode == LIGHT_BAKE_STATIC_LIGHTMAPS;
 				String save_to_file;
@@ -1178,6 +1180,10 @@ void ResourceImporterScene::_generate_meshes(Node *p_node, const Dictionary &p_m
 						}
 					}
 
+					if (mesh_settings.has("lods/normal_split_angle")) {
+						split_angle = mesh_settings["lods/normal_split_angle"];
+					}
+
 					if (mesh_settings.has("save_to_file/enabled") && bool(mesh_settings["save_to_file/enabled"]) && mesh_settings.has("save_to_file/path")) {
 						save_to_file = mesh_settings["save_to_file/path"];
 						if (!save_to_file.is_resource_file()) {
@@ -1187,7 +1193,7 @@ void ResourceImporterScene::_generate_meshes(Node *p_node, const Dictionary &p_m
 				}
 
 				if (generate_lods) {
-					src_mesh_node->get_mesh()->generate_lods();
+					src_mesh_node->get_mesh()->generate_lods(split_angle);
 				}
 				if (create_shadow_meshes) {
 					src_mesh_node->get_mesh()->create_shadow_mesh();
