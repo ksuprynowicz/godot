@@ -85,7 +85,7 @@ MESHOPTIMIZER_API void meshopt_remapIndexBuffer(unsigned int* destination, const
  *
  * destination must contain enough space for the resulting index buffer (index_count elements)
  */
-MESHOPTIMIZER_API void meshopt_generateShadowIndexBuffer(unsigned int* destination, const unsigned int* indices, size_t index_count, const void* vertices, size_t vertex_count, size_t vertex_size, size_t vertex_stride);
+MESHOPTIMIZER_API void meshopt_generateShadowIndexBuffer(unsigned int* destination, const unsigned int* indices, size_t index_count, const void* vertices, size_t vertex_count, size_t vertex_size, size_t vertex_stride, bool (*filter)(unsigned int, unsigned int));
 
 /**
  * Generate index buffer that can be used for more efficient rendering when only a subset of the vertex attributes is necessary
@@ -552,7 +552,7 @@ inline size_t meshopt_generateVertexRemapMulti(unsigned int* destination, const 
 template <typename T>
 inline void meshopt_remapIndexBuffer(T* destination, const T* indices, size_t index_count, const unsigned int* remap);
 template <typename T>
-inline void meshopt_generateShadowIndexBuffer(T* destination, const T* indices, size_t index_count, const void* vertices, size_t vertex_count, size_t vertex_size, size_t vertex_stride);
+inline void meshopt_generateShadowIndexBuffer(T* destination, const T* indices, size_t index_count, const void* vertices, size_t vertex_count, size_t vertex_size, size_t vertex_stride, bool (*filter)(unsigned int, unsigned int));
 template <typename T>
 inline void meshopt_generateShadowIndexBufferMulti(T* destination, const T* indices, size_t index_count, size_t vertex_count, const meshopt_Stream* streams, size_t stream_count);
 template <typename T>
@@ -793,12 +793,12 @@ inline void meshopt_remapIndexBuffer(T* destination, const T* indices, size_t in
 }
 
 template <typename T>
-inline void meshopt_generateShadowIndexBuffer(T* destination, const T* indices, size_t index_count, const void* vertices, size_t vertex_count, size_t vertex_size, size_t vertex_stride)
+inline void meshopt_generateShadowIndexBuffer(T* destination, const T* indices, size_t index_count, const void* vertices, size_t vertex_count, size_t vertex_size, size_t vertex_stride, bool (*filter)(unsigned int, unsigned int))
 {
 	meshopt_IndexAdapter<T> in(0, indices, index_count);
 	meshopt_IndexAdapter<T> out(destination, 0, index_count);
 
-	meshopt_generateShadowIndexBuffer(out.data, in.data, index_count, vertices, vertex_count, vertex_size, vertex_stride);
+	meshopt_generateShadowIndexBuffer(out.data, in.data, index_count, vertices, vertex_count, vertex_size, vertex_stride, filter);
 }
 
 template <typename T>
