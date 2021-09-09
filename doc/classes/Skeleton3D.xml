@@ -367,6 +367,11 @@
 		</member>
 	</members>
 	<signals>
+		<signal name="bone_enabled_changed">
+			<argument index="0" name="bone_idx" type="int" />
+			<description>
+			</description>
+		</signal>
 		<signal name="bone_pose_changed">
 			<argument index="0" name="bone_idx" type="int" />
 			<description>
