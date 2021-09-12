@@ -26,8 +26,8 @@ func _init():
 
 ```elixir
 iex -S mix
-{:ok, state} = Godot.init(["--verbose", "--path", "/nexus/V-Sekai/dance", "-e"])
-{:ok, state} = Godot.init([])
+{:ok, state} = Godot.start_link(["--verbose", "--path", "/nexus/V-Sekai/dance", "-e"])
+{:ok, state} = Godot.start_link([])
 {:ok, state} = Godot.iteration(state)
 {:ok, state} = Godot.call(state, ["get_node_count"])
 {:ok, state} = Godot.call(state, ["get_method_list"])

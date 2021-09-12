@@ -9,8 +9,10 @@ defmodule Godot do
   use GenServer
   require Unifex.CNode
 
-  def start_link do
-      GenServer.start_link(__MODULE__, %{})
+  def start_link(args) do
+      {:ok, pid} = GenServer.start_link(__MODULE__, args)
+      state = %GodotState{pid: state.pid, last_tick: :os.system_time(:millisecond), result: []}
+      {:ok, state}
   end
 
   def iteration(state) do  
@@ -32,10 +34,10 @@ defmodule Godot do
   end
 
   def init(args) do
-      {:ok, pid} = Unifex.CNode.start_link(:godot_elixir)
-      Unifex.CNode.call(pid, :init, [["godot"]] ++ args, @godot_timeout)
-      state = %GodotState{pid: pid, last_tick: :os.system_time(:millisecond), result: []}
-      {:ok, state}
+    {:ok, pid} = Unifex.CNode.start_link(:godot_elixir)
+    Unifex.CNode.call(pid, :init, [["godot"]] ++ args, @godot_timeout)
+    state = %GodotState{pid: pid, last_tick: :os.system_time(:millisecond), result: []}
+    {:ok, state}
   end
 
   def handle_info(:work, state) do   

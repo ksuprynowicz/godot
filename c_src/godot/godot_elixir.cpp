@@ -55,17 +55,23 @@ UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 			return call_result_ok_int(env, state, res_int);
 		} break;
 		case Variant::FLOAT: {
-			const CharString res_char_string = String(res).utf8();
-			const char *res_string = res_char_string.get_data();
-			return call_result_ok_string(env, state, res_string);
-			// return call_result_ok_float(env, state, res.get_type(), res_float);
+			const CharString res_float_string = rtos(res).utf8();
+			return call_result_ok_string(env, state, res_float_string.get_data());
 		} break;
-		// Variant::DOUBLE
 		case Variant::STRING: {
 			const CharString res_char_string = String(res).utf8();
 			const char *res_string = res_char_string.get_data();
 			return call_result_ok_string(env, state, res_string);
 		} break;
+		case Variant::PACKED_BYTE_ARRAY:
+		case Variant::PACKED_INT32_ARRAY:
+		case Variant::PACKED_INT64_ARRAY:
+		case Variant::PACKED_FLOAT32_ARRAY:
+		case Variant::PACKED_FLOAT64_ARRAY:
+		case Variant::PACKED_STRING_ARRAY:
+		case Variant::PACKED_VECTOR2_ARRAY:
+		case Variant::PACKED_VECTOR3_ARRAY:
+		case Variant::PACKED_COLOR_ARRAY:
 		case Variant::ARRAY: {
 			const Array array = res;
 			StringBuilder builder;
