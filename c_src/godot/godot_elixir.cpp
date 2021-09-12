@@ -5,7 +5,9 @@
 #include "modules/gdscript/gdscript.h"
 #include "scene/main/node.h"
 
-static OS_LinuxBSD os;
+#include <locale.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int list_length) {
 	int err = OK;
@@ -14,7 +16,7 @@ UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int
 	}
 	state = unifex_alloc_state(env);
 	err = Main::setup(in_strings[0], list_length - 1, &in_strings[1]);
-	if (err != OK) {
+	if (err != OK) {		
 		return init_result_fail(env, state, "Godot can't be setup.");
 	}
 	if (!Main::start()) {
@@ -23,26 +25,15 @@ UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int
 	return init_result_ok(env, state, err);
 }
 
-UNIFEX_TERM iteration(UnifexEnv *env, MyState *state, double delta) {
-	if (!state) {
-		return iteration_result_fail(env, state, "Godot is not initialized.");
-	}
-	bool err = os.get_main_loop()->process(delta);
-	if (err != OK) {
-		return iteration_result_fail(env, state, "Godot can't iterate.");
-	}
-	return iteration_result_ok(env, state, err);
-}
-
 UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 	if (!state) {
 		return init_result_fail(env, state, "Godot is not initialized.");
 	}
-	if (!os.get_main_loop()->get_script_instance()) {
+	if (!state->os.get_main_loop()->get_script_instance()) {
 		return init_result_fail(env, state, "Godot does not have a script instance.");
 	}
 	Callable::CallError call_error;
-	Variant res = os.get_main_loop()->call(method, nullptr, 0, call_error);
+	Variant res = state->os.get_main_loop()->call(method, nullptr, 0, call_error);
 	switch (res.get_type()) {
 		case Variant::NIL: {
 			return init_result_fail(env, state, "Call is invalid.");
@@ -88,6 +79,6 @@ UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 void handle_destroy_state(UnifexEnv *env, MyState *state) {
 	UNIFEX_UNUSED(env);
 	UNIFEX_UNUSED(state);
-	os.get_main_loop()->finalize();
+	state->os.get_main_loop()->finalize();
 	Main::cleanup();
 }

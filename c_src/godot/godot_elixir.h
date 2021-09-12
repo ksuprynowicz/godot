@@ -5,5 +5,8 @@ typedef struct MyState MyState;
 #include "main/main.h"
 #include "os_linuxbsd.h"
 
+#include <limits.h>
+
 struct MyState {
+    OS_LinuxBSD os;
 };

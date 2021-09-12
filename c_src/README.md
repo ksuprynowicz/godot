@@ -28,11 +28,9 @@ func _init():
 iex -S mix
 require Unifex.CNode
 {:ok, pid} = Unifex.CNode.start_link(:godot_elixir)
-Unifex.CNode.call(pid, :init, [["godot", "--verbose", "--script", "new_script.gd"]])
-Unifex.CNode.call(pid, :iteration, [0.033])
+Unifex.CNode.call(pid, :init, [["godot", "--verbose", "--headless"]])
 Unifex.CNode.call(pid, :call, ["get_node_count"])
 Unifex.CNode.call(pid, :call, ["get_method_list"])
-Unifex.CNode.call(pid, :init, [["godot", "-v", "--headless"]])
 Unifex.CNode.call(pid, :set_gdscript, [script])
 Unifex.CNode.stop(pid)
 ```
