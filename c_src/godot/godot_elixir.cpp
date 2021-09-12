@@ -23,9 +23,14 @@ UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int
 	state->ret = getcwd(state->cwd, PATH_MAX);
 
 	err = Main::setup(in_strings[0], list_length - 1, &in_strings[1]);
-	if (!Main::start()) {
+	if (err != OK) {
+		return init_result_fail(env, state, "Godot can't be setup.");
+	}
+	err = Main::start();
+	if (err != OK) {
 		return init_result_fail(env, state, "Godot can't start.");
 	}
+	os.get_main_loop()->initialize();
 	return init_result_ok(env, state, err);
 }
 
@@ -83,17 +88,18 @@ UNIFEX_TERM iteration(UnifexEnv *env, MyState *state) {
 	if (!state) {
 		return iteration_result_fail(env, state, "Godot is not initialized.");
 	}
-	bool ok = Main::iteration();
-	if (!ok) {
+	DisplayServer::get_singleton()->process_events(); // get rid of pending events
+	bool err = Main::iteration();
+	if (err != OK) {
 		return iteration_result_fail(env, state, "Godot can't iterate.");
 	}
-	return iteration_result_ok(env, state, OK);
+	return iteration_result_ok(env, state, err);
 }
 
 void handle_destroy_state(UnifexEnv *env, MyState *state) {
 	UNIFEX_UNUSED(env);
 	UNIFEX_UNUSED(state);
-
+	os.get_main_loop()->finalize();
 	Main::cleanup();
 	if (state->ret) { // Previous getcwd was successful
 		if (chdir(state->cwd) != 0) {
@@ -101,4 +107,5 @@ void handle_destroy_state(UnifexEnv *env, MyState *state) {
 		}
 	}
 	free(state->cwd);
+	state->cwd = nullptr;
 }

@@ -24,11 +24,12 @@ func _init():
 	quit()
 ```
 
-```bash
+```elixir
 iex -S mix
-{:ok, state} = Godot.init(["--help"])
+{:ok, state} = Godot.init(["--verbose", "--path", "/nexus/V-Sekai/dance", "-e"])
+{:ok, state} = Godot.init([])
+{:ok, state} = Godot.iteration(state)
 {:ok, state} = Godot.call(state, ["get_node_count"])
 {:ok, state} = Godot.call(state, ["get_method_list"])
 {:ok, state} = Godot.stop(state)
 ```
-
