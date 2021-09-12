@@ -30,7 +30,5 @@ iex -S mix
 {:ok, pid} = Godot.start_link(["--verbose"])
 GenServer.call(pid, {:call, ["get_node_count"]})
 GenServer.call(pid, {:call, ["get_method_list"]})
-{:ok, pid} = Godot.start_link(["--verbose"])
-GenServer.call(pid, {:work, []})
 GenServer.stop(pid)
 ```

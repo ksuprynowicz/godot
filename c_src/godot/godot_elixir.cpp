@@ -38,8 +38,8 @@ UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 	if (!state) {
 		return init_result_fail(env, state, "Godot is not initialized.");
 	}
-	if (!os.get_main_loop()->get_script_instance()) {
-		return init_result_fail(env, state, "Godot does not have a script instance.");
+	if (!os.get_main_loop()) {
+		return init_result_fail(env, state, "Godot does not have a main loop.");
 	}
 	Variant res = os.get_main_loop()->call(method);
 	switch (res.get_type()) {
@@ -93,7 +93,9 @@ UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 void handle_destroy_state(UnifexEnv *env, MyState *state) {
 	UNIFEX_UNUSED(env);
 	UNIFEX_UNUSED(state);
-	os.get_main_loop()->finalize();
+	if (os.get_main_loop()) {
+		os.get_main_loop()->finalize();
+	}
 	Main::cleanup();
 	if (state->ret) { // Previous getcwd was successful
 		if (chdir(state->cwd) != 0) {
