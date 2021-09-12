@@ -18,7 +18,7 @@
          lib_dirs: [Path.absname("bin")],
          libs: ["godot.linuxbsd.opt.tools.64.llvm"],
          language: :cpp,
-         linker_flags: ["-Wl,-rpath=bin"],
+         linker_flags: ["-Wl,-rpath=_build/dev/lib/godot/priv/"],
        ]
      ]
    end

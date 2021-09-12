@@ -4,7 +4,9 @@ defmodule Godot.Mixfile do
   def project do
     [
       app: :godot,
-      compilers: [:elixir_make, :unifex, :bundlex] ++ Mix.compilers,
+      compilers: [:unifex, :bundlex] \
+      [:elixir_make] \
+      ++ Mix.compilers,
       version: "0.1.0",
       deps: deps(),
       extra_applications: [:logger],
@@ -35,7 +37,7 @@ defmodule Godot.Mixfile do
       licenses: ["MIT"],
       files: [
         "lib", "LICENSE.txt", "mix.exs", "README.md",
-        "bin", "c_src", "c_src/*.md", "Makefile"],
+        "c_src", "c_src/*.md", "Makefile", "_build/dev/lib/godot/priv/bundlex/cnode/libgodot.linuxbsd.opt.tools.64.llvm.so"],
       links: %{"GitHub" => "https://github.com/V-Sekai/godot/tree/elixir"}
     ]
   end
