@@ -1,6 +1,10 @@
 #include "godot_elixir.h"
 
+#include "core/io/marshalls.h"
+#include "core/io/stream_peer.h"
 #include "core/string/string_builder.h"
+#include "core/string/string_name.h"
+#include "core/variant/variant.h"
 #include "main/main.h"
 #include "modules/gdscript/gdscript.h"
 #include "scene/main/node.h"
@@ -8,6 +12,7 @@
 #include <locale.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <cstdint>
 
 static OS_LinuxBSD os;
 
@@ -34,19 +39,15 @@ UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int
 	return init_result_ok(env, state, err);
 }
 
-UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method, char **in_strings, unsigned int list_length) {
+UNIFEX_TERM call(UnifexEnv *env, MyState *state, \
+		char * method, UnifexPayload * arg_1, UnifexPayload * arg_2, UnifexPayload * arg_3, UnifexPayload * arg_4, UnifexPayload * arg_5, UnifexPayload * arg_6) {
 	if (!state) {
 		return init_result_fail(env, state, "Godot is not initialized.");
 	}
 	if (!os.get_main_loop()) {
 		return init_result_fail(env, state, "Godot does not have a main loop.");
 	}
-	Array args;
-	args.resize(list_length);
-	for (uint32_t arg_i = 0; arg_i < list_length; arg_i++) {
-		args[arg_i] = in_strings[arg_i];
-	}
-	Variant res = os.get_main_loop()->callv(method, args);
+	Variant res = os.get_main_loop()->call(method, arg_1->data, arg_2->data, arg_3->data, arg_4->data, arg_5->data, arg_6->data);
 	switch (res.get_type()) {
 		case Variant::NIL: {
 			return init_result_fail(env, state, "Call is invalid.");

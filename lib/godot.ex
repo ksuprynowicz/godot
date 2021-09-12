@@ -17,23 +17,21 @@ defmodule Godot.Loop do
   end
 
   @impl true
-  def handle_call({:work, []} = empty, _from, state) do
-    Unifex.CNode.call(state.pid, :iteration, [], @godot_timeout)    
-    last_tick = state.last_tick
-    state = %GodotState{last_tick: :os.system_time(:millisecond)}
-    {:reply, [], state}
-  end
-
-  @impl true
-  def terminate(reason, state) do
+  def terminate(_reason, state) do
     Unifex.CNode.stop(state.pid)
     state = %{state | last_tick: :os.system_time(:millisecond)}      
     {:noreply, state}
   end
 
   @impl true
-  def handle_call({:call, args}, _from, state) do
-    res = Unifex.CNode.call(state.pid, :call, args, @godot_timeout)
+  def handle_call({:call, \
+  args}, _from, state) do
+    [[method, arg_0, arg_1, \
+    arg_2, arg_3, \
+    arg_4, arg_5]] = args
+    res = Unifex.CNode.call(state.pid, :call, [method, arg_0, arg_1, \
+    arg_2, arg_3, \
+    arg_4, arg_5], @godot_timeout)
     state = %{state | last_tick: :os.system_time(:millisecond)}
     {:reply, [res], state}
   end
