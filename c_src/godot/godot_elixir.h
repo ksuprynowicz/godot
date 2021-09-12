@@ -8,5 +8,4 @@ typedef struct MyState MyState;
 #include <limits.h>
 
 struct MyState {
-    OS_LinuxBSD os;
 };

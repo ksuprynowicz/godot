@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+static OS_LinuxBSD os;
+
 UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int list_length) {
 	int err = OK;
 	if (state) {
@@ -29,11 +31,11 @@ UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 	if (!state) {
 		return init_result_fail(env, state, "Godot is not initialized.");
 	}
-	if (!state->os.get_main_loop()->get_script_instance()) {
+	if (!os.get_main_loop()->get_script_instance()) {
 		return init_result_fail(env, state, "Godot does not have a script instance.");
 	}
 	Callable::CallError call_error;
-	Variant res = state->os.get_main_loop()->call(method, nullptr, 0, call_error);
+	Variant res = os.get_main_loop()->call(method, nullptr, 0, call_error);
 	switch (res.get_type()) {
 		case Variant::NIL: {
 			return init_result_fail(env, state, "Call is invalid.");
@@ -79,6 +81,6 @@ UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 void handle_destroy_state(UnifexEnv *env, MyState *state) {
 	UNIFEX_UNUSED(env);
 	UNIFEX_UNUSED(state);
-	state->os.get_main_loop()->finalize();
+	os.get_main_loop()->finalize();
 	Main::cleanup();
 }
