@@ -26,8 +26,9 @@ func _init():
 
 ```bash
 iex -S mix
-{:ok, state} = Godot.init([])
+{:ok, state} = Godot.init(["--help"])
 {:ok, state} = Godot.call(state, ["get_node_count"])
 {:ok, state} = Godot.call(state, ["get_method_list"])
 {:ok, state} = Godot.stop(state)
 ```
+

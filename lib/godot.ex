@@ -4,7 +4,7 @@ end
 
 defmodule Godot do
   use Unifex.Loader
-  @godot_timeout 60_000
+  @godot_timeout 5000
   @godot_frame 1.0 / 20.0 * 1000.0
   use GenServer
 
@@ -15,7 +15,7 @@ defmodule Godot do
   def init(args) do
       require Unifex.CNode
       {:ok, pid} = Unifex.CNode.start_link(:godot_elixir)
-      Unifex.CNode.call(pid, :init, [["godot"] ++ args ++ ["--disable-render-loop"]], @godot_timeout)
+      Unifex.CNode.call(pid, :init, [["godot"]] ++ args, @godot_timeout)
       state = %GodotState{pid: pid, last_tick: :os.system_time(:millisecond)}
       {:ok, state}
   end

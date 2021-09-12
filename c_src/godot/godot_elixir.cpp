@@ -23,17 +23,6 @@ UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int
 	state->ret = getcwd(state->cwd, PATH_MAX);
 
 	err = Main::setup(in_strings[0], list_length - 1, &in_strings[1]);
-	if (err != OK) {
-		return init_result_fail(env, state, "Godot can't be setup.");
-	}
-
-	if (Main::start()) {
-		os.run(); // it is actually the OS that decides how to run
-	}
-
-	if (err != OK) {
-		return init_result_fail(env, state, "Godot can't be setup.");
-	}
 	if (!Main::start()) {
 		return init_result_fail(env, state, "Godot can't start.");
 	}
