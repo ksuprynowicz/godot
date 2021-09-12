@@ -5,7 +5,7 @@ defmodule Godot.Mixfile do
     [
       app: :godot,
       compilers: [:unifex, :bundlex] \
-      [:elixir_make] \
+      ++ [:elixir_make] \
       ++ Mix.compilers,
       version: "0.1.0",
       deps: deps(),

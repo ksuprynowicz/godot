@@ -30,7 +30,7 @@ UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int
 	if (err != OK) {
 		return init_result_fail(env, state, "Godot can't start.");
 	}
-	os.get_main_loop()->initialize();
+	os.run();
 	return init_result_ok(env, state, err);
 }
 
@@ -88,18 +88,6 @@ UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 		} break;
 	}
 	return init_result_fail(env, state, "Call is invalid.");
-}
-
-UNIFEX_TERM iteration(UnifexEnv *env, MyState *state) {
-	if (!state) {
-		return iteration_result_fail(env, state, "Godot is not initialized.");
-	}
-	DisplayServer::get_singleton()->process_events(); // get rid of pending events
-	bool err = Main::iteration();
-	if (err != OK) {
-		return iteration_result_fail(env, state, "Godot can't iterate.");
-	}
-	return iteration_result_ok(env, state, err);
 }
 
 void handle_destroy_state(UnifexEnv *env, MyState *state) {
