@@ -28,7 +28,8 @@ func _init():
 iex -S mix
 {:ok, pid} = Godot.start_link(["--verbose", "--headless", "--path", "/nexus/V-Sekai/dance", "-e"])
 {:ok, pid} = Godot.start_link(["--verbose"])
-GenServer.call(pid, {:call, [["get_method_list", nil, nil, nil, nil, nil]]})
-GenServer.call(pid, {:call, [["get_node_count", nil, nil, nil, nil, nil]]})
+GenServer.call(pid, {:call, ["get_method_list", :nil, "", :string, "", :string, "", :string, "", :string, ""]}) 
+GenServer.call(pid, {:call, ["get", :string, "script", :string, "", :string, "", :string, "", :string, ""]}) 
+GenServer.call(pid, {:call, ["get_node_count", "", "", "", "", ""]}) 
 GenServer.stop(pid)
 ```

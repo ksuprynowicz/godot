@@ -39,15 +39,32 @@ UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int
 	return init_result_ok(env, state, err);
 }
 
-UNIFEX_TERM call(UnifexEnv *env, MyState *state, \
-		char * method, UnifexPayload * arg_1, UnifexPayload * arg_2, UnifexPayload * arg_3, UnifexPayload * arg_4, UnifexPayload * arg_5, UnifexPayload * arg_6) {
+UNIFEX_TERM call(UnifexEnv *env, MyState *state,
+		char *method,
+		char *type_1, UnifexPayload *arg_1,
+		char *type_2, UnifexPayload *arg_2,
+		char *type_3, UnifexPayload *arg_3,
+		char *type_4, UnifexPayload *arg_4,
+		char *type_5, UnifexPayload *arg_5) {
 	if (!state) {
 		return init_result_fail(env, state, "Godot is not initialized.");
 	}
 	if (!os.get_main_loop()) {
 		return init_result_fail(env, state, "Godot does not have a main loop.");
 	}
-	Variant res = os.get_main_loop()->call(method, arg_1->data, arg_2->data, arg_3->data, arg_4->data, arg_5->data, arg_6->data);
+	String call_method;
+	call_method.parse_utf8(method);
+	String arg_type_1;
+	arg_type_1.parse_utf8(type_1);
+	Array args;
+	Variant variant_1;
+	if (arg_type_1 == SNAME("string")) {
+		String arg_type_1;
+		arg_type_1.parse_utf8((const char *)arg_1->data, arg_1->size);
+		variant_1 = arg_type_1;
+		args.push_back(variant_1);
+	}
+	Variant res = os.get_main_loop()->callv(call_method, args);
 	switch (res.get_type()) {
 		case Variant::NIL: {
 			return init_result_fail(env, state, "Call is invalid.");

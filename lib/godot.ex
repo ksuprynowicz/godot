@@ -24,14 +24,8 @@ defmodule Godot.Loop do
   end
 
   @impl true
-  def handle_call({:call, \
-  args}, _from, state) do
-    [[method, arg_0, arg_1, \
-    arg_2, arg_3, \
-    arg_4, arg_5]] = args
-    res = Unifex.CNode.call(state.pid, :call, [method, arg_0, arg_1, \
-    arg_2, arg_3, \
-    arg_4, arg_5], @godot_timeout)
+  def handle_call({:call, args}, _from, state) do
+    res = Unifex.CNode.call(state.pid, :call, args, @godot_timeout)
     state = %{state | last_tick: :os.system_time(:millisecond)}
     {:reply, [res], state}
   end
