@@ -47,8 +47,7 @@ UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 	if (!os.get_main_loop()->get_script_instance()) {
 		return init_result_fail(env, state, "Godot does not have a script instance.");
 	}
-	Callable::CallError call_error;
-	Variant res = os.get_main_loop()->call(method, nullptr, 0, call_error);
+	Variant res = os.get_main_loop()->call(method);
 	switch (res.get_type()) {
 		case Variant::NIL: {
 			return init_result_fail(env, state, "Call is invalid.");
