@@ -1,10 +1,5 @@
 #include "godot_elixir.h"
 
-#include "core/string/string_builder.h"
-#include "main/main.h"
-#include "modules/gdscript/gdscript.h"
-#include "scene/main/node.h"
-
 static OS_LinuxBSD os;
 
 UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int list_length) {
@@ -25,7 +20,7 @@ UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int
 
 UNIFEX_TERM iteration(UnifexEnv *env, MyState *state, double delta) {
 	if (!state) {
-		return iteration_result_fail(env, state, "Godot is not initialized.");
+		return iteration_result_fail(env, state, "Godot is not initalized.");
 	}
 	bool err = os.get_main_loop()->process(delta);
 	if (err != OK) {
@@ -36,16 +31,16 @@ UNIFEX_TERM iteration(UnifexEnv *env, MyState *state, double delta) {
 
 UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 	if (!state) {
-		return init_result_fail(env, state, "Godot is not initialized.");
+		return call_result_fail(env, state, "Godot is not initalized.");
 	}
 	if (!os.get_main_loop()->get_script_instance()) {
-		return init_result_fail(env, state, "Godot does not have a script instance.");
+		return call_result_fail(env, state, "Godot does not have a script instance.");
 	}
 	Callable::CallError call_error;
 	Variant res = os.get_main_loop()->call(method, nullptr, 0, call_error);
 	switch (res.get_type()) {
 		case Variant::NIL: {
-			return init_result_fail(env, state, "Call is invalid.");
+			return call_result_fail(env, state, "Call is invalid.");
 		} break;
 		case Variant::BOOL: {
 			int res_int = res;
@@ -67,22 +62,13 @@ UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 			const char *res_string = res_char_string.get_data();
 			return call_result_ok_string(env, state, res_string);
 		} break;
-		case Variant::ARRAY: {
-			const Array array = res;
-			StringBuilder builder;
-			for (int32_t array_i = 0; array_i < array.size(); array_i++) {
-				builder.append(array[array_i]);
-			}
-			const CharString res_string = String(builder.as_string()).utf8();
-			return call_result_ok_string(env, state, res_string);
-		} break;
 		default: {
 			const CharString res_char_string = (String("Unsupported result: ") + String(res)).utf8();
 			const char *res_string = res_char_string.get_data();
-			return init_result_fail(env, state, res_string);
+			return call_result_fail(env, state, res_string);
 		} break;
 	}
-	return init_result_fail(env, state, "Call is invalid.");
+	return call_result_fail(env, state, "Call is invalid.");
 }
 
 void handle_destroy_state(UnifexEnv *env, MyState *state) {

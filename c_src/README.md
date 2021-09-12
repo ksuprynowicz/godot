@@ -8,17 +8,6 @@ mix compile
 
 Launch.
 
-```
-script = "\
-extends Node
-func _init():  \
-    var gltf_doc = GLTFDocument.new()  \
-    var packed_scene = PackedScene.new() \
-    var node = gltf_doc.import_scene(\"res://Fox.glb\") \
-    packed_scene.pack(node) \
-    ResourceSaver.save(\"res://ran.scn\", packed_scene, ResourceSaver.FLAG_COMPRESS)"
-```
-
 ```bash
 iex -S mix
 require Unifex.CNode
