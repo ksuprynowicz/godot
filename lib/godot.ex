@@ -11,7 +11,7 @@ defmodule Godot do
 
   def start_link(args) do
       {:ok, pid} = GenServer.start_link(__MODULE__, args)
-      state = %GodotState{pid: state.pid, last_tick: :os.system_time(:millisecond), result: []}
+      state = %GodotState{pid: pid, last_tick: :os.system_time(:millisecond), result: []}
       {:ok, state}
   end
 
