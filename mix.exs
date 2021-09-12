@@ -9,6 +9,7 @@ defmodule Godot.Mixfile do
       deps: deps(),
       extra_applications: [:logger],
       package: package(),
+      description: description(),
    ]
   end
 
@@ -23,6 +24,10 @@ defmodule Godot.Mixfile do
       {:unifex, "~> 0.7.0"},
       {:elixir_make, "~> 0.4", runtime: false},
     ]
+  end
+
+  defp description() do
+    "Godot as an Elixir library."
   end
 
   defp package do
