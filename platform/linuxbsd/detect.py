@@ -88,11 +88,6 @@ def get_flags():
 
 def configure(env):
 
-    ## Enable Shared library
-    if env["platform"] != "windows":
-        env.Append(CCFLAGS=["-fPIC"])
-        env.Append(LINKFLAGS=["-fPIC"])
-
     ## Build type
 
     if env["target"] == "release":
@@ -443,3 +438,8 @@ def configure(env):
     else:
         if env["use_llvm"]:
             env.Append(LIBS=["atomic"])
+
+    ## Enable Shared library
+    if env["platform"] != "windows":
+        env.Append(CCFLAGS=["-fPIC"])
+        env.Append(LINKFLAGS=["-fPIC"])
