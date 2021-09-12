@@ -3,7 +3,7 @@ defmodule GodotState do
 end
 
 defmodule Godot.Loop do
-  @godot_timeout 10_000
+  @godot_timeout 2_000
   @godot_frame 100
   use GenServer
   require Unifex.CNode
