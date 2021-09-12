@@ -72,6 +72,7 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
+          mix local.hex --force
           mix deps.get
           mix compile
           ls -l bin/
