@@ -31,6 +31,11 @@ jobs:
         run: |
           sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
             libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev libdbus-1-dev libudev-dev libxi-dev libxrandr-dev yasm
+      
+      # Install elixir dev
+      - name: Configure dependencies
+        run: |
+          sudo apt-get install elixir erlang-dev
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
@@ -67,7 +72,8 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons tools=yes tests=yes target=release_debug
+          mix deps.get
+          mix compile
           ls -l bin/
 
       - uses: actions/upload-artifact@v2
