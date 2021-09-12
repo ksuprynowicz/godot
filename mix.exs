@@ -4,7 +4,7 @@ defmodule Godot.Mixfile do
   def project do
     [
       app: :godot,
-      compilers: [:unifex, :bundlex] ++ Mix.compilers,
+      compilers: [:elixir_make, :unifex, :bundlex] ++ Mix.compilers,
       version: "0.1.0",
       deps: deps(),
       extra_applications: [:logger]
@@ -19,7 +19,8 @@ defmodule Godot.Mixfile do
 
   defp deps() do
     [
-      {:unifex, "~> 0.7.0"}
+      {:unifex, "~> 0.7.0"},
+      {:elixir_make, "~> 0.4", runtime: false},
     ]
   end
 end
