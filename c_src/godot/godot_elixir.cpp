@@ -34,14 +34,19 @@ UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int
 	return init_result_ok(env, state, err);
 }
 
-UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
+UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method, char **in_strings, unsigned int list_length) {
 	if (!state) {
 		return init_result_fail(env, state, "Godot is not initialized.");
 	}
 	if (!os.get_main_loop()) {
 		return init_result_fail(env, state, "Godot does not have a main loop.");
 	}
-	Variant res = os.get_main_loop()->call(method);
+	Array args;
+	args.resize(list_length);
+	for (int32_t arg_i = 0; arg_i < list_length; arg_i++) {
+		args[arg_i] = in_strings[arg_i];
+	}
+	Variant res = os.get_main_loop()->callv(method, args);
 	switch (res.get_type()) {
 		case Variant::NIL: {
 			return init_result_fail(env, state, "Call is invalid.");
