@@ -26,11 +26,8 @@ func _init():
 
 ```bash
 iex -S mix
-{:ok, state} = Godot.init(["--verbose", "--path", "/nexus/V-Sekai/dance", "--disable-render-loop"])
+{:ok, state} = Godot.init([])
 {:ok, state} = Godot.call(state, ["get_node_count"])
 {:ok, state} = Godot.call(state, ["get_method_list"])
 {:ok, state} = Godot.stop(state)
 ```
-
-Unifex.CNode.call(pid, :init, [["/nexus/V-Sekai/workspace/godot/bin/godot", "--verbose", "--headless", "--script", "./new_script.gd"]])
-
