@@ -17,8 +17,21 @@ UNIFEX_TERM init(UnifexEnv *env, MyState *state, char **in_strings, unsigned int
 		return init_result_fail(env, state, "Godot is already initialized.");
 	}
 	state = unifex_alloc_state(env);
+
+	setlocale(LC_CTYPE, "");
+
+	state->ret = getcwd(state->cwd, PATH_MAX);
+
 	err = Main::setup(in_strings[0], list_length - 1, &in_strings[1]);
-	if (err != OK) {		
+	if (err != OK) {
+		return init_result_fail(env, state, "Godot can't be setup.");
+	}
+
+	if (Main::start()) {
+		os.run(); // it is actually the OS that decides how to run
+	}
+
+	if (err != OK) {
 		return init_result_fail(env, state, "Godot can't be setup.");
 	}
 	if (!Main::start()) {
@@ -81,6 +94,12 @@ UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 void handle_destroy_state(UnifexEnv *env, MyState *state) {
 	UNIFEX_UNUSED(env);
 	UNIFEX_UNUSED(state);
-	os.get_main_loop()->finalize();
+
 	Main::cleanup();
+	if (state->ret) { // Previous getcwd was successful
+		if (chdir(state->cwd) != 0) {
+			ERR_PRINT("Couldn't return to previous working directory.");
+		}
+	}
+	free(state->cwd);
 }

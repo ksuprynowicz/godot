@@ -8,4 +8,6 @@ typedef struct MyState MyState;
 #include <limits.h>
 
 struct MyState {
+    char *cwd = (char *)malloc(PATH_MAX);
+	char *ret = nullptr;
 };
