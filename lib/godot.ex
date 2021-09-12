@@ -5,6 +5,7 @@ end
 defmodule Godot do
   use Unifex.Loader
   @godot_timeout 60_000
+  @godot_frame 1.0 / 20.0 * 1000.0
   use GenServer
 
   def start_link do
@@ -29,6 +30,6 @@ defmodule Godot do
   end
 
   defp schedule_work() do
-      Process.send_after(self(), :work, 33)
+      Process.send_after(self(), :work, @godot_frame)
   end
 end

@@ -90,15 +90,15 @@ UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method) {
 	return init_result_fail(env, state, "Call is invalid.");
 }
 
-UNIFEX_TERM iteration(UnifexEnv *env, MyState *state, double delta) {
+UNIFEX_TERM iteration(UnifexEnv *env, MyState *state) {
 	if (!state) {
 		return iteration_result_fail(env, state, "Godot is not initialized.");
 	}
-	bool err = os.get_main_loop()->process(delta);
-	if (err != OK) {
+	bool ok = Main::iteration();
+	if (!ok) {
 		return iteration_result_fail(env, state, "Godot can't iterate.");
 	}
-	return iteration_result_ok(env, state, err);
+	return iteration_result_ok(env, state, OK);
 }
 
 void handle_destroy_state(UnifexEnv *env, MyState *state) {
