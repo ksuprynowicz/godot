@@ -43,7 +43,7 @@ UNIFEX_TERM call(UnifexEnv *env, MyState *state, char *method, char **in_strings
 	}
 	Array args;
 	args.resize(list_length);
-	for (int32_t arg_i = 0; arg_i < list_length; arg_i++) {
+	for (uint32_t arg_i = 0; arg_i < list_length; arg_i++) {
 		args[arg_i] = in_strings[arg_i];
 	}
 	Variant res = os.get_main_loop()->callv(method, args);
