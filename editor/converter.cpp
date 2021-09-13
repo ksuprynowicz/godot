@@ -381,6 +381,59 @@ static const char *gdscript_function_renames[][2] = {
 	{ "update_configuration_warning", "update_configuration_warnings" }, // Node
 	{ "update_gizmo", "update_gizmos" }, // Node3D
 	{ "viewport_set_use_arvr", "viewport_set_use_xr" }, // RenderingServer
+	{ "is_network_master", "is_multiplayer_authority" }, // Node
+	{ "get_network_master", "get_multiplayer_authority" }, // Node
+	{ "get_importer_name", "_get_importer_name" }, // EditorImportPlugin
+	{ "get_import_options", "_get_import_options" }, // EditorImportPlugin
+	{ "get_import_order", "_get_import_order" }, // EditorImportPlugin
+	{ "get_option_visibility", "_get_option_visibility" }, // EditorImportPlugin
+	{ "get_preset_count", "_get_preset_count" }, // EditorImportPlugin
+	{ "get_preset_name", "_get_preset_name" }, // EditorImportPlugin
+	{ "get_save_extension", "_get_save_extension" }, // EditorImportPlugin
+	{ "is_handle_highlighted", "_is_handle_highlighted" }, // EditorNode3DGizmo
+	{ "can_be_hidden", "_can_be_hidden" }, // EditorNode3DGizmoPlugin
+	// { "create_gizmo", "_create_gizmo"}, // EditorNode3DGizmoPlugin - may be used
+	{ "is_handle_highlighted", "_is_handle_highlighted" }, // EditorNode3DGizmoPlugin
+	{ "is_selectable_when_hidden", "_is_selectable_when_hidden" }, // EditorNode3DGizmoPlugin
+	{ "forward_canvas_draw_over_viewport", "_forward_canvas_draw_over_viewport" }, // EditorPlugin
+	{ "forward_canvas_force_draw_over_viewport", "_forward_canvas_force_draw_over_viewport" }, // EditorPlugin
+	{ "forward_canvas_gui_input", "_forward_canvas_gui_input" }, // EditorPlugin
+	{ "forward_canvas_draw_over_viewport", "_forward_3d_draw_over_viewport" }, // EditorPlugin
+	{ "forward_canvas_force_draw_over_viewport", "_forward_3d_force_draw_over_viewport" }, // EditorPlugin
+	{ "forward_canvas_gui_input", "_forward_3d_gui_input" }, // EditorPlugin
+	{ "get_plugin_icon", "_get_plugin_icon" }, // EditorPlugin
+	{ "get_plugin_name", "_get_plugin_name" }, // EditorPlugin
+	{ "get_window_layout", "_get_window_layout" }, // EditorPlugin
+	{ "save_external_data", "_save_external_data" }, // EditorPlugin
+	{ "set_window_layout", "_set_window_layout" }, // EditorPlugin
+	{ "set_create_options", "_set_create_options" }, //  EditorResourcePicker
+	{ "get_closest_points_between_segments_2d", "get_closest_point_to_segment" }, //Geometry2D
+	{ "exclude_polygons_2d", "exclude_polygons" }, //Geometry2D
+	{ "convex_hull_2d", "convex_hull" }, //Geometry2D
+	{ "clip_polygons_2d", "clip_polygons" }, //Geometry2D
+	{ "get_closest_point_to_segment_2d", "get_closest_point_to_segment" }, //Geometry2D
+	{ "get_closest_point_to_segment_uncapped_2d", "get_closest_point_to_segment_uncapped" }, //Geometry2D
+	{ "intersect_polygons_2d", "intersect_polygons" }, //Geometry2D
+	{ "intersect_polyline_with_polygon_2d", "intersect_polyline_with_polygon" }, //Geometry2D
+	{ "line_intersects_line_2d", "line_intersects_line" }, //Geometry2D
+	{ "merge_polygons_2d", "merge_polygons" }, //Geometry2D
+	{ "offset_polygon_2d", "offset_polygon" }, //Geometry2D
+	{ "offset_polyline_2d", "offset_polyline" }, //Geometry2D
+	{ "segment_intersects_segment_2d", "segment_intersects_segment" }, //Geometry2D
+	{ "triangulate_delaunay_2d", "triangulate_delaunay" }, //Geometry2D
+	{ "set_as_bulk_array", "set_buffer" }, // MultiMesh
+	// { "is_refusing_new_network_connections", "is_refusing_new_connections"}, // MultiplayerAPI broke SceneTree
+	// { "has_network_peer", "has_multiplayer_peer"}, // MultiplayerAPI broke SceneTree
+	// { "get_network_peer", "has_multiplayer_peer"}, // MultiplayerAPI broke SceneTree
+	// { "get_network_connected_peers", "get_peers"}, // MultiplayerAPI broke SceneTree
+	// { "get_network_unique_id", "get_unique_id"}, // MultiplayerAPI broke SceneTree
+	// { "set_refuse_new_network_connections", "set_refuse_new_connections"}, // MultiplayerAPI broke SceneTree
+	{ "_set_editor_description", "set_editor_description" }, // Node
+	{ "set_network_master", "set_multiplayer_authority" }, //Node
+	{ "get_motion_remainder", "get_remainder" }, // PhysicsTestMotionResult2D
+	// { "get_motion", "get_travel"}, // PhysicsTestMotionResult2D broke ParalaxLayer
+	{ "targeting_property", "tween_property" }, // Tween
+	{ "targeting_method", "tween_method" }, // Tween
 
 	// Builtin types
 	{ "clamped", "clamp" }, // Vector2  // Be careful, this will be used everywhere
@@ -1109,19 +1162,16 @@ void GodotConverter4::converter() {
 
 		ERR_FAIL_COND_MSG(!FileAccess::exists("project.godot"), "Current directory doesn't contains any Godot 3 project");
 
-		// Check if folder contains valid Godot project
 		Error err = OK;
 		String project_godot_content = FileAccess::get_file_as_string("project.godot", &err);
 
 		ERR_FAIL_COND_MSG(err != OK, "Failed to read content of \"project.godot\" file.");
 		ERR_FAIL_COND_MSG(project_godot_content.find(conventer_text) != -1, "Project already was converted with this tool.");
 
-		// TODO - Re-enable this after testing
+		FileAccess *file = FileAccess::open("project.godot", FileAccess::WRITE);
+		ERR_FAIL_COND_MSG(!file, "Failed to open project.godot file.");
 
-		// 	FileAccess *file = FileAccess::open("project.godot", FileAccess::WRITE);
-		// 	ERR_FAIL_COND_MSG(!file, "Failed to open project.godot file.");
-
-		// 	file->store_string(conventer_text + "\n" + project_godot_content);
+		file->store_string(conventer_text + "\n" + project_godot_content);
 	}
 
 	Vector<String> collected_files = check_for_files();
@@ -1139,7 +1189,7 @@ void GodotConverter4::converter() {
 		//		print_line("DEBUG: Trying to format: " + file_name + " with size - " + itos(file_size / 1024) + " KB"); // DEBUG
 
 		String additional_reason;
-		if (file_size < 1024 * 250) {
+		if (file_size < 1024 * 250 * 999) {
 			// TSCN must be the same work exactly same as .gd file because it may contains builtin script
 			if (file_name.ends_with(".gd")) {
 				rename_classes(file_content); // Using only specialized function
@@ -1243,19 +1293,11 @@ void GodotConverter4::converter_validation() {
 
 		ERR_FAIL_COND_MSG(!FileAccess::exists("project.godot"), "Current directory doesn't contains any Godot 3 project");
 
-		// Check if folder
 		Error err = OK;
 		String project_godot_content = FileAccess::get_file_as_string("project.godot", &err);
 
 		ERR_FAIL_COND_MSG(err != OK, "Failed to read content of \"project.godot\" file.");
 		ERR_FAIL_COND_MSG(project_godot_content.find(conventer_text) != -1, "Project already was converted with this tool.");
-
-		// TODO - Re-enable this after testing
-
-		// 	FileAccess *file = FileAccess::open("project.godot", FileAccess::WRITE);
-		// 	ERR_FAIL_COND_MSG(!file, "Failed to open project.godot file.");
-
-		// 	file->store_string(conventer_text + "\n" + project_godot_content);
 	}
 
 	Vector<String> collected_files = check_for_files();
@@ -1282,7 +1324,7 @@ void GodotConverter4::converter_validation() {
 		Vector<String> changed_elements;
 
 		String additional_reason;
-		if (file_size < 1024 * 250) {
+		if (file_size < 1024 * 250 * 999) {
 			if (file_name.ends_with(".gd")) {
 				changed_elements.append_array(check_for_rename_classes(file_content));
 
@@ -1533,6 +1575,8 @@ bool GodotConverter4::test_conversion() {
 
 	valid = valid & test_conversion_single_additional("set_cell_item(a, b, c, d ,e) # AA", "set_cell_item( Vector3(a b c) , d ,e) # AA", &GodotConverter4::rename_gdscript_functions, "custom rename");
 	valid = valid & test_conversion_single_additional("set_cell_item(a, b)", "set_cell_item(a, b)", &GodotConverter4::rename_gdscript_functions, "custom rename");
+	valid = valid & test_conversion_single_additional("get_cell_item_orientation(a, b,c)", "get_cell_item_orientation(Vector3i(a, b,c))", &GodotConverter4::rename_gdscript_functions, "custom rename");
+	valid = valid & test_conversion_single_additional("get_cell_item(a, b,c)", "get_cell_item(Vector3i(a, b,c))", &GodotConverter4::rename_gdscript_functions, "custom rename");
 
 	valid = valid & test_conversion_single_additional("PackedStringArray(req_godot).join('.')", "'.'.join(PackedStringArray(req_godot))", &GodotConverter4::rename_gdscript_functions, "custom rename");
 	valid = valid & test_conversion_single_additional("=PackedStringArray(req_godot).join('.')", "='.'.join(PackedStringArray(req_godot))", &GodotConverter4::rename_gdscript_functions, "custom rename");
@@ -1978,7 +2022,7 @@ void GodotConverter4::rename_gdscript_functions(String &file_content) {
 	CRASH_COND(!reg_os_fullscreen.is_valid());
 
 	for (String &line : lines) {
-		if (line.find("mtx") == -1 && line.find("mutex") == -1) {
+		if (line.find("mtx") == -1 && line.find("mutex") == -1 && line.find("Mutex") == -1) {
 			line = reg_image_lock.sub(line, "false # $1.lock() # TODOConverter40, image no longer require locking, `false` helps to not broke one line if/else, so can be freely removed", true);
 			line = reg_image_unlock.sub(line, "false # $1.unlock() # TODOConverter40, image no longer require locking, `false` helps to not broke one line if/else, so can be freely removed", true);
 		}
@@ -2284,6 +2328,28 @@ void GodotConverter4::rename_gdscript_functions(String &file_content) {
 				Vector<String> parts = parse_arguments(line.substr(start, end));
 				if (parts.size() > 2) {
 					line = line.substr(0, start) + "set_cell_item( Vector3(" + parts[0] + parts[1] + parts[2] + ") " + connect_arguments(parts, 3) + ")" + line.substr(end + start);
+				}
+			}
+		}
+		//  get_cell_item(a, b, c)  ->   get_cell_item(Vector3i(a, b, c))
+		if (line.find("get_cell_item(") != -1) {
+			int start = line.find("get_cell_item(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 3) {
+					line = line.substr(0, start) + "get_cell_item( Vector3i(" + parts[0] + parts[1] + parts[2] + "))" + line.substr(end + start);
+				}
+			}
+		}
+		//  get_cell_item_orientation(a, b, c)  ->   get_cell_item_orientation(Vector3i(a, b, c))
+		if (line.find("get_cell_item_orientation(") != -1) {
+			int start = line.find("get_cell_item_orientation(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 3) {
+					line = line.substr(0, start) + "get_cell_item_orientation( Vector3i(" + parts[0] + parts[1] + parts[2] + "))" + line.substr(end + start);
 				}
 			}
 		}
