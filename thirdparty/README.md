@@ -451,19 +451,6 @@ Files extracted from the upstream source:
 - Files in `core/` folder.
 - `LICENSE.txt` and `CHANGELOG.md`
 
-
-## nanosvg
-
-- Upstream: https://github.com/memononen/nanosvg
-- Version: git (ccdb1995134d340a93fb20e3a3d323ccb3838dd0, 2021)
-- License: zlib
-
-Files extracted from the upstream source:
-
-- All .h files in `src/`
-- LICENSE.txt
-
-
 ## oidn
 
 - Upstream: https://github.com/OpenImageDenoise/oidn
@@ -597,6 +584,17 @@ comments and a patch is provided in the squish/ folder.
 Files extracted from upstream source:
 
 - `tinyexr.{cc,h}`
+
+
+## thorvg
+
+- Upstream: https://github.com/Samsung/thorvg
+- Version: 0.4.2 (88928070e796a3a4ac44eb8eb2f1b815b99ac900, 2021)
+- License: MIT
+
+Files extracted from upstream source:
+
+See `thorvg/update-thorvg.sh` for extraction instructions.
 
 
 ## vhacd
