@@ -99,6 +99,28 @@ public:
 		return inverse().xform(v);
 	}
 
+private:
+	enum Method {
+		INTERP_LERP,
+		INTERP_SLERP,
+		INTERP_SCALED_SLERP,
+	};
+	Quaternion _basis_to_quat_unchecked(const Basis &p_basis) const;
+	Quaternion _quat_slerp_unchecked(const Quaternion &p_from, const Quaternion &p_to, real_t p_fraction) const;
+	Basis _basis_slerp_unchecked(Basis p_from, Basis p_to, real_t p_fraction) const;
+	real_t _vec3_normalize(Vector3 &p_vec) const;
+	Vector3 _basis_orthonormalize(Basis &r_basis) const;
+	Quaternion::Method _test_basis(Basis p_basis, bool r_needed_normalize, Quaternion &r_quat) const;
+	bool _basis_is_orthogonal_any_scale(const Basis &p_basis) const;
+	bool _is_vector3_equal_approx(const Vector3 &p_a, const Vector3 &p_b, real_t p_tolerance) const;
+	bool _basis_is_orthogonal(const Basis &p_basis, real_t p_epsilon = 0.01) const;
+	real_t _vec3_sum(const Vector3 &p_pt) const;
+	void _interpolate_basis_scaled_slerp(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction) const;
+	void _interpolate_basis_linear(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction) const;
+	void _interpolate_basis_via_method(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction, Method p_method) const;
+	Quaternion::Method _find_interpolate_method(const Basis &p_a, const Basis &p_b) const;
+
+public:
 	_FORCE_INLINE_ void operator+=(const Quaternion &p_q);
 	_FORCE_INLINE_ void operator-=(const Quaternion &p_q);
 	_FORCE_INLINE_ void operator*=(const real_t &s);
