@@ -931,19 +931,6 @@ void Basis::_set_diagonal(const Vector3 &p_diag) {
 	elements[2][2] = p_diag.z;
 }
 
-Basis Basis::slerp(const Basis &p_to, const real_t &p_weight) const {
-	//consider scale
-	Quaternion from(*this);
-	Quaternion to(p_to);
-
-	Basis b(from.slerp(to, p_weight));
-	b.elements[0] *= Math::lerp(elements[0].length(), p_to.elements[0].length(), p_weight);
-	b.elements[1] *= Math::lerp(elements[1].length(), p_to.elements[1].length(), p_weight);
-	b.elements[2] *= Math::lerp(elements[2].length(), p_to.elements[2].length(), p_weight);
-
-	return b;
-}
-
 void Basis::rotate_sh(real_t *p_values) {
 	// code by John Hable
 	// http://filmicworlds.com/blog/simple-and-fast-spherical-harmonic-rotation/
@@ -1070,4 +1057,318 @@ Basis Basis::looking_at(const Vector3 &p_target, const Vector3 &p_up) {
 	Basis basis;
 	basis.set(v_x, v_y, v_z);
 	return basis;
+}
+
+Basis Basis::_basis_slerp_unchecked(Basis p_from, Basis p_to, real_t p_weight) {
+	Quaternion from = p_from;
+	Quaternion to = p_to;
+	Quaternion to1;
+	real_t omega, cosom, sinom, scale0, scale1;
+
+	// Calculate cosine.
+	cosom = from.dot(p_to);
+
+	// Adjust signs (if necessary).
+	if (cosom < 0.0) {
+		cosom = -cosom;
+		to1.x = -to.x;
+		to1.y = -to.y;
+		to1.z = -to.z;
+		to1.w = -to.w;
+	} else {
+		to1.x = to.x;
+		to1.y = to.y;
+		to1.z = to.z;
+		to1.w = to.w;
+	}
+
+	// Calculate coefficients.
+
+	if ((1.0 - cosom) > CMP_EPSILON) {
+		// The standard case (slerp).
+		omega = Math::acos(cosom);
+		sinom = Math::sin(omega);
+		scale0 = Math::sin((1.0 - p_weight) * omega) / sinom;
+		scale1 = Math::sin(p_weight * omega) / sinom;
+	} else {
+		// "from" and "to" quaternions are very close
+		//  ... so we can do a linear interpolation.
+		scale0 = 1.0 - p_weight;
+		scale1 = p_weight;
+	}
+	// Calculate final values.
+	return Quaternion(
+			scale0 * from.x + scale1 * to1.x,
+			scale0 * from.y + scale1 * to1.y,
+			scale0 * from.z + scale1 * to1.z,
+			scale0 * from.w + scale1 * to1.w);
+}
+
+Quaternion Basis::get_quaternion_unchecked() {
+	Basis m = *this;
+	real_t trace = m.elements[0][0] + m.elements[1][1] + m.elements[2][2];
+	real_t temp[4];
+
+	if (trace > 0.0) {
+		real_t s = Math::sqrt(trace + 1.0);
+		temp[3] = (s * 0.5);
+		s = 0.5 / s;
+
+		temp[0] = ((m.elements[2][1] - m.elements[1][2]) * s);
+		temp[1] = ((m.elements[0][2] - m.elements[2][0]) * s);
+		temp[2] = ((m.elements[1][0] - m.elements[0][1]) * s);
+	} else {
+		int i = m.elements[0][0] < m.elements[1][1]
+				? (m.elements[1][1] < m.elements[2][2] ? 2 : 1)
+				: (m.elements[0][0] < m.elements[2][2] ? 2 : 0);
+		int j = (i + 1) % 3;
+		int k = (i + 2) % 3;
+
+		real_t s = Math::sqrt(m.elements[i][i] - m.elements[j][j] - m.elements[k][k] + 1.0);
+		temp[i] = s * 0.5;
+		s = 0.5 / s;
+
+		temp[3] = (m.elements[k][j] - m.elements[j][k]) * s;
+		temp[j] = (m.elements[j][i] + m.elements[i][j]) * s;
+		temp[k] = (m.elements[k][i] + m.elements[i][k]) * s;
+	}
+
+	return Quaternion(temp[0], temp[1], temp[2], temp[3]);
+}
+
+Basis::Method Basis::_test_basis(Basis p_basis, bool r_needed_normalize, Quaternion &r_quat) {
+	Vector3 axis_length = Vector3(p_basis.get_axis(0).length_squared(),
+			p_basis.get_axis(1).length_squared(),
+			p_basis.get_axis(2).length_squared());
+
+	bool is_unit_scale = r_needed_normalize || !_is_vector3_equal_approx(axis_length, Vector3(1.0, 1.0, 1.0), (real_t)0.001);
+	if (is_unit_scale) {
+		// If the basis is not normalized (at least approximately), it will fail the checks needed for slerp.
+		// So we try to detect a scaled (but not sheared) basis, which we *can* slerp by normalizing first,
+		// and lerping the scales separately.
+
+		// if any of the axes are really small, it is unlikely to be a valid rotation, or is scaled too small to deal with float error.
+		const real_t sl_epsilon = 0.00001;
+		if ((axis_length.x < sl_epsilon) ||
+				(axis_length.y < sl_epsilon) ||
+				(axis_length.z < sl_epsilon)) {
+			return BASIS_INTERP_LERP;
+		}
+
+		// Normalize the basis.
+		Basis norm_basis = p_basis;
+
+		axis_length.x = Math::sqrt(axis_length.x);
+		axis_length.y = Math::sqrt(axis_length.y);
+		axis_length.z = Math::sqrt(axis_length.z);
+
+		norm_basis.set_axis(0, norm_basis.get_axis(0) / axis_length.x);
+		norm_basis.set_axis(1, norm_basis.get_axis(1) / axis_length.y);
+		norm_basis.set_axis(2, norm_basis.get_axis(2) / axis_length.z);
+
+		// This doesn't appear necessary, as the later checks will catch it.
+		// if (!_basis_is_orthogonal_any_scale(norm_basis)) {
+		// return INTERP_LERP;
+		// }
+
+		p_basis = norm_basis;
+
+		p_basis.orthonormalize();
+
+		// If we needed to normalize one of the two basis, we will need to normalize both,
+		// regardless of whether the 2nd needs it, just to make sure it takes the path to return
+		// INTERP_SCALED_LERP on the 2nd call of _test_basis.
+		r_needed_normalize = true;
+	}
+
+	// Apply less stringent tests than the built in slerp, the standard Godot slerp
+	// is too susceptible to float error to be useful
+	real_t det = p_basis.determinant();
+	if (!Math::is_equal_approx(det, 1, (real_t)0.01)) {
+		return BASIS_INTERP_LERP;
+	}
+
+	if (!_basis_is_orthogonal(p_basis)) {
+		return BASIS_INTERP_LERP;
+	}
+
+	// This could possibly be less stringent too, check this.
+	r_quat = p_basis.get_quaternion_unchecked();
+	if (!r_quat.is_normalized()) {
+		return BASIS_INTERP_LERP;
+	}
+
+	return r_needed_normalize ? BASIS_INTERP_SCALED_SLERP : BASIS_INTERP_SLERP;
+}
+
+Vector3 Basis::_basis_orthonormalize(Basis &r_basis) {
+	// Returns lengths.
+	// Gram-Schmidt Process
+
+	Vector3 x = r_basis.get_axis(0);
+	Vector3 y = r_basis.get_axis(1);
+	Vector3 z = r_basis.get_axis(2);
+
+	Vector3 lengths;
+
+	lengths.x = _vector3_normalize(x);
+	y = (y - x * (x.dot(y)));
+	lengths.y = _vector3_normalize(y);
+	z = (z - x * (x.dot(z)) - y * (y.dot(z)));
+	lengths.z = _vector3_normalize(z);
+
+	r_basis.set_axis(0, x);
+	r_basis.set_axis(1, y);
+	r_basis.set_axis(2, z);
+
+	return lengths;
+}
+
+real_t Basis::_vector3_normalize(Vector3 &p_vec) {
+	// Returns the length after normalization.
+	real_t lengthsq = p_vec.length_squared();
+	if (lengthsq == 0) {
+		p_vec.x = p_vec.y = p_vec.z = 0;
+		return 0.0;
+	}
+	real_t length = Math::sqrt(lengthsq);
+	p_vec.x /= length;
+	p_vec.y /= length;
+	p_vec.z /= length;
+	return length;
+}
+
+bool Basis::_basis_is_orthogonal(const Basis &p_basis, real_t p_epsilon) {
+	Basis identity;
+	Basis m = p_basis * p_basis.transposed();
+
+	// Test stringently than the standard slerp.
+	if (!_is_vector3_equal_approx(m[0], identity[0], p_epsilon) || !_is_vector3_equal_approx(m[1], identity[1], p_epsilon) || !_is_vector3_equal_approx(m[2], identity[2], p_epsilon)) {
+		return false;
+	}
+	return true;
+}
+
+bool Basis::_is_vector3_equal_approx(const Vector3 &p_a, const Vector3 &p_b, real_t p_tolerance) {
+	return Math::is_equal_approx(p_a.x, p_b.x, p_tolerance) && Math::is_equal_approx(p_a.y, p_b.y, p_tolerance) && Math::is_equal_approx(p_a.z, p_b.z, p_tolerance);
+}
+
+bool Basis::_basis_is_orthogonal_any_scale(const Basis &p_basis) {
+	// This check doesn't seem to be needed but is preserved in case of bugs.
+	Vector3 cross = p_basis.get_axis(0).cross(p_basis.get_axis(1));
+	real_t l = _vector3_normalize(cross);
+	// The numbers are too small, revert to lerp.
+	if (l < 0.001) {
+		return false;
+	}
+
+	const real_t epsilon = 0.9995;
+
+	real_t dot = cross.dot(p_basis.get_axis(2));
+	if (dot < epsilon) {
+		return false;
+	}
+
+	cross = p_basis.get_axis(1).cross(p_basis.get_axis(2));
+	l = _vector3_normalize(cross);
+	// The numbers are too small, revert to lerp.
+	if (l < 0.001) {
+		return false;
+	}
+
+	dot = cross.dot(p_basis.get_axis(0));
+	if (dot < epsilon) {
+		return false;
+	}
+
+	return true;
+}
+
+Basis::Method Basis::find_basis_interpolate_method(const Basis &p_a, const Basis &p_b) {
+	bool needed_normalize = false;
+
+	Quaternion q0;
+	Method method = _test_basis(p_a, needed_normalize, q0);
+	if (method == BASIS_INTERP_LERP) {
+		return method;
+	}
+
+	Quaternion q1;
+	method = _test_basis(p_b, needed_normalize, q1);
+	if (method == BASIS_INTERP_LERP) {
+		return method;
+	}
+
+	// Are they close together?
+	// Apply the same test that will revert to lerp as
+	// is present in the slerp routine.
+	// Calculate cosine.
+	real_t cosom = Math::abs(q0.dot(q1));
+	if ((1.0 - cosom) <= CMP_EPSILON) {
+		return BASIS_INTERP_LERP;
+	}
+
+	return method;
+}
+
+void Basis::interpolate_basis_via_method(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction, Method p_method) {
+	switch (p_method) {
+		default: {
+			interpolate_basis_linear(p_prev, p_curr, r_result, p_fraction);
+		} break;
+		case BASIS_INTERP_SLERP: {
+			r_result = _basis_slerp_unchecked(p_prev, p_curr, p_fraction);
+		} break;
+		case BASIS_INTERP_SCALED_SLERP: {
+			interpolate_basis_scaled_slerp(p_prev, p_curr, r_result, p_fraction);
+		} break;
+	}
+}
+
+void Basis::interpolate_basis_linear(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction) {
+	for (int n = 0; n < 3; n++) {
+		r_result.elements[n] = p_prev.elements[n].lerp(p_curr.elements[n], p_fraction);
+	}
+
+	// It turns out we need to guard against zero scale basis.
+	// This is kind of silly, as we should probably fix the bugs elsewhere in Godot that can't deal with
+	// zero scale, but until that time...
+	for (int n = 0; n < 3; n++) {
+		Vector3 &axis = r_result[n];
+
+		// not ok, this could cause errors due to bugs elsewhere,
+		// so we will bodge set this to a small value
+		const real_t smallest = 0.0001;
+		const real_t smallest_squared = smallest * smallest;
+		if (axis.length_squared() < smallest_squared) {
+			// setting a different component to the smallest
+			// helps prevent the situation where all the axes are pointing in the same direction,
+			// which could be a problem for e.g. cross products..
+			axis[n] = smallest;
+		}
+	}
+}
+
+void Basis::interpolate_basis_scaled_slerp(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction) {
+	Basis b_prev = p_prev;
+	Basis b_curr = p_curr;
+
+	// Normalize both lengths and find lengths.
+	Vector3 lengths_prev = _basis_orthonormalize(b_prev);
+	Vector3 lengths_curr = _basis_orthonormalize(b_curr);
+
+	r_result = _basis_slerp_unchecked(b_prev, b_curr, p_fraction);
+
+	// As the result is now unit length basis, we need to scale.
+	Vector3 lengths_lerped = lengths_prev + ((lengths_curr - lengths_prev) * p_fraction);
+
+	// Keep a note that the column / row order of the basis is weird,
+	// so keep an eye for bugs with this.
+	r_result[0] *= lengths_lerped;
+	r_result[1] *= lengths_lerped;
+	r_result[2] *= lengths_lerped;
+}
+
+real_t Basis::_vector3_sum(const Vector3 &p_pt) {
+	return p_pt.x + p_pt.y + p_pt.z;
 }

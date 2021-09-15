@@ -83,16 +83,11 @@ void Transform3D::set_look_at(const Vector3 &p_eye, const Vector3 &p_target, con
 Transform3D Transform3D::interpolate_with(const Transform3D &p_transform, real_t p_c) const {
 	/* not sure if very "efficient" but good enough? */
 
-	Vector3 src_scale = basis.get_scale();
-	Quaternion src_rot = basis.get_rotation_quaternion();
 	Vector3 src_loc = origin;
-
-	Vector3 dst_scale = p_transform.basis.get_scale();
-	Quaternion dst_rot = p_transform.basis.get_rotation_quaternion();
 	Vector3 dst_loc = p_transform.origin;
 
 	Transform3D interp;
-	interp.basis.set_quaternion_scale(src_rot.slerp(dst_rot, p_c).normalized(), src_scale.lerp(dst_scale, p_c));
+	interp.basis = basis.slerp(p_transform.basis, p_c);
 	interp.origin = src_loc.lerp(dst_loc, p_c);
 
 	return interp;
