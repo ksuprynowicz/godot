@@ -192,6 +192,7 @@ static const char *gdscript_function_renames[][2] = {
 	{ "get_bound_child_nodes_to_bone", "get_bone_children" }, // Skeleton3D
 	{ "get_cancel", "get_cancel_button" }, // ConfirmationDialog
 	{ "get_caption", "_get_caption" }, // AnimationNode
+	{ "get_camera", "get_camera_3d" }, // Viewport -> this is also convertable to get_camera_2d
 	{ "get_cast_to", "get_target_position" }, // RayCast2D, RayCast3D
 	{ "get_child_by_name", "_get_child_by_name" }, // AnimationNode
 	{ "get_child_nodes", "_get_child_nodes" }, // AnimationNode
@@ -390,17 +391,13 @@ static const char *gdscript_function_renames[][2] = {
 	{ "get_preset_count", "_get_preset_count" }, // EditorImportPlugin
 	{ "get_preset_name", "_get_preset_name" }, // EditorImportPlugin
 	{ "get_save_extension", "_get_save_extension" }, // EditorImportPlugin
-	{ "is_handle_highlighted", "_is_handle_highlighted" }, // EditorNode3DGizmo
+	{ "is_handle_highlighted", "_is_handle_highlighted" }, // EditorNode3DGizmo, EditorNode3DGizmoPlugin
 	{ "can_be_hidden", "_can_be_hidden" }, // EditorNode3DGizmoPlugin
 	// { "create_gizmo", "_create_gizmo"}, // EditorNode3DGizmoPlugin - may be used
-	{ "is_handle_highlighted", "_is_handle_highlighted" }, // EditorNode3DGizmoPlugin
 	{ "is_selectable_when_hidden", "_is_selectable_when_hidden" }, // EditorNode3DGizmoPlugin
 	{ "forward_canvas_draw_over_viewport", "_forward_canvas_draw_over_viewport" }, // EditorPlugin
 	{ "forward_canvas_force_draw_over_viewport", "_forward_canvas_force_draw_over_viewport" }, // EditorPlugin
 	{ "forward_canvas_gui_input", "_forward_canvas_gui_input" }, // EditorPlugin
-	{ "forward_canvas_draw_over_viewport", "_forward_3d_draw_over_viewport" }, // EditorPlugin
-	{ "forward_canvas_force_draw_over_viewport", "_forward_3d_force_draw_over_viewport" }, // EditorPlugin
-	{ "forward_canvas_gui_input", "_forward_3d_gui_input" }, // EditorPlugin
 	{ "get_plugin_icon", "_get_plugin_icon" }, // EditorPlugin
 	{ "get_plugin_name", "_get_plugin_name" }, // EditorPlugin
 	{ "get_window_layout", "_get_window_layout" }, // EditorPlugin
@@ -807,13 +804,16 @@ static const char *shaders_renames[][2] = {
 };
 
 static const char *class_renames[][2] = {
-	//	{ "BulletPhysicsDirectBodyState", "BulletPhysicsDirectBodyState3D" }, // Class is not visible in ClassDB
-	//	{ "BulletPhysicsServer", "BulletPhysicsServer3D" }, // Class is not visible in ClassDB
-	//	{ "Physics2DDirectBodyStateSW", "PhysicsDirectBodyState2DSW" }, // Class is not visible in ClassDB
-	//	{ "Physics2DShapeQueryResult", "PhysicsShapeQueryResult2D" }, // Class is not visible in ClassDB
-	//	{ "PhysicsShapeQueryResult", "PhysicsShapeQueryResult3D" }, // Class is not visible in ClassDB
+	// { "BulletPhysicsDirectBodyState", "BulletPhysicsDirectBodyState3D" }, // Class is not visible in ClassDB
+	// { "BulletPhysicsServer", "BulletPhysicsServer3D" }, // Class is not visible in ClassDB
+	// { "Physics2DDirectBodyStateSW", "PhysicsDirectBodyState2DSW" }, // Class is not visible in ClassDB
+	// { "Physics2DShapeQueryResult", "PhysicsShapeQueryResult2D" }, // Class is not visible in ClassDB
+	// { "PhysicsShapeQueryResult", "PhysicsShapeQueryResult3D" }, // Class is not visible in ClassDB
 	// { "GDScriptFunctionState", "Node3D" }, // TODO - not sure to which should be changed
 	// { "GDScriptNativeClass", "Node3D" }, // TODO - not sure to which should be changed
+	// { "Physics2DDirectBodyStateSW",""}, // TODO ?
+	// { "InputDefault",""}, // TODO ?
+	{ "EditorNavigationMeshGenerator", "NavigationMeshGenerator" },
 	{ "ARVRAnchor", "XRAnchor3D" },
 	{ "ARVRCamera", "XRCamera3D" },
 	{ "ARVRController", "XRController3D" },
@@ -879,8 +879,10 @@ static const char *class_renames[][2] = {
 	{ "LargeTexture", "ImageTexture" },
 	{ "Light", "Light3D" },
 	{ "Light2D", "PointLight2D" },
-	{ "LineShape2D", "WorldMarginShape2D" },
-	{ "Listener", "Listener3D" },
+	{ "LineShape2D", "WorldBoundaryShape2D" },
+	{ "Listener2D", "AudioListener2D" },
+	{ "RigidBody2D", "RigidDynamicBody2D" },
+	{ "Listener", "AudioListener3D" },
 	{ "MeshInstance", "MeshInstance3D" },
 	{ "MultiMeshInstance", "MultiMeshInstance3D" },
 	{ "Navigation", "Node3D" },
@@ -916,7 +918,7 @@ static const char *class_renames[][2] = {
 	{ "PhysicsShapeQueryParameters", "PhysicsShapeQueryParameters3D" },
 	{ "PhysicsTestMotionResult", "PhysicsTestMotionResult3D" },
 	{ "PinJoint", "PinJoint3D" },
-	{ "PlaneShape", "WorldMarginShape3D" },
+	{ "PlaneShape", "WorldBoundaryShape3D" },
 	{ "PopupDialog", "Popup" },
 	{ "ProceduralSky", "Sky" },
 	{ "ProximityGroup", "ProximityGroup3D" },
@@ -924,14 +926,15 @@ static const char *class_renames[][2] = {
 	{ "Reference", "RefCounted" }, // Be careful, this will be used everywhere
 	{ "RemoteTransform", "RemoteTransform3D" },
 	{ "ResourceInteractiveLoader", "ResourceLoader" },
-	{ "RigidBody", "RigidBody3D" },
+	{ "RigidBody", "RigidDynamicBody3D" },
 	{ "Shape", "Shape3D" }, // Be careful, this will be used everywhere
 	{ "ShortCut", "Shortcut" },
 	{ "Skeleton", "Skeleton3D" },
 	{ "SkeletonIK", "SkeletonIK3D" },
 	{ "SliderJoint", "SliderJoint3D" },
-	{ "SoftBody", "SoftBody3D" },
+	{ "SoftBody", "SoftDynamicBody3D" },
 	{ "Spatial", "Node3D" },
+	{ "Occluder", "OccluderInstance3D" },
 	{ "SpatialGizmo", "Node3DGizmo" },
 	{ "SpatialMaterial", "StandardMaterial3D" },
 	{ "SpatialVelocityTracker", "VelocityTracker3D" },
@@ -1189,7 +1192,7 @@ void GodotConverter4::converter() {
 		//		print_line("DEBUG: Trying to format: " + file_name + " with size - " + itos(file_size / 1024) + " KB"); // DEBUG
 
 		String additional_reason;
-		if (file_size < 1024 * 250 * 999) {
+		if (file_size < 1024 * 250 * 1) {
 			// TSCN must be the same work exactly same as .gd file because it may contains builtin script
 			if (file_name.ends_with(".gd")) {
 				rename_classes(file_content); // Using only specialized function
@@ -1324,7 +1327,7 @@ void GodotConverter4::converter_validation() {
 		Vector<String> changed_elements;
 
 		String additional_reason;
-		if (file_size < 1024 * 250 * 999) {
+		if (file_size < 1024 * 250 * 1) {
 			if (file_name.ends_with(".gd")) {
 				changed_elements.append_array(check_for_rename_classes(file_content));
 
@@ -1517,10 +1520,13 @@ bool GodotConverter4::test_conversion() {
 	valid = valid & test_conversion_single_additional("tool", "@tool", &GodotConverter4::rename_gdscript_keywords, "gdscript keyword");
 	valid = valid & test_conversion_single_additional("\n    tool", "\n    tool", &GodotConverter4::rename_gdscript_keywords, "gdscript keyword");
 	valid = valid & test_conversion_single_additional("\n\ntool", "\n\n@tool", &GodotConverter4::rename_gdscript_keywords, "gdscript keyword");
-	valid = valid & test_conversion_single_additional("\n\nmaster func", "\n\n@rpc(master) func", &GodotConverter4::rename_gdscript_keywords, "gdscript keyword");
-	valid = valid & test_conversion_single_additional("\n\npuppet func", "\n\n@rpc(puppet) func", &GodotConverter4::rename_gdscript_keywords, "gdscript keyword");
+	valid = valid & test_conversion_single_additional("\n\nmaster func", "\n\n@rpc(any) func", &GodotConverter4::rename_gdscript_keywords, "gdscript keyword");
+	valid = valid & test_conversion_single_additional("\n\npuppet func", "\n\n@rpc(auth) func", &GodotConverter4::rename_gdscript_keywords, "gdscript keyword");
 	valid = valid & test_conversion_single_additional("\n\nremote func", "\n\n@rpc(any) func", &GodotConverter4::rename_gdscript_keywords, "gdscript keyword");
 	valid = valid & test_conversion_single_additional("\n\nremotesync func", "\n\n@rpc(any,sync) func", &GodotConverter4::rename_gdscript_keywords, "gdscript keyword");
+	valid = valid & test_conversion_single_additional("\n\nsync func", "\n\n@rpc(any,sync) func", &GodotConverter4::rename_gdscript_keywords, "gdscript keyword");
+	valid = valid & test_conversion_single_additional("\n\npuppetsync func", "\n\n@rpc(auth,sync) func", &GodotConverter4::rename_gdscript_keywords, "gdscript keyword");
+	valid = valid & test_conversion_single_additional("\n\nmastersync func", "\n\n@rpc(any,sync) func", &GodotConverter4::rename_gdscript_keywords, "gdscript keyword");
 
 	valid = valid & test_conversion_single_additional("var size : Vector2 = Vector2() setget set_function , get_function", "var size : Vector2 = Vector2() :\n	get:\n		return size # TODOConverter40 Copy here content of get_function\n	set(mod_value):\n		mod_value  # TODOConverter40 Copy here content of set_function", &GodotConverter4::rename_gdscript_functions, "custom rename");
 	valid = valid & test_conversion_single_additional("var size : Vector2 = Vector2() setget set_function , ", "var size : Vector2 = Vector2() :\n	get:\n		return size # TODOConverter40 Non existent get function \n	set(mod_value):\n		mod_value  # TODOConverter40 Copy here content of set_function", &GodotConverter4::rename_gdscript_functions, "custom rename");
@@ -1700,7 +1706,7 @@ bool GodotConverter4::test_single_array(const char *array[][2], bool ignore_seco
 			}
 		}
 		if (names.has(array[current_index][0])) {
-			ERR_PRINT(String("Found duplicated things, pair ( -> ") + array[current_index][0] + ", " + array[current_index][1] + ")");
+			ERR_PRINT(String("Found duplicated things, pair ( -> ") + array[current_index][0] + " , " + array[current_index][1] + ")");
 			valid = false;
 		}
 		names.append(array[current_index][0]);
@@ -1712,7 +1718,7 @@ bool GodotConverter4::test_single_array(const char *array[][2], bool ignore_seco
 			}
 		}
 		if (names.has(array[current_index][1])) {
-			ERR_PRINT(String("Found duplicated things, pair (") + array[current_index][0] + ", ->" + array[current_index][1] + ")");
+			ERR_PRINT(String("Found duplicated things, pair (") + array[current_index][0] + " , ->" + array[current_index][1] + ")");
 			valid = false;
 		}
 		if (!ignore_second_check) {
@@ -2214,7 +2220,7 @@ void GodotConverter4::rename_gdscript_functions(String &file_content) {
 			if (end > -1) {
 				Vector<String> parts = parse_arguments(line.substr(start, end));
 				if (parts.size() == 2) {
-					line = line.substr(0, start) + "await " + parts[0] + "." + parts[1].replace("\"", "").replace(" ", "") + line.substr(end + start);
+					line = line.substr(0, start) + "await " + parts[0] + "." + parts[1].replace("\"", "").replace("\'", "").replace(" ", "") + line.substr(end + start);
 				}
 			}
 		}
@@ -2338,7 +2344,7 @@ void GodotConverter4::rename_gdscript_functions(String &file_content) {
 			if (end > -1) {
 				Vector<String> parts = parse_arguments(line.substr(start, end));
 				if (parts.size() == 3) {
-					line = line.substr(0, start) + "get_cell_item( Vector3i(" + parts[0] + parts[1] + parts[2] + "))" + line.substr(end + start);
+					line = line.substr(0, start) + "get_cell_item(Vector3i(" + parts[0] + "," + parts[1] + "," + parts[2] + "))" + line.substr(end + start);
 				}
 			}
 		}
@@ -2349,7 +2355,7 @@ void GodotConverter4::rename_gdscript_functions(String &file_content) {
 			if (end > -1) {
 				Vector<String> parts = parse_arguments(line.substr(start, end));
 				if (parts.size() == 3) {
-					line = line.substr(0, start) + "get_cell_item_orientation( Vector3i(" + parts[0] + parts[1] + parts[2] + "))" + line.substr(end + start);
+					line = line.substr(0, start) + "get_cell_item_orientation(Vector3i(" + parts[0] + "," + parts[1] + "," + parts[2] + "))" + line.substr(end + start);
 				}
 			}
 		}
@@ -2396,56 +2402,88 @@ Vector<String> GodotConverter4::check_for_rename_gdscript_functions(Vector<Strin
 	return found_things;
 }
 
-void GodotConverter4::rename_gdscript_keywords(String &file_content) {
-	RegEx reg_tool = RegEx("([\n]+)tool");
-	CRASH_COND(!reg_tool.is_valid());
-	file_content = reg_tool.sub(file_content, "$1@tool", true);
-	RegEx reg_tool2 = RegEx("^tool");
-	CRASH_COND(!reg_tool2.is_valid());
-	file_content = reg_tool2.sub(file_content, "@tool", true);
-
+void GodotConverter4::rename_gdscript_keywords(String &file_content){
+	{ RegEx reg_tool = RegEx("([\n]+)tool");
+CRASH_COND(!reg_tool.is_valid());
+file_content = reg_tool.sub(file_content, "$1@tool", true);
+RegEx reg_tool2 = RegEx("^tool");
+CRASH_COND(!reg_tool2.is_valid());
+file_content = reg_tool2.sub(file_content, "@tool", true);
+}
+{
 	RegEx reg_export = RegEx("([\n\t]+)export\\b");
 	CRASH_COND(!reg_export.is_valid());
 	file_content = reg_export.sub(file_content, "$1@export", true);
 	RegEx reg_export2 = RegEx("^export");
 	CRASH_COND(!reg_export2.is_valid());
 	file_content = reg_export2.sub(file_content, "@export", true);
-
+}
+{
 	RegEx reg_onready = RegEx("([\n]+)onready");
 	CRASH_COND(!reg_onready.is_valid());
 	file_content = reg_onready.sub(file_content, "$1@onready", true);
 	RegEx reg_onready2 = RegEx("^onready");
 	CRASH_COND(!reg_onready2.is_valid());
 	file_content = reg_onready2.sub(file_content, "@onready", true);
-
+}
+{
 	RegEx reg_master = RegEx("([\n]+)master func");
 	CRASH_COND(!reg_master.is_valid());
-	file_content = reg_master.sub(file_content, "$1@rpc(master) func", true);
+	file_content = reg_master.sub(file_content, "$1@rpc(any) func", true);
 	RegEx reg_master2 = RegEx("^master func");
 	CRASH_COND(!reg_master2.is_valid());
-	file_content = reg_master2.sub(file_content, "@rpc(master) func", true);
-
+	file_content = reg_master2.sub(file_content, "@rpc(any) func", true);
+}
+{
 	RegEx reg_puppet = RegEx("([\n]+)puppet func");
 	CRASH_COND(!reg_puppet.is_valid());
-	file_content = reg_puppet.sub(file_content, "$1@rpc(puppet) func", true);
+	file_content = reg_puppet.sub(file_content, "$1@rpc(auth) func", true);
 	RegEx reg_puppet2 = RegEx("^puppet func");
 	CRASH_COND(!reg_puppet2.is_valid());
-	file_content = reg_puppet2.sub(file_content, "@rpc(puppet) func", true);
-
+	file_content = reg_puppet2.sub(file_content, "@rpc(auth) func", true);
+}
+{
 	RegEx reg_remote = RegEx("([\n]+)remote func");
 	CRASH_COND(!reg_remote.is_valid());
 	file_content = reg_remote.sub(file_content, "$1@rpc(any) func", true);
 	RegEx reg_remote2 = RegEx("^remote func");
 	CRASH_COND(!reg_remote2.is_valid());
 	file_content = reg_remote2.sub(file_content, "@rpc(any) func", true);
-
+}
+{
 	RegEx reg_remotesync = RegEx("([\n]+)remotesync func");
 	CRASH_COND(!reg_remotesync.is_valid());
 	file_content = reg_remotesync.sub(file_content, "$1@rpc(any,sync) func", true);
 	RegEx reg_remotesync2 = RegEx("^remotesync func");
 	CRASH_COND(!reg_remotesync2.is_valid());
 	file_content = reg_remotesync2.sub(file_content, "@rpc(any,sync) func", true);
-};
+}
+{
+	RegEx reg_sync = RegEx("([\n]+)sync func");
+	CRASH_COND(!reg_sync.is_valid());
+	file_content = reg_sync.sub(file_content, "$1@rpc(any,sync) func", true);
+	RegEx reg_sync2 = RegEx("^sync func");
+	CRASH_COND(!reg_sync2.is_valid());
+	file_content = reg_sync2.sub(file_content, "@rpc(any,sync) func", true);
+}
+{
+	RegEx reg_puppetsync = RegEx("([\n]+)puppetsync func");
+	CRASH_COND(!reg_puppetsync.is_valid());
+	file_content = reg_puppetsync.sub(file_content, "$1@rpc(auth,sync) func", true);
+	RegEx reg_puppetsync2 = RegEx("^puppetsync func");
+	CRASH_COND(!reg_puppetsync2.is_valid());
+	file_content = reg_puppetsync2.sub(file_content, "@rpc(auth,sync) func", true);
+}
+{
+	RegEx reg_mastersync = RegEx("([\n]+)mastersync func");
+	CRASH_COND(!reg_mastersync.is_valid());
+	file_content = reg_mastersync.sub(file_content, "$1@rpc(any,sync) func", true);
+	RegEx reg_mastersync2 = RegEx("^mastersync func");
+	CRASH_COND(!reg_mastersync2.is_valid());
+	file_content = reg_mastersync2.sub(file_content, "@rpc(any,sync) func", true);
+}
+}
+;
 
 Vector<String> GodotConverter4::check_for_rename_gdscript_keywords(Vector<String> &file_content) {
 	Vector<String> found_things;
