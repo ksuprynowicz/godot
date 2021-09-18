@@ -40,15 +40,15 @@ class GLTFMesh : public Resource {
 	GDCLASS(GLTFMesh, Resource);
 
 private:
-	Ref<EditorSceneImporterMesh> mesh;
+	Ref<Mesh> mesh;
 	Vector<float> blend_weights;
 
 protected:
 	static void _bind_methods();
 
 public:
-	Ref<EditorSceneImporterMesh> get_mesh();
-	void set_mesh(Ref<EditorSceneImporterMesh> p_mesh);
+	Ref<Mesh> get_mesh();
+	void set_mesh(Ref<Mesh> p_mesh);
 	Vector<float> get_blend_weights();
 	void set_blend_weights(Vector<float> p_blend_weights);
 };
