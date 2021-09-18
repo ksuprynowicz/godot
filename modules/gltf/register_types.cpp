@@ -38,6 +38,7 @@
 #include "gltf_buffer_view.h"
 #include "gltf_camera.h"
 #include "gltf_document.h"
+#include "gltf_document_extension.h"
 #include "gltf_light.h"
 #include "gltf_mesh.h"
 #include "gltf_node.h"
@@ -79,6 +80,10 @@ void register_gltf_types() {
 	GDREGISTER_CLASS(GLTFCamera);
 	GDREGISTER_CLASS(GLTFLight);
 	GDREGISTER_CLASS(GLTFState);
+#if TOOLS_ENABLED
+	GDREGISTER_CLASS(GLTFDocumentExtensionEditorConvertMeshInstance);
+#endif // TOOLS_ENABLED
+	GDREGISTER_CLASS(GLTFDocumentExtension);
 	GDREGISTER_CLASS(GLTFDocument);
 #endif
 }
