@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  gltf_mesh.cpp                                                        */
+/*  gltf_document_extension.cpp                                          */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,31 +28,28 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "gltf_mesh.h"
-#include "editor/import/scene_importer_mesh.h"
+#include "gltf_document_extension.h"
 
-void GLTFMesh::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_mesh"), &GLTFMesh::get_mesh);
-	ClassDB::bind_method(D_METHOD("set_mesh", "mesh"), &GLTFMesh::set_mesh);
-	ClassDB::bind_method(D_METHOD("get_blend_weights"), &GLTFMesh::get_blend_weights);
-	ClassDB::bind_method(D_METHOD("set_blend_weights", "blend_weights"), &GLTFMesh::set_blend_weights);
+#include "gltf_document.h"
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh"), "set_mesh", "get_mesh");
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT32_ARRAY, "blend_weights"), "set_blend_weights", "get_blend_weights"); // Vector<float>
-}
+void GLTFDocumentExtension::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_import_settings", "settings"),
+			&GLTFDocumentExtension::set_import_settings);
+	ClassDB::bind_method(D_METHOD("set_export_settings", "settings"),
+			&GLTFDocumentExtension::set_export_settings);
+	ClassDB::bind_method(D_METHOD("get_import_settings"),
+			&GLTFDocumentExtension::get_import_settings);
+	ClassDB::bind_method(D_METHOD("get_export_settings"),
+			&GLTFDocumentExtension::get_export_settings);
+	ClassDB::bind_method(D_METHOD("import_preflight", "document", "settings"),
+			&GLTFDocumentExtension::import_preflight);
+	ClassDB::bind_method(D_METHOD("import_post", "document", "node", "settings"),
+			&GLTFDocumentExtension::import_post);
+	ClassDB::bind_method(D_METHOD("export_preflight", "document", "node", "settings"),
+			&GLTFDocumentExtension::export_preflight);
+	ClassDB::bind_method(D_METHOD("export_post", "document", "settings"),
+			&GLTFDocumentExtension::export_post);
 
-Ref<Mesh> GLTFMesh::get_mesh() {
-	return mesh;
-}
-
-void GLTFMesh::set_mesh(Ref<Mesh> p_mesh) {
-	mesh = p_mesh;
-}
-
-Vector<float> GLTFMesh::get_blend_weights() {
-	return blend_weights;
-}
-
-void GLTFMesh::set_blend_weights(Vector<float> p_blend_weights) {
-	blend_weights = p_blend_weights;
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "import_settings"), "set_import_settings", "get_import_settings");
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "export_settings"), "set_export_settings", "get_export_settings");
 }
