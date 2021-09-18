@@ -30,6 +30,10 @@
 			</description>
 		</method>
 	</methods>
+	<members>
+		<member name="extensions" type="GLTFDocumentExtension[]" setter="set_extensions" getter="get_extensions" default="[Object(GLTFDocumentExtensionEditorConvertMeshInstance,&quot;resource_local_to_scene&quot;:false,&quot;resource_name&quot;:&quot;Convert mesh instances to editor meshes.&quot;,&quot;import_settings&quot;:{},&quot;export_settings&quot;:{},&quot;script&quot;:null)]">
+		</member>
+	</members>
 	<constants>
 	</constants>
 </class>

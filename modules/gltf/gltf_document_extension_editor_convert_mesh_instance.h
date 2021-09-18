@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  gltf_mesh.cpp                                                        */
+/*  gltf_document_extension_editor_convert_mesh_instance.h               */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,31 +28,32 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "gltf_mesh.h"
+#ifndef GLTF_EXTENSION_EDITOR_H
+#define GLTF_EXTENSION_EDITOR_H
+
+#if TOOLS_ENABLED
+
+#include "core/io/resource.h"
+#include "core/variant/dictionary.h"
+
 #include "editor/import/scene_importer_mesh.h"
+#include "editor/import/scene_importer_mesh_node_3d.h"
+#include "gltf_document.h"
+#include "gltf_document_extension.h"
+#include "scene/3d/mesh_instance_3d.h"
+#include "scene/main/node.h"
 
-void GLTFMesh::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_mesh"), &GLTFMesh::get_mesh);
-	ClassDB::bind_method(D_METHOD("set_mesh", "mesh"), &GLTFMesh::set_mesh);
-	ClassDB::bind_method(D_METHOD("get_blend_weights"), &GLTFMesh::get_blend_weights);
-	ClassDB::bind_method(D_METHOD("set_blend_weights", "blend_weights"), &GLTFMesh::set_blend_weights);
+class GLTFDocumentExtension;
+class GLTFDocument;
+class GLTFDocumentExtensionEditorConvertMeshInstance : public GLTFDocumentExtension {
+	GDCLASS(GLTFDocumentExtensionEditorConvertMeshInstance, GLTFDocumentExtension);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh"), "set_mesh", "get_mesh");
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT32_ARRAY, "blend_weights"), "set_blend_weights", "get_blend_weights"); // Vector<float>
-}
+protected:
+	static void _bind_methods();
 
-Ref<Mesh> GLTFMesh::get_mesh() {
-	return mesh;
-}
-
-void GLTFMesh::set_mesh(Ref<Mesh> p_mesh) {
-	mesh = p_mesh;
-}
-
-Vector<float> GLTFMesh::get_blend_weights() {
-	return blend_weights;
-}
-
-void GLTFMesh::set_blend_weights(Vector<float> p_blend_weights) {
-	blend_weights = p_blend_weights;
-}
+public:
+	GLTFDocumentExtensionEditorConvertMeshInstance();
+	Error import_post(Ref<GLTFDocument> p_document, Node *p_node, Dictionary p_export_settings) override;
+};
+#endif // GLTF_EXTENSION_EDITOR_H
+#endif // TOOLS_ENABLED
