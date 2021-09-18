@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GLTFDocumentExtension" inherits="Resource" version="4.0">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="export_post">
+			<return type="int" enum="Error" />
+			<argument index="0" name="document" type="GLTFDocument" />
+			<argument index="1" name="settings" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="export_preflight">
+			<return type="int" enum="Error" />
+			<argument index="0" name="document" type="GLTFDocument" />
+			<argument index="1" name="node" type="Node" />
+			<argument index="2" name="settings" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="import_post">
+			<return type="int" enum="Error" />
+			<argument index="0" name="document" type="GLTFDocument" />
+			<argument index="1" name="node" type="Node" />
+			<argument index="2" name="settings" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+		<method name="import_preflight">
+			<return type="int" enum="Error" />
+			<argument index="0" name="document" type="GLTFDocument" />
+			<argument index="1" name="settings" type="Dictionary" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="export_settings" type="Dictionary" setter="set_export_settings" getter="get_export_settings" default="{}">
+		</member>
+		<member name="import_settings" type="Dictionary" setter="set_import_settings" getter="get_import_settings" default="{}">
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

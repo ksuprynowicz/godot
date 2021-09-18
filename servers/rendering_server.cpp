@@ -31,7 +31,12 @@
 #include "rendering_server.h"
 
 #include "core/config/project_settings.h"
+#include "core/string/string_builder.h"
+#include "core/variant/type_info.h"
 #include "servers/rendering/rendering_server_globals.h"
+
+#include <cstdint>
+
 RenderingServer *RenderingServer::singleton = nullptr;
 RenderingServer *(*RenderingServer::create_func)() = nullptr;
 
@@ -929,12 +934,13 @@ Error RenderingServer::mesh_create_surface_data_from_arrays(SurfaceData *r_surfa
 			uint32_t bsformat = 0;
 			Array arr = p_blend_shapes[i];
 			for (int j = 0; j < arr.size(); j++) {
-				if (arr[j].get_type() != Variant::NIL) {
-					bsformat |= (1 << j);
+				if (arr[j].get_type() == Variant::NIL) {
+					continue;
 				}
+				bsformat |= (1 << j);
 			}
-
-			ERR_FAIL_COND_V((bsformat) != (format & (RS::ARRAY_FORMAT_INDEX - 1)), ERR_INVALID_PARAMETER);
+			bool has_index = (bsformat & RS::ARRAY_FORMAT_INDEX) != 0;
+			ERR_FAIL_COND_V_MSG(has_index, ERR_INVALID_PARAMETER, "The mesh cannot have indices.");
 		}
 	}
 
