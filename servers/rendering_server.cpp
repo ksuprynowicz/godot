@@ -926,15 +926,9 @@ Error RenderingServer::mesh_create_surface_data_from_arrays(SurfaceData *r_surfa
 	if (p_blend_shapes.size()) {
 		//validate format for morphs
 		for (int i = 0; i < p_blend_shapes.size(); i++) {
-			uint32_t bsformat = 0;
-			Array arr = p_blend_shapes[i];
-			for (int j = 0; j < arr.size(); j++) {
-				if (arr[j].get_type() != Variant::NIL) {
-					bsformat |= (1 << j);
-				}
-			}
-
-			ERR_FAIL_COND_V((bsformat) != (format & (RS::ARRAY_FORMAT_INDEX - 1)), ERR_INVALID_PARAMETER);
+			const Array &arr = p_blend_shapes[i];
+			const Vector<int32_t> &mesh_indices = arr[RS::ARRAY_INDEX];
+			ERR_FAIL_COND_V(mesh_indices.size(), ERR_INVALID_PARAMETER);
 		}
 	}
 
