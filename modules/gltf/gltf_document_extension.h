@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  gltf_mesh.cpp                                                        */
+/*  gltf_document_extension.h                                            */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,31 +28,30 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "gltf_mesh.h"
-#include "editor/import/scene_importer_mesh.h"
+#ifndef GLTF_DOCUMENT_EXTENSION_H
+#define GLTF_DOCUMENT_EXTENSION_H
 
-void GLTFMesh::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_mesh"), &GLTFMesh::get_mesh);
-	ClassDB::bind_method(D_METHOD("set_mesh", "mesh"), &GLTFMesh::set_mesh);
-	ClassDB::bind_method(D_METHOD("get_blend_weights"), &GLTFMesh::get_blend_weights);
-	ClassDB::bind_method(D_METHOD("set_blend_weights", "blend_weights"), &GLTFMesh::set_blend_weights);
+#include "core/io/resource.h"
+#include "core/variant/dictionary.h"
+class GLTFDocument;
+class GLTFDocumentExtension : public Resource {
+	GDCLASS(GLTFDocumentExtension, Resource);
 
-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "mesh"), "set_mesh", "get_mesh");
-	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT32_ARRAY, "blend_weights"), "set_blend_weights", "get_blend_weights"); // Vector<float>
-}
+	Dictionary import_settings;
+	Dictionary export_settings;
 
-Ref<Mesh> GLTFMesh::get_mesh() {
-	return mesh;
-}
+protected:
+	static void _bind_methods();
 
-void GLTFMesh::set_mesh(Ref<Mesh> p_mesh) {
-	mesh = p_mesh;
-}
+public:
+	virtual Dictionary get_import_settings() { return import_settings; }
+	virtual Dictionary get_export_settings() { return export_settings; }
+	virtual void set_import_settings(Dictionary p_settings) { import_settings = p_settings; }
+	virtual void set_export_settings(Dictionary p_settings) { export_settings = p_settings; }
+	virtual Error import_preflight(Ref<GLTFDocument> p_document, Dictionary p_export_settings) { return OK; }
+	virtual Error import_post(Ref<GLTFDocument> p_document, Node *p_node, Dictionary p_export_settings) { return OK; }
+	virtual Error export_preflight(Ref<GLTFDocument> p_document, Node *p_node, Dictionary p_import_settings) { return OK; }
+	virtual Error export_post(Ref<GLTFDocument> p_document, Dictionary p_import_settings) { return OK; }
+};
 
-Vector<float> GLTFMesh::get_blend_weights() {
-	return blend_weights;
-}
-
-void GLTFMesh::set_blend_weights(Vector<float> p_blend_weights) {
-	blend_weights = p_blend_weights;
-}
+#endif // GLTF_DOCUMENT_EXTENSION_H
