@@ -246,10 +246,11 @@ void XRInterfaceExtension::notification(int p_what) {
 }
 
 RID XRInterfaceExtension::get_render_target_texture(RID p_render_target) {
-	RendererStorage *storage = RSG::storage;
-	ERR_FAIL_NULL_V_MSG(storage, RID(), "Renderer storage not setup");
+	// This needs to be implemented in a better way I guess...
+	RendererStorageRD * rd_storage = RendererStorageRD::base_singleton;
+	ERR_FAIL_NULL_V_MSG(rd_storage, RID(), "Renderer storage not setup");
 
-	return storage->render_target_get_texture(p_render_target);
+	return rd_storage->render_target_get_rd_texture(p_render_target);
 }
 
 /*
