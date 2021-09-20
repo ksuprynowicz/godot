@@ -31,7 +31,9 @@
 #include "rendering_server.h"
 
 #include "core/config/project_settings.h"
+#include "core/string/string_builder.h"
 #include "servers/rendering/rendering_server_globals.h"
+
 RenderingServer *RenderingServer::singleton = nullptr;
 RenderingServer *(*RenderingServer::create_func)() = nullptr;
 
@@ -924,17 +926,36 @@ Error RenderingServer::mesh_create_surface_data_from_arrays(SurfaceData *r_surfa
 	ERR_FAIL_COND_V((format & RS::ARRAY_FORMAT_VERTEX) == 0, ERR_INVALID_PARAMETER); // mandatory
 
 	if (p_blend_shapes.size()) {
+		Vector<int32_t> check_formats;
+		check_formats.push_back(RenderingServer::ARRAY_VERTEX);
+		check_formats.push_back(RenderingServer::ARRAY_INDEX);
+		check_formats.push_back(RenderingServer::ARRAY_TANGENT);
+
 		//validate format for morphs
 		for (int i = 0; i < p_blend_shapes.size(); i++) {
-			uint32_t bsformat = 0;
 			Array arr = p_blend_shapes[i];
-			for (int j = 0; j < arr.size(); j++) {
-				if (arr[j].get_type() != Variant::NIL) {
-					bsformat |= (1 << j);
+			StringBuilder blend_array_info;
+			bool formats_match = true;
+			uint32_t bsformat = 0;
+			for (int j = 0; j < check_formats.size(); j++) {
+				int32_t index = check_formats[j];
+				if (arr[index].get_type() == Variant::NIL) {
+					continue;
 				}
+				bsformat |= (1 << index);
+				if (index >= p_arrays.size()){
+					continue;
+				}
+				if (arr[index].get_type() == p_arrays[index].get_type()) {
+					continue;
+				}
+				formats_match = false;
+				blend_array_info.append(vformat("Mesh array index %d type %s did not match %s.\n", index, arr[index].get_type_name(arr[index].get_type()),
+						p_arrays[index].get_type_name(p_arrays[index].get_type())));
 			}
-
-			ERR_FAIL_COND_V((bsformat) != (format & (RS::ARRAY_FORMAT_INDEX - 1)), ERR_INVALID_PARAMETER);
+			String error = vformat("The mesh arrays must match. The blend shape index is %d, array format is %d, and the mesh format is %d.\n%s",
+					i, bsformat, format, blend_array_info.as_string());
+			ERR_FAIL_COND_V_MSG(!formats_match, ERR_INVALID_PARAMETER, error);
 		}
 	}
 
