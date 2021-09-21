@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GLTFDocumentExtensionConvertImporterMesh" inherits="GLTFDocumentExtension" version="4.0">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+	</methods>
+	<members>
+		<member name="resource_name" type="String" setter="set_name" getter="get_name" override="true" default="&quot;Convert mesh instances to editor meshes.&quot;" />
+	</members>
+	<constants>
+	</constants>
+</class>
