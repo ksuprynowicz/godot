@@ -33,8 +33,11 @@
 
 #include "gltf_animation.h"
 
-#include "editor/import/scene_importer_mesh_node_3d.h"
+#include "core/variant/dictionary.h"
+#include "core/variant/variant.h"
+#include "gltf_document_extension_convert_importer_mesh.h"
 #include "scene/3d/bone_attachment_3d.h"
+#include "scene/3d/importer_mesh_instance_3d.h"
 #include "scene/3d/light_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
 #include "scene/3d/node_3d.h"
@@ -51,6 +54,7 @@ class GLTFSkin;
 class GLTFNode;
 class GLTFSpecGloss;
 class GLTFSkeleton;
+class GLTFDocumentExtension;
 
 using GLTFAccessorIndex = int;
 using GLTFAnimationIndex = int;
@@ -71,8 +75,10 @@ class GLTFDocument : public Resource {
 	friend class GLTFState;
 	friend class GLTFSkin;
 	friend class GLTFSkeleton;
+	TypedArray<GLTFDocumentExtension> document_extensions;
 
 public:
+	GLTFDocument();
 	const int32_t JOINT_GROUP_SIZE = 4;
 	enum GLTFType {
 		TYPE_SCALAR,
@@ -112,6 +118,8 @@ public:
 	Error save_scene(Node *p_node, const String &p_path,
 			const String &p_src_path, uint32_t p_flags,
 			float p_bake_fps, Ref<GLTFState> r_state);
+	void set_extensions(TypedArray<GLTFDocumentExtension> p_extensions);
+	TypedArray<GLTFDocumentExtension> get_extensions() const;
 
 private:
 	template <class T>
@@ -274,12 +282,10 @@ private:
 			Skeleton3D *skeleton,
 			const GLTFNodeIndex node_index,
 			const GLTFNodeIndex bone_index);
-	EditorSceneImporterMeshNode3D *_generate_mesh_instance(Ref<GLTFState> state, Node *scene_parent, const GLTFNodeIndex node_index);
-	Camera3D *_generate_camera(Ref<GLTFState> state, Node *scene_parent,
-			const GLTFNodeIndex node_index);
-	Node3D *_generate_light(Ref<GLTFState> state, Node *scene_parent, const GLTFNodeIndex node_index);
-	Node3D *_generate_spatial(Ref<GLTFState> state, Node *scene_parent,
-			const GLTFNodeIndex node_index);
+	ImporterMeshInstance3D *_generate_mesh_instance(Ref<GLTFState> state, Node *parent_node, const GLTFNodeIndex node_index);
+	Camera3D *_generate_camera(Ref<GLTFState> state, Node *parent_node, const GLTFNodeIndex node_index);
+	Node3D *_generate_light(Ref<GLTFState> state, Node *parent_node, const GLTFNodeIndex node_index);
+	Node3D *_generate_spatial(Ref<GLTFState> state, Node *parent_node, const GLTFNodeIndex node_index);
 	void _assign_scene_names(Ref<GLTFState> state);
 	template <class T>
 	T _interpolate_track(const Vector<float> &p_times, const Vector<T> &p_values,

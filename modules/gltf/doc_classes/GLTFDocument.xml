@@ -30,6 +30,10 @@
 			</description>
 		</method>
 	</methods>
+	<members>
+		<member name="extensions" type="GLTFDocumentExtension[]" setter="set_extensions" getter="get_extensions" default="[]">
+		</member>
+	</members>
 	<constants>
 	</constants>
 </class>
