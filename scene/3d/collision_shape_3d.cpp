@@ -68,7 +68,17 @@ void CollisionShape3D::make_convex_from_siblings() {
 }
 
 void CollisionShape3D::_update_in_shape_owner(bool p_xform_only) {
-	parent->shape_owner_set_transform(owner_id, get_transform());
+	RigidDynamicBody3D *rigid_body_dynamic = Object::cast_to<RigidDynamicBody3D>(parent);
+	Transform3D shape_transform;
+
+	if (rigid_body_dynamic) {
+		Vector3 parant_scale = parent->get_transform().basis.get_scale_local();
+		shape_transform = Transform3D(get_transform().basis.scaled(parant_scale), get_transform().origin * parant_scale);
+	} else {
+		shape_transform = get_transform();
+	}
+
+	parent->shape_owner_set_transform(owner_id, shape_transform);
 	if (p_xform_only) {
 		return;
 	}

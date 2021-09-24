@@ -165,6 +165,8 @@ protected:
 	real_t linear_damp = -1.0;
 	real_t angular_damp = -1.0;
 
+	Vector3 _cached_scale = Vector3(1.0f, 1.0f, 1.0f);
+
 	bool sleeping = false;
 	bool ccd = false;
 

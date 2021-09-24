@@ -331,6 +331,7 @@ void Body3DSW::_shapes_changed() {
 
 void Body3DSW::set_state(PhysicsServer3D::BodyState p_state, const Variant &p_variant) {
 	switch (p_state) {
+		//
 		case PhysicsServer3D::BODY_STATE_TRANSFORM: {
 			if (mode == PhysicsServer3D::BODY_MODE_KINEMATIC) {
 				new_transform = p_variant;

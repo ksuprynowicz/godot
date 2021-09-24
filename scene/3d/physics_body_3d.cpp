@@ -484,7 +484,8 @@ void RigidDynamicBody3D::_body_state_changed_callback(void *p_instance, PhysicsD
 
 void RigidDynamicBody3D::_body_state_changed(PhysicsDirectBodyState3D *p_state) {
 	set_ignore_transform_notification(true);
-	set_global_transform(p_state->get_transform());
+	Transform3D new_state_transform = p_state->get_transform();
+	set_global_transform(Transform3D(new_state_transform.basis.scaled_local(_cached_scale), new_state_transform.origin));
 
 	linear_velocity = p_state->get_linear_velocity();
 	angular_velocity = p_state->get_angular_velocity();
@@ -582,21 +583,25 @@ void RigidDynamicBody3D::_body_state_changed(PhysicsDirectBodyState3D *p_state) 
 }
 
 void RigidDynamicBody3D::_notification(int p_what) {
-#ifdef TOOLS_ENABLED
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
+#ifdef TOOLS_ENABLED
 			if (Engine::get_singleton()->is_editor_hint()) {
 				set_notify_local_transform(true); //used for warnings and only in editor
 			}
+#endif
+			_cached_scale = get_global_transform().basis.get_scale_local();
 		} break;
 
 		case NOTIFICATION_LOCAL_TRANSFORM_CHANGED: {
+#ifdef TOOLS_ENABLED
 			if (Engine::get_singleton()->is_editor_hint()) {
 				update_configuration_warnings();
 			}
+#endif
+			_cached_scale = get_global_transform().basis.get_scale_local();
 		} break;
 	}
-#endif
 }
 
 void RigidDynamicBody3D::set_mode(Mode p_mode) {
