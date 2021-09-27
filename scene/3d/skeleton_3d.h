@@ -137,6 +137,9 @@ private:
 	void _make_dirty();
 	bool dirty = false;
 
+	bool show_rest_only = false;
+	int selected_bone = -1;
+
 	uint64_t version = 1;
 
 	void _update_process_order();
@@ -197,6 +200,9 @@ public:
 
 	void set_bone_enabled(int p_bone, bool p_enabled);
 	bool is_bone_enabled(int p_bone) const;
+
+	void set_show_rest_only(bool p_disabled);
+	bool is_show_rest_only() const;
 	void clear_bones();
 
 	// posing api
@@ -219,6 +225,7 @@ public:
 
 	Ref<SkinReference> register_skin(const Ref<Skin> &p_skin);
 
+	void force_update_all_dirty_bones();
 	void force_update_all_bone_transforms();
 	void force_update_bone_children_transforms(int bone_idx);
 
@@ -226,6 +233,9 @@ public:
 	void update_bone_rest_forward_axis(int p_bone, bool p_force_update = false);
 	Vector3 get_bone_axis_forward_vector(int p_bone);
 	int get_bone_axis_forward_enum(int p_bone);
+
+	void set_selected_bone(int p_bone);
+	int get_selected_bone() const;
 
 	// Helper functions
 	Transform3D global_pose_to_world_transform(Transform3D p_global_pose);
