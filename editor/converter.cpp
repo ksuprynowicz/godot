@@ -31,6 +31,8 @@
 #include "converter.h"
 
 #include "core/os/time.h"
+#include "core/templates/list.h"
+#include "core/templates/ordered_hash_map.h"
 #include "modules/regex/regex.h"
 
 const int ERROR_CODE = 77;
@@ -1715,6 +1717,33 @@ bool GodotConverter4::test_array_names() {
 	}
 
 	// TODO add all functions to hashmap and check later if functions from ClassDB exists
+	// To be able to fully work, it needs https://github.com/godotengine/godot/pull/49053
+	// TODO this needs to be changed to hashset https://github.com/godotengine/godot-proposals/issues/867
+	{
+		OrderedHashMap<String, bool> all_functions;
+
+		List<StringName> classes_list;
+		ClassDB::get_class_list(&classes_list);
+		for (StringName &name_of_class : classes_list) {
+			List<MethodInfo> method_list;
+			ClassDB::get_method_list(name_of_class, &method_list, true);
+			for (MethodInfo &function_data : method_list) {
+				if (!all_functions.has(function_data.name)) {
+					all_functions.insert(function_data.name, false);
+				}
+			}
+		}
+
+		int current_element = 0;
+		while (gdscript_function_renames[current_element][0] != nullptr) {
+			if (!all_functions.has(gdscript_function_renames[current_element][1])) {
+				ERR_PRINT(String("Missing gdscript function in pair (") + gdscript_function_renames[current_element][0] + " - ===> " + gdscript_function_renames[current_element][1] + " <===) (Currently not fully functioning properly, waiting for https://github.com/godotengine/godot/pull/49053)");
+			}
+			current_element++;
+		}
+
+		valid = false;
+	}
 
 	valid = valid & test_single_array(enum_renames);
 	valid = valid & test_single_array(class_renames, true);
