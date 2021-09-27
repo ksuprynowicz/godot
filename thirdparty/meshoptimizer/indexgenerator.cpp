@@ -324,7 +324,7 @@ void meshopt_remapIndexBuffer(unsigned int* destination, const unsigned int* ind
 	}
 }
 
-void meshopt_generateShadowIndexBuffer(unsigned int* destination, const unsigned int* indices, size_t index_count, const void* vertices, size_t vertex_count, size_t vertex_size, size_t vertex_stride)
+void meshopt_generateShadowIndexBuffer(unsigned int* destination, const unsigned int* indices, size_t index_count, const void* vertices, size_t vertex_count, size_t vertex_size, size_t vertex_stride, bool (*filter)(unsigned int, unsigned int))
 {
 	using namespace meshopt;
 
@@ -344,22 +344,90 @@ void meshopt_generateShadowIndexBuffer(unsigned int* destination, const unsigned
 	unsigned int* table = allocator.allocate<unsigned int>(table_size);
 	memset(table, -1, table_size * sizeof(unsigned int));
 
-	for (size_t i = 0; i < index_count; ++i)
+	if (filter)
 	{
-		unsigned int index = indices[i];
-		assert(index < vertex_count);
+		//unsigned int entries = 0;
+		unsigned int *entry_sizes = allocator.allocate<unsigned int>(table_size);
+		memset(entry_sizes, 0, table_size * sizeof(unsigned int));
+		unsigned int *entry_offsets = allocator.allocate<unsigned int>(table_size);
 
-		if (remap[index] == ~0u)
+		unsigned int* temp_remap = allocator.allocate<unsigned int>(vertex_count);
+		memset(temp_remap, -1, vertex_count * sizeof(unsigned int));
+
+		for (size_t i = 0; i < index_count; ++i)
 		{
-			unsigned int* entry = hashLookup(table, table_size, hasher, index, ~0u);
+			unsigned int index = indices[i];
+			unsigned int *entry = hashLookup(table, table_size, hasher, index, ~0u);
 
 			if (*entry == ~0u)
+			{
 				*entry = index;
-
-			remap[index] = *entry;
+			}
+			temp_remap[index] = *entry;
+			entry_sizes[*entry]++;
 		}
 
-		destination[i] = remap[index];
+		unsigned int offset = 0;
+		for (size_t i = 0; i < index_count; ++i)
+		{
+			entry_offsets[i] = offset;
+			offset += entry_sizes[i];
+		}
+
+		unsigned int* entry_table = allocator.allocate<unsigned int>(vertex_count);
+		memcpy(entry_table, entry_sizes, vertex_count * sizeof(unsigned int));
+		for (size_t i = 0; i < index_count; ++i)
+		{
+			unsigned int index = indices[i];
+			unsigned int entry = temp_remap[i];
+			unsigned int offset = entry_offsets[entry];
+			unsigned int remaining_size = entry_table[entry];
+			entry_table[offset + remaining_size - 1] = index;
+			entry_table[entry]--;
+		}
+
+		for (size_t i = 0; i < index_count; ++i)
+		{
+			unsigned int index = indices[i];
+			assert(index < vertex_count);
+
+			if (remap[index] == ~0u)
+			{
+				unsigned int entry = temp_remap[index];
+				unsigned int match = -1;
+				for (unsigned int k = 0; k < entry_sizes[entry]; k++)
+				{
+					unsigned int other = entry_table[entry + k];
+					if (filter(index, other))
+					{
+						match = other;
+						break;
+					}
+				}
+
+				if (match != ~0u)
+				{
+					remap[index] = match;
+					destination[i] = remap[match];
+				}
+			}
+		}
+	} else {
+		for (size_t i = 0; i < index_count; ++i) {
+			unsigned int index = indices[i];
+			assert(index < vertex_count);
+
+			if (remap[index] == ~0u) {
+				unsigned int *entry = hashLookup(table, table_size, hasher, index, ~0u);
+
+				if (*entry == ~0u)
+					*entry = index;
+
+				remap[index] = *entry;
+			}
+
+			destination[i] = remap[index];
+		}
 	}
 }
 
