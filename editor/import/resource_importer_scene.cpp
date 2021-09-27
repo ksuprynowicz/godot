@@ -118,6 +118,11 @@ void EditorSceneImporter::_bind_methods() {
 }
 
 /////////////////////////////////
+
+void EditorSceneImportBehaviourPlugin::_bind_methods() {
+}
+
+/////////////////////////////////
 void EditorScenePostImport::_bind_methods() {
 	GDVIRTUAL_BIND(_post_import, "scene")
 	ClassDB::bind_method(D_METHOD("get_source_file"), &EditorScenePostImport::get_source_file);

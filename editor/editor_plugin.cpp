@@ -772,6 +772,16 @@ void EditorPlugin::remove_scene_import_plugin(const Ref<EditorSceneImporter> &p_
 	ResourceImporterScene::get_singleton()->remove_importer(p_importer);
 }
 
+void EditorPlugin::add_scene_import_behaviour_plugin(const Ref<EditorSceneImportBehaviourPlugin> &p_plugin) {
+	ERR_FAIL_COND(!p_plugin.is_valid());
+	ResourceImporterScene::get_singleton()->add_import_behaviour_plugin(p_plugin);
+}
+
+void EditorPlugin::remove_scene_import_behaviour_plugin(const Ref<EditorSceneImportBehaviourPlugin> &p_plugin) {
+	ERR_FAIL_COND(!p_plugin.is_valid());
+	ResourceImporterScene::get_singleton()->remove_import_behaviour_plugin(p_plugin);
+}
+
 int find(const PackedStringArray &a, const String &v) {
 	const String *r = a.ptr();
 	for (int j = 0; j < a.size(); ++j) {
@@ -881,6 +891,8 @@ void EditorPlugin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("remove_import_plugin", "importer"), &EditorPlugin::remove_import_plugin);
 	ClassDB::bind_method(D_METHOD("add_scene_import_plugin", "scene_importer"), &EditorPlugin::add_scene_import_plugin);
 	ClassDB::bind_method(D_METHOD("remove_scene_import_plugin", "scene_importer"), &EditorPlugin::remove_scene_import_plugin);
+	ClassDB::bind_method(D_METHOD("add_scene_import_behaviour_plugin", "importer_behaviour"), &EditorPlugin::add_scene_import_behaviour_plugin);
+	ClassDB::bind_method(D_METHOD("remove_scene_import_behaviour_plugin", "importer_behaviour"), &EditorPlugin::remove_scene_import_behaviour_plugin);
 	ClassDB::bind_method(D_METHOD("add_export_plugin", "plugin"), &EditorPlugin::add_export_plugin);
 	ClassDB::bind_method(D_METHOD("remove_export_plugin", "plugin"), &EditorPlugin::remove_export_plugin);
 	ClassDB::bind_method(D_METHOD("add_spatial_gizmo_plugin", "plugin"), &EditorPlugin::add_spatial_gizmo_plugin);

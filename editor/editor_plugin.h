@@ -285,6 +285,9 @@ public:
 	void add_scene_import_plugin(const Ref<EditorSceneImporter> &p_importer);
 	void remove_scene_import_plugin(const Ref<EditorSceneImporter> &p_importer);
 
+	void add_scene_import_behaviour_plugin(const Ref<EditorSceneImportBehaviourPlugin> &p_plugin);
+	void remove_scene_import_behaviour_plugin(const Ref<EditorSceneImportBehaviourPlugin> &p_plugin);
+
 	void add_autoload_singleton(const String &p_name, const String &p_path);
 	void remove_autoload_singleton(const String &p_name);
 

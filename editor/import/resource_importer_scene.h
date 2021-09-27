@@ -73,6 +73,16 @@ public:
 	EditorSceneImporter() {}
 };
 
+class EditorSceneImportBehaviourPlugin : public RefCounted {
+	GDCLASS(EditorSceneImportBehaviourPlugin, RefCounted);
+
+protected:
+	static void _bind_methods();
+
+public:
+	EditorSceneImportBehaviourPlugin() {}
+};
+
 class EditorScenePostImport : public RefCounted {
 	GDCLASS(EditorScenePostImport, RefCounted);
 
@@ -94,6 +104,7 @@ class ResourceImporterScene : public ResourceImporter {
 	GDCLASS(ResourceImporterScene, ResourceImporter);
 
 	Set<Ref<EditorSceneImporter>> importers;
+	Set<Ref<EditorSceneImportBehaviourPlugin>> behaviours;
 
 	static ResourceImporterScene *singleton;
 
@@ -151,6 +162,9 @@ public:
 
 	void add_importer(Ref<EditorSceneImporter> p_importer) { importers.insert(p_importer); }
 	void remove_importer(Ref<EditorSceneImporter> p_importer) { importers.erase(p_importer); }
+
+	void add_import_behaviour_plugin(Ref<EditorSceneImportBehaviourPlugin> p_plugin) { behaviours.insert(p_plugin); }
+	void remove_import_behaviour_plugin(Ref<EditorSceneImportBehaviourPlugin> p_plugin) { behaviours.erase(p_plugin); }
 
 	virtual String get_importer_name() const override;
 	virtual String get_visible_name() const override;
