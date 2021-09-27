@@ -1165,7 +1165,7 @@ static const char *colors_renames[][2] = {
 	{ "white", "WHITE" },
 	{ "whitesmoke", "WHITE_SMOKE" },
 	{ "yellow", "YELLOW" },
-	{ "yellowgreen", "YELLOW_GREEN " },
+	{ "yellowgreen", "YELLOW_GREEN" },
 
 	{ nullptr, nullptr },
 };
