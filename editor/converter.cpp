@@ -30,9 +30,13 @@
 
 #include "converter.h"
 
+#include "core/os/time.h"
 #include "modules/regex/regex.h"
 
+const int ERROR_CODE = 77;
+
 static const char *enum_renames[][2] = {
+	//// constants
 	{ "TYPE_QUAT", "TYPE_QUATERNION" },
 	{ "TYPE_REAL", "TYPE_FLOAT" },
 	{ "TYPE_TRANSFORM", "TYPE_TRANSFORM3D" },
@@ -119,7 +123,22 @@ static const char *enum_renames[][2] = {
 	{ "TRACKER_LEFT_HAND", "TRACKER_HAND_LEFT" }, // XRPositionalTracker
 	{ "TRACKER_RIGHT_HAND", "TRACKER_HAND_RIGHT" }, // XRPositionalTracker
 	{ "TYPE_NORMALMAP", "TYPE_NORMAL_MAP" }, // VisualShaderNodeCubemap
+	{ "TEXTURE_TYPE_2D_ARRAY", "TEXTURE_LAYERED_2D_ARRAY" }, // RenderingServer
+	{ "TEXTURE_TYPE_CUBEMAP", "TEXTURE_LAYERED_CUBEMAP_ARRAY" }, // RenderingServer
+	{ "BODY_MODE_RIGID", "BODY_MODE_DYNAMIC_LOCKED" }, // PhysicsServer2D
+	{ "MATH_RAND", "MATH_RANDF_RANGE" }, // VisualScriptBuiltinFunc
+	{ "MATH_RANDOM", "MATH_RANDI_RANGE" }, // VisualScriptBuiltinFunc
 
+	/// enums
+	{ "AnimationProcessMode", "AnimationProcessCallback" }, // AnimationTree, AnimationPlayer
+	{ "FFT_Size", "FFTSize" }, // AudioEffectPitchShift,AudioEffectSpectrumAnalyzer
+	{ "Camera2DProcessMode", "Camera2DProcessCallback" }, // Camera2D
+	// {"ProcessMode","ClipProcessCallback"}, // ClippedCamera3D - probably used in a lot of code
+	{ "PauseMode", "ProcessMode" }, // Node
+	{ "DampedStringParam", "DampedSpringParam" }, // PhysicsServer2D
+	{ "CubeMapSide", "CubeMapLayer" }, // RenderingServer
+	{ "TimerProcessMode", "TimerProcessCallback" }, // Timer
+	{ "Tracking_status", "TrackingStatus" }, // XRInterface
 	{ nullptr, nullptr },
 };
 
@@ -1146,7 +1165,7 @@ static const char *colors_renames[][2] = {
 	{ "white", "WHITE" },
 	{ "whitesmoke", "WHITE_SMOKE" },
 	{ "yellow", "YELLOW" },
-	{ "yellowgreen", "YELLOW_GREEN" },
+	{ "yellowgreen", "YELLOW_GREEN " },
 
 	{ nullptr, nullptr },
 };
@@ -1155,24 +1174,24 @@ static const char *colors_renames[][2] = {
 int GodotConverter4::converter() {
 	print_line("Starting Converting.");
 
-	ERR_FAIL_COND_V_MSG(!test_array_names(), 77, "Cannot start converting due to problems with data in arrays.");
-	ERR_FAIL_COND_V_MSG(!test_conversion(), 77, "Cannot start converting due to problems with converting arrays.");
+	ERR_FAIL_COND_V_MSG(!test_array_names(), ERROR_CODE, "Cannot start converting due to problems with data in arrays.");
+	ERR_FAIL_COND_V_MSG(!test_conversion(), ERROR_CODE, "Cannot start converting due to problems with converting arrays.");
 
 	// Checking if folder contains valid Godot 3 project.
 	// Project cannot be converted 2 times
 	{
 		String conventer_text = "; Project was converted by built-in tool to Godot 4.0";
 
-		ERR_FAIL_COND_V_MSG(!FileAccess::exists("project.godot"), 77, "Current directory doesn't contains any Godot 3 project");
+		ERR_FAIL_COND_V_MSG(!FileAccess::exists("project.godot"), ERROR_CODE, "Current directory doesn't contains any Godot 3 project");
 
 		Error err = OK;
 		String project_godot_content = FileAccess::get_file_as_string("project.godot", &err);
 
-		ERR_FAIL_COND_V_MSG(err != OK, 77, "Failed to read content of \"project.godot\" file.");
-		ERR_FAIL_COND_V_MSG(project_godot_content.find(conventer_text) != -1, 77, "Project already was converted with this tool.");
+		ERR_FAIL_COND_V_MSG(err != OK, ERROR_CODE, "Failed to read content of \"project.godot\" file.");
+		ERR_FAIL_COND_V_MSG(project_godot_content.find(conventer_text) != -1, ERROR_CODE, "Project already was converted with this tool.");
 
 		FileAccess *file = FileAccess::open("project.godot", FileAccess::WRITE);
-		ERR_FAIL_COND_V_MSG(!file, 77, "Failed to open project.godot file.");
+		ERR_FAIL_COND_V_MSG(!file, ERROR_CODE, "Failed to open project.godot file.");
 
 		file->store_string(conventer_text + "\n" + project_godot_content);
 	}
@@ -1193,6 +1212,7 @@ int GodotConverter4::converter() {
 
 		Vector<String> reason;
 		bool is_ignored = false;
+		uint64_t start_time = Time::get_singleton()->get_ticks_msec();
 
 		if (file_name.ends_with(".shader")) {
 			DirAccess::remove_file_or_error(file_name);
@@ -1239,7 +1259,7 @@ int GodotConverter4::converter() {
 			} else if (file_name.ends_with(".cs")) { // TODO, C# should use different methods
 				rename_classes(file_content); // Using only specialized function
 				rename_common(csharp_function_renames, file_content);
-			} else if (file_name.ends_with(".gdshader")) {
+			} else if (file_name.ends_with(".gdshader") || file_name.ends_with(".shader")) {
 				rename_common(shaders_renames, file_content);
 			} else if (file_name.ends_with("tres")) {
 				rename_classes(file_content); // Using only specialized function
@@ -1262,6 +1282,8 @@ int GodotConverter4::converter() {
 			is_ignored = true;
 		}
 
+		uint64_t end_time = Time::get_singleton()->get_ticks_msec();
+
 		if (!is_ignored) {
 			uint64_t hash_after = file_content.hash64();
 			// Don't need to save file without any changes
@@ -1273,9 +1295,9 @@ int GodotConverter4::converter() {
 				ERR_CONTINUE_MSG(!file, "Failed to open \"" + file_name + "\" to save data to file.");
 				file->store_string(file_content);
 				memdelete(file);
-				reason.append("    File was changed.");
+				reason.append("    File was changed, conversion took " + itos(end_time - start_time) + " ms.");
 			} else {
-				reason.append("    File was not changed.");
+				reason.append("    File was not changed, checking took " + itos(end_time - start_time) + " ms.");
 			}
 		}
 		for (int k = 0; k < reason.size(); k++) {
@@ -1291,21 +1313,21 @@ int GodotConverter4::converter() {
 int GodotConverter4::converter_validation() {
 	print_line("Starting checking for converting.");
 
-	ERR_FAIL_COND_V_MSG(!test_array_names(), 77, "Cannot start converting due to problems with data in arrays.");
-	ERR_FAIL_COND_V_MSG(!test_conversion(), 77, "Cannot start converting due to problems with converting arrays.");
+	ERR_FAIL_COND_V_MSG(!test_array_names(), ERROR_CODE, "Cannot start converting due to problems with data in arrays.");
+	ERR_FAIL_COND_V_MSG(!test_conversion(), ERROR_CODE, "Cannot start converting due to problems with converting arrays.");
 
 	// Checking if folder contains valid Godot 3 project.
 	// Project cannot be converted 2 times
 	{
 		String conventer_text = "; Project was converted by built-in tool to Godot 4.0";
 
-		ERR_FAIL_COND_V_MSG(!FileAccess::exists("project.godot"), 77, "Current directory doesn't contains any Godot 3 project");
+		ERR_FAIL_COND_V_MSG(!FileAccess::exists("project.godot"), ERROR_CODE, "Current directory doesn't contains any Godot 3 project");
 
 		Error err = OK;
 		String project_godot_content = FileAccess::get_file_as_string("project.godot", &err);
 
-		ERR_FAIL_COND_V_MSG(err != OK, 77, "Failed to read content of \"project.godot\" file.");
-		ERR_FAIL_COND_V_MSG(project_godot_content.find(conventer_text) != -1, 77, "Project already was converted with this tool.");
+		ERR_FAIL_COND_V_MSG(err != OK, ERROR_CODE, "Failed to read content of \"project.godot\" file.");
+		ERR_FAIL_COND_V_MSG(project_godot_content.find(conventer_text) != -1, ERROR_CODE, "Project already was converted with this tool.");
 	}
 
 	Vector<String> collected_files = check_for_files();
@@ -1332,10 +1354,9 @@ int GodotConverter4::converter_validation() {
 		Vector<String> changed_elements;
 		Vector<String> reason;
 		bool is_ignored = false;
+		uint64_t start_time = Time::get_singleton()->get_ticks_msec();
 
-		String additional_reason;
-
-		if (file_name.ends_with(".shader")) {
+		if (file_name.ends_with(".sader")) {
 			reason.append("\tFile extension will be renamed from `shader` to `gdshader`.");
 		}
 
@@ -1378,7 +1399,7 @@ int GodotConverter4::converter_validation() {
 			} else if (file_name.ends_with(".cs")) {
 				changed_elements.append_array(check_for_rename_common(class_renames, file_content));
 				changed_elements.append_array(check_for_rename_common(csharp_function_renames, file_content));
-			} else if (file_name.ends_with(".gdshader")) {
+			} else if (file_name.ends_with(".gdshader") || file_name.ends_with(".shader")) {
 				changed_elements.append_array(check_for_rename_common(shaders_renames, file_content));
 			} else if (file_name.ends_with("tres")) {
 				changed_elements.append_array(check_for_rename_classes(file_content));
@@ -1400,6 +1421,9 @@ int GodotConverter4::converter_validation() {
 			reason.append("\tERROR: File has exceeded the maximum size allowed - 250 KB");
 			is_ignored = true;
 		}
+
+		uint64_t end_time = Time::get_singleton()->get_ticks_msec();
+		print_line("    Checking file took " + itos(end_time - start_time) + " ms.");
 
 		for (int k = 0; k < reason.size(); k++) {
 			print_line(reason[k]);
@@ -1690,6 +1714,8 @@ bool GodotConverter4::test_array_names() {
 		}
 	}
 
+	// TODO add all functions to hashmap and check later if functions from ClassDB exists
+
 	valid = valid & test_single_array(enum_renames);
 	valid = valid & test_single_array(class_renames, true);
 	valid = valid & test_single_array(gdscript_function_renames, true);
@@ -1699,6 +1725,7 @@ bool GodotConverter4::test_array_names() {
 	valid = valid & test_single_array(signals_renames);
 	valid = valid & test_single_array(project_settings_renames);
 	valid = valid & test_single_array(builtin_types_renames);
+	valid = valid & test_single_array(colors_renames);
 
 	return valid;
 }
@@ -1725,7 +1752,7 @@ bool GodotConverter4::test_single_array(const char *array[][2], bool ignore_seco
 
 		if (String(array[current_index][1]).begins_with(" ") || String(array[current_index][1]).ends_with(" ")) {
 			{
-				ERR_PRINT(String("Entry \"") + array[current_index][0] + "\" ends or stars with space.");
+				ERR_PRINT(String("Entry \"") + array[current_index][1] + "\" ends or stars with space.");
 				valid = false;
 			}
 		}
