@@ -1152,27 +1152,27 @@ static const char *colors_renames[][2] = {
 };
 
 // Function responsible for converting project
-void GodotConverter4::converter() {
+int GodotConverter4::converter() {
 	print_line("Starting Converting.");
 
-	ERR_FAIL_COND_MSG(!test_array_names(), "Cannot start converting due to problems with data in arrays.");
-	ERR_FAIL_COND_MSG(!test_conversion(), "Cannot start converting due to problems with converting arrays.");
+	ERR_FAIL_COND_V_MSG(!test_array_names(), 77, "Cannot start converting due to problems with data in arrays.");
+	ERR_FAIL_COND_V_MSG(!test_conversion(), 77, "Cannot start converting due to problems with converting arrays.");
 
 	// Checking if folder contains valid Godot 3 project.
 	// Project cannot be converted 2 times
 	{
 		String conventer_text = "; Project was converted by built-in tool to Godot 4.0";
 
-		ERR_FAIL_COND_MSG(!FileAccess::exists("project.godot"), "Current directory doesn't contains any Godot 3 project");
+		ERR_FAIL_COND_V_MSG(!FileAccess::exists("project.godot"), 77, "Current directory doesn't contains any Godot 3 project");
 
 		Error err = OK;
 		String project_godot_content = FileAccess::get_file_as_string("project.godot", &err);
 
-		ERR_FAIL_COND_MSG(err != OK, "Failed to read content of \"project.godot\" file.");
-		ERR_FAIL_COND_MSG(project_godot_content.find(conventer_text) != -1, "Project already was converted with this tool.");
+		ERR_FAIL_COND_V_MSG(err != OK, 77, "Failed to read content of \"project.godot\" file.");
+		ERR_FAIL_COND_V_MSG(project_godot_content.find(conventer_text) != -1, 77, "Project already was converted with this tool.");
 
 		FileAccess *file = FileAccess::open("project.godot", FileAccess::WRITE);
-		ERR_FAIL_COND_MSG(!file, "Failed to open project.godot file.");
+		ERR_FAIL_COND_V_MSG(!file, 77, "Failed to open project.godot file.");
 
 		file->store_string(conventer_text + "\n" + project_godot_content);
 	}
@@ -1189,9 +1189,16 @@ void GodotConverter4::converter() {
 		ERR_CONTINUE_MSG(err != OK, "Failed to read content of \"" + file_name + "\".");
 		uint64_t hash_before = file_content.hash64();
 		uint64_t file_size = file_content.size();
-		//		print_line("DEBUG: Trying to format: " + file_name + " with size - " + itos(file_size / 1024) + " KB"); // DEBUG
+		print_line("Trying to convert\t" + itos(i + 1) + "/" + itos(collected_files.size()) + " file - \"" + file_name.trim_prefix("res://") + "\" with size - " + itos(file_size / 1024) + " KB");
 
-		String additional_reason;
+		Vector<String> reason;
+		bool is_ignored = false;
+
+		if (file_name.ends_with(".shader")) {
+			DirAccess::remove_file_or_error(file_name);
+			file_name = file_name.replace(".shader", ".gdshader");
+		}
+
 		if (file_size < 1024 * 250 * 1) {
 			// TSCN must be the same work exactly same as .gd file because it may contains builtin script
 			if (file_name.ends_with(".gd")) {
@@ -1231,12 +1238,9 @@ void GodotConverter4::converter() {
 				custom_rename(file_content, "\\.shader", ".gdshader");
 			} else if (file_name.ends_with(".cs")) { // TODO, C# should use different methods
 				rename_classes(file_content); // Using only specialized function
-
 				rename_common(csharp_function_renames, file_content);
-			} else if (file_name.ends_with(".shader")) {
+			} else if (file_name.ends_with(".gdshader")) {
 				rename_common(shaders_renames, file_content);
-			} else if (file_name.ends_with(".csproj")) {
-				// TODO
 			} else if (file_name.ends_with("tres")) {
 				rename_classes(file_content); // Using only specialized function
 
@@ -1247,60 +1251,61 @@ void GodotConverter4::converter() {
 			} else if (file_name.ends_with("project.godot")) {
 				rename_common(project_settings_renames, file_content);
 				rename_common(builtin_types_renames, file_content);
+			} else if (file_name.ends_with(".csproj")) {
+				// TODO
 			} else {
 				ERR_PRINT(file_name + " is not supported!");
 				continue;
 			}
 		} else {
-			additional_reason = String(" ERROR: File has exceeded the maximum size allowed - 250 KB, file size - ") + itos(file_size / 1024) + " KB";
+			reason.append("    ERROR: File has exceeded the maximum size allowed - 250 KB");
+			is_ignored = true;
 		}
 
-		if (file_name.ends_with(".shader")) {
-			DirAccess::remove_file_or_error(file_name);
-			file_name = file_name.replace(".shader", ".gdshader");
+		if (!is_ignored) {
+			uint64_t hash_after = file_content.hash64();
+			// Don't need to save file without any changes
+			// Save if this is a shader, because it was renamed
+			if (hash_before != hash_after || file_name.find(".gdshader") != -1) {
+				converted_files++;
+
+				FileAccess *file = FileAccess::open(file_name, FileAccess::WRITE);
+				ERR_CONTINUE_MSG(!file, "Failed to open \"" + file_name + "\" to save data to file.");
+				file->store_string(file_content);
+				memdelete(file);
+				reason.append("    File was changed.");
+			} else {
+				reason.append("    File was not changed.");
+			}
 		}
-
-		String changed = "NOT changed";
-
-		uint64_t hash_after = file_content.hash64();
-
-		// Don't need to save file without any changes
-		// Save if this is a shader, because it was renamed
-		if (hash_before != hash_after || file_name.find(".gdshader") != -1) {
-			changed = "changed";
-			converted_files++;
-
-			FileAccess *file = FileAccess::open(file_name, FileAccess::WRITE);
-			ERR_CONTINUE_MSG(!file, "Failed to open \"" + file_name + "\" to save data to file.");
-			file->store_string(file_content);
-			memdelete(file);
+		for (int k = 0; k < reason.size(); k++) {
+			print_line(reason[k]);
 		}
-
-		print_line("Processed " + itos(i + 1) + "/" + itos(collected_files.size()) + " file - " + file_name.trim_prefix("res://") + " was " + changed + "." + additional_reason);
 	}
 
 	print_line("Converting ended - all files(" + itos(collected_files.size()) + "), converted files(" + itos(converted_files) + "), not converted files(" + itos(collected_files.size() - converted_files) + ").");
+	return 0;
 };
 
 // Function responsible for validating converting project
-void GodotConverter4::converter_validation() {
+int GodotConverter4::converter_validation() {
 	print_line("Starting checking for converting.");
 
-	ERR_FAIL_COND_MSG(!test_array_names(), "Cannot start converting due to problems with data in arrays.");
-	ERR_FAIL_COND_MSG(!test_conversion(), "Cannot start converting due to problems with converting arrays.");
+	ERR_FAIL_COND_V_MSG(!test_array_names(), 77, "Cannot start converting due to problems with data in arrays.");
+	ERR_FAIL_COND_V_MSG(!test_conversion(), 77, "Cannot start converting due to problems with converting arrays.");
 
 	// Checking if folder contains valid Godot 3 project.
 	// Project cannot be converted 2 times
 	{
 		String conventer_text = "; Project was converted by built-in tool to Godot 4.0";
 
-		ERR_FAIL_COND_MSG(!FileAccess::exists("project.godot"), "Current directory doesn't contains any Godot 3 project");
+		ERR_FAIL_COND_V_MSG(!FileAccess::exists("project.godot"), 77, "Current directory doesn't contains any Godot 3 project");
 
 		Error err = OK;
 		String project_godot_content = FileAccess::get_file_as_string("project.godot", &err);
 
-		ERR_FAIL_COND_MSG(err != OK, "Failed to read content of \"project.godot\" file.");
-		ERR_FAIL_COND_MSG(project_godot_content.find(conventer_text) != -1, "Project already was converted with this tool.");
+		ERR_FAIL_COND_V_MSG(err != OK, 77, "Failed to read content of \"project.godot\" file.");
+		ERR_FAIL_COND_V_MSG(project_godot_content.find(conventer_text) != -1, 77, "Project already was converted with this tool.");
 	}
 
 	Vector<String> collected_files = check_for_files();
@@ -1322,11 +1327,18 @@ void GodotConverter4::converter_validation() {
 			}
 			memdelete(file);
 		}
-		//		print_line("DEBUG: Trying to format: " + file_name + " with size - " + itos(file_size / 1024) + " KB"); // DEBUG
+		print_line("Checking for conversion - " + itos(i + 1) + "/" + itos(collected_files.size()) + " file - \"" + file_name.trim_prefix("res://") + "\" with size - " + itos(file_size / 1024) + " KB");
 
 		Vector<String> changed_elements;
+		Vector<String> reason;
+		bool is_ignored = false;
 
 		String additional_reason;
+
+		if (file_name.ends_with(".shader")) {
+			reason.append("\tFile extension will be renamed from `shader` to `gdshader`.");
+		}
+
 		if (file_size < 1024 * 250 * 1) {
 			if (file_name.ends_with(".gd")) {
 				changed_elements.append_array(check_for_rename_classes(file_content));
@@ -1366,7 +1378,7 @@ void GodotConverter4::converter_validation() {
 			} else if (file_name.ends_with(".cs")) {
 				changed_elements.append_array(check_for_rename_common(class_renames, file_content));
 				changed_elements.append_array(check_for_rename_common(csharp_function_renames, file_content));
-			} else if (file_name.ends_with(".shader")) {
+			} else if (file_name.ends_with(".gdshader")) {
 				changed_elements.append_array(check_for_rename_common(shaders_renames, file_content));
 			} else if (file_name.ends_with("tres")) {
 				changed_elements.append_array(check_for_rename_classes(file_content));
@@ -1375,27 +1387,26 @@ void GodotConverter4::converter_validation() {
 				changed_elements.append_array(check_for_rename_common(builtin_types_renames, file_content));
 
 				changed_elements.append_array(check_for_custom_rename(file_content, "\\.shader", ".gdshader"));
-			} else if (file_name.ends_with(".csproj")) {
-				// TODO
 			} else if (file_name.ends_with("project.godot")) {
 				changed_elements.append_array(check_for_rename_common(project_settings_renames, file_content));
 				changed_elements.append_array(check_for_rename_common(builtin_types_renames, file_content));
+			} else if (file_name.ends_with(".csproj")) {
+				// TODO
 			} else {
 				ERR_PRINT(file_name + " is not supported!");
 				continue;
 			}
 		} else {
-			additional_reason = String(" ERROR: File has exceeded the maximum size allowed - 250 KB, file size - ") + itos(file_size / 1024) + " KB";
+			reason.append("\tERROR: File has exceeded the maximum size allowed - 250 KB");
+			is_ignored = true;
 		}
 
-		if (file_name.ends_with(".shader")) {
-			changed_elements.append(String("\"") + file_name + "\" will be renamed to \"" + file_name.replace(".shader", ".gdshader") + "\"");
+		for (int k = 0; k < reason.size(); k++) {
+			print_line(reason[k]);
 		}
 
-		if (changed_elements.size() > 0) {
+		if (changed_elements.size() > 0 && !is_ignored) {
 			converted_files++;
-
-			print_line("File: " + file_name + " (" + itos(i) + "/" + itos(collected_files.size()) + ")" + additional_reason);
 
 			for (int k = 0; k < changed_elements.size(); k++) {
 				print_line(String("\t\t") + changed_elements[k]);
@@ -1404,6 +1415,7 @@ void GodotConverter4::converter_validation() {
 	}
 
 	print_line("Checking for converting ended - all files(" + itos(collected_files.size()) + "), files which would be converted(" + itos(converted_files) + "), files which would not be converted(" + itos(collected_files.size() - converted_files) + ").");
+	return 0;
 }
 
 // Collect files which will be checked, it will not touch txt, mp4, wav etc. files
@@ -1656,7 +1668,7 @@ bool GodotConverter4::test_array_names() {
 	bool valid = true;
 	Vector<String> names = Vector<String>();
 
-	// Validate if all classes exists
+	// Validate if all classes are valid
 	{
 		int current_index = 0;
 		while (class_renames[current_index][0]) {
@@ -1665,13 +1677,13 @@ bool GodotConverter4::test_array_names() {
 
 			// Light2D, Texture, Viewport are special classes(probably virtual ones)
 			if (ClassDB::class_exists(StringName(old_class)) && old_class != "Light2D" && old_class != "Texture" && old_class != "Viewport") {
-				ERR_PRINT(String("Class `") + old_class + "` exists, so cannot be renamed.");
+				ERR_PRINT(String("Class `") + old_class + "` exists in Godot 4.0, so cannot be renamed to something else.");
 				valid = false; // This probably should be only a warning, but not 100% sure - this would need to be added to CI
 			}
 
 			// Callable is special class, to which normal classes may be renamed
 			if (!ClassDB::class_exists(StringName(new_class)) && new_class != "Callable") {
-				ERR_PRINT(String("Class `") + new_class + "` doesn't exists, so cannot be used in convertion.");
+				ERR_PRINT(String("Class `") + new_class + "` doesn't exists in Godot 4.0, so cannot be used in convertion.");
 				valid = false; // This probably should be only a warning, but not 100% sure - this would need to be added to CI
 			}
 			current_index++;
@@ -1986,7 +1998,22 @@ Vector<String> GodotConverter4::check_for_rename_classes(Vector<String> &file_co
 	}
 
 	// TODO OS -> TIME
+	int current_line = 1;
+	RegEx reg_time1 = RegEx("OS.get_ticks_msec");
+	CRASH_COND(!reg_time1.is_valid());
+	RegEx reg_time2 = RegEx("OS.get_ticks_usec");
+	CRASH_COND(!reg_time2.is_valid());
+	for (String &line : file_content) {
+		String old = line;
 
+		line = reg_time1.sub(line, "Time.get_ticks_msec", true);
+		line = reg_time2.sub(line, "Time.get_ticks_usec", true);
+
+		if (old != line) {
+			found_things.append(simple_line_formatter(current_line, old, line));
+		}
+		current_line++;
+	}
 	return found_things;
 }
 
@@ -2363,8 +2390,6 @@ void GodotConverter4::rename_gdscript_functions(String &file_content) {
 		// TODO - add_surface_from_arrays - additional 4 argument
 		// ENetMultiplayerPeer.create_client - additional argument
 		// ENetMultiplayerPeer.create_server - additional argument
-		// GridMap.get_cell_item 3int to vector3i
-		// GridMap.get_cell_item_orientation 3int to vector3i
 		// Translation.get_message (and similar)
 		// TreeItem.move_after() - new argument
 		// TreeItem.move_before() - new argument
@@ -2382,22 +2407,391 @@ void GodotConverter4::rename_gdscript_functions(String &file_content) {
 	}
 };
 
+// This is simple
 Vector<String> GodotConverter4::check_for_rename_gdscript_functions(Vector<String> &file_content) {
-	int current_line = 0;
+	int current_line = 1;
 
 	Vector<String> found_things;
 
-	RegEx reg = RegEx("\\bempty\\(");
-	CRASH_COND(!reg.is_valid());
+	RegEx reg_is_empty = RegEx("\\bempty\\(");
+	RegEx reg_super = RegEx("([\t ])\\.([a-zA-Z_])");
+	RegEx reg_json_to = RegEx("\\bto_json\\b");
+	RegEx reg_json_parse = RegEx("([\t]{0,})([^\n]+)parse_json\\(([^\n]+)");
+	RegEx reg_json_non_new = RegEx("([\t]{0,})([^\n]+)JSON\\.parse\\(([^\n]+)");
+	RegEx reg_export = RegEx("export\\(([a-zA-Z0-9_]+)\\)[ ]+var[ ]+([a-zA-Z0-9_]+)");
+	RegEx reg_export_advanced = RegEx("export\\(([^)^\n]+)\\)[ ]+var[ ]+([a-zA-Z0-9_]+)([^\n]+)");
+	RegEx reg_setget_setget = RegEx("var[ ]+([a-zA-Z0-9_]+)([^\n]+)setget[ \t]+([a-zA-Z0-9_]+)[ \t]*,[ \t]*([a-zA-Z0-9_]+)");
+	RegEx reg_setget_set = RegEx("var[ ]+([a-zA-Z0-9_]+)([^\n]+)setget[ \t]+([a-zA-Z0-9_]+)[ \t]*[,]*[^a-z^A-Z^0-9^_]*$");
+	RegEx reg_setget_get = RegEx("var[ ]+([a-zA-Z0-9_]+)([^\n]+)setget[ \t]+,[ \t]*([a-zA-Z0-9_]+)[ \t]*$");
+	RegEx reg_join = RegEx("([\\(\\)a-zA-Z0-9_]+)\\.join\\(([^\n^\\)]+)\\)");
+	RegEx reg_mixed_tab_space = RegEx("([\t]+)([ ]+)");
+	RegEx reg_image_lock = RegEx("([a-zA-Z0-9_\\.]+)\\.lock\\(\\)");
+	RegEx reg_image_unlock = RegEx("([a-zA-Z0-9_\\.]+)\\.unlock\\(\\)");
+	RegEx reg_os_fullscreen = RegEx("OS.window_fullscreen[= ]+([^#^\n]+)");
+
+	CRASH_COND(!reg_is_empty.is_valid());
+	CRASH_COND(!reg_super.is_valid());
+	CRASH_COND(!reg_json_to.is_valid());
+	CRASH_COND(!reg_json_parse.is_valid());
+	CRASH_COND(!reg_json_non_new.is_valid());
+	CRASH_COND(!reg_export.is_valid());
+	CRASH_COND(!reg_export_advanced.is_valid());
+	CRASH_COND(!reg_setget_setget.is_valid());
+	CRASH_COND(!reg_setget_set.is_valid());
+	CRASH_COND(!reg_setget_get.is_valid());
+	CRASH_COND(!reg_join.is_valid());
+	CRASH_COND(!reg_mixed_tab_space.is_valid());
+	CRASH_COND(!reg_image_lock.is_valid());
+	CRASH_COND(!reg_image_unlock.is_valid());
+	CRASH_COND(!reg_os_fullscreen.is_valid());
+
 	for (String &line : file_content) {
-		current_line++;
-		// -- empty() -> is_empty()       Object
-		Array reg_match = reg.search_all(line);
-		if (reg_match.size() > 0) {
-			found_things.append(line_formatter(current_line, "empty", "is_empty", line));
+		String old_line = line;
+
+		if (line.find("mtx") == -1 && line.find("mutex") == -1 && line.find("Mutex") == -1) {
+			line = reg_image_lock.sub(line, "false # $1.lock() # TODOConverter40, image no longer require locking, `false` helps to not broke one line if/else, so can be freely removed", true);
+			line = reg_image_unlock.sub(line, "false # $1.unlock() # TODOConverter40, image no longer require locking, `false` helps to not broke one line if/else, so can be freely removed", true);
+		}
+
+		// Mixed use of spaces and tabs - tabs as first - TODO, this probably is problem problem, but not sure
+		line = reg_mixed_tab_space.sub(line, "$1", true);
+
+		// PackedStringArray(req_godot).join('.') -> '.'.join(PackedStringArray(req_godot))       PoolStringArray
+		line = reg_join.sub(line, "$2.join($1)", true);
+
+		// -- empty() -> is_empty()       Pool*Array
+		line = reg_is_empty.sub(line, "is_empty(", true);
+
+		// -- \t.func() -> \tsuper.func()       Object
+		line = reg_super.sub(line, "$1super.$2", true); // TODO, not sure if possible, but for now this brake String text e.g. "Choosen .gitignore" -> "Choosen super.gitignore"
+
+		// -- JSON.parse(a) -> JSON.new().parse(a) etc.    JSON
+		line = reg_json_non_new.sub(line, "$1var test_json_conv = JSON.new()\n$1test_json_conv.parse($3\n$1$2test_json_conv.get_data()", true);
+
+		// -- to_json(a) -> JSON.new().stringify(a)     Object
+		line = reg_json_to.sub(line, "JSON.new().stringify", true);
+
+		// -- parse_json(a) -> JSON.get_data() etc.    Object
+		line = reg_json_parse.sub(line, "$1var test_json_conv = JSON.new()\n$1test_json_conv.parse($3\n$1$2test_json_conv.get_data()", true);
+
+		// -- get_node(@ -> get_node(       Node
+		line = line.replace("get_node(@", "get_node(");
+
+		// export(float) var lifetime = 3.0 -> export var lifetime: float = 3.0     GDScript
+		line = reg_export.sub(line, "export var $2: $1");
+
+		// export(String, 'AnonymousPro', 'CourierPrime') var _font_name = 'AnonymousPro' -> export var _font_name = 'AnonymousPro' #(String, 'AnonymousPro', 'CourierPrime')   GDScript
+		line = reg_export_advanced.sub(line, "export var $2$3 # ($1)");
+
+		// Setget Setget
+		line = reg_setget_setget.sub(line, "var $1$2:\n\tget:\n\t\treturn $1 # TODOConverter40 Copy here content of $4\n\tset(mod_value):\n\t\tmod_value  # TODOConverter40 Copy here content of $3", true);
+
+		// Setget set
+		line = reg_setget_set.sub(line, "var $1$2:\n\tget:\n\t\treturn $1 # TODOConverter40 Non existent get function \n\tset(mod_value):\n\t\tmod_value  # TODOConverter40 Copy here content of $3", true);
+
+		// Setget get
+		line = reg_setget_get.sub(line, "var $1$2:\n\tget:\n\t\treturn $1 # TODOConverter40 Copy here content of $3 \n\tset(mod_value):\n\t\tmod_value  # TODOConverter40  Non existent set function", true);
+
+		// OS.window_fullscreen = true -> ProjectSettings.set("display/window/size/fullscreen",true)
+		line = reg_os_fullscreen.sub(line, "ProjectSettings.set(\"display/window/size/fullscreen\", $1)", true);
+
+		// -- r.move_and_slide( a, b, c, d, e )  ->  r.set_linear_velocity(a) ... r.move_and_slide()         KinematicBody
+		if (line.find("move_and_slide(") != -1) {
+			int start = line.find("move_and_slide(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				String base_obj = get_object_of_execution(line.substr(0, start));
+				String starting_space = get_starting_space(line);
+
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() >= 1) {
+					String line_new;
+
+					// linear_velocity
+					line_new += starting_space + base_obj + "set_linear_velocity(" + parts[0] + ")\n";
+
+					// up_direction
+					if (parts.size() >= 2) {
+						line_new += starting_space + base_obj + "set_up_direction(" + parts[1] + ")\n";
+					}
+
+					// stop_on_slope
+					if (parts.size() >= 3) {
+						line_new += starting_space + base_obj + "set_floor_stop_on_slope_enabled(" + parts[2] + ")\n";
+					}
+
+					// max_slides
+					if (parts.size() >= 4) {
+						line_new += starting_space + base_obj + "set_max_slides(" + parts[3] + ")\n";
+					}
+
+					// floor_max_angle
+					if (parts.size() >= 5) {
+						line_new += starting_space + base_obj + "set_floor_max_angle(" + parts[4] + ")\n";
+					}
+
+					// infiinite_interia
+					if (parts.size() >= 6) {
+						line_new += starting_space + "# TODOConverter40 infinite_inertia were removed in Godot 4.0 - previous value `" + parts[5] + "`\n";
+					}
+
+					line = line_new + line.substr(0, start) + "move_and_slide()" + line.substr(end + start);
+				}
+			}
+		}
+
+		// -- r.move_and_slide_with_snap( a, b, c, d, e )  ->  r.set_linear_velocity(a) ... r.move_and_slide()         KinematicBody
+		if (line.find("move_and_slide_with_snap(") != -1) {
+			int start = line.find("move_and_slide_with_snap(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				String base_obj = get_object_of_execution(line.substr(0, start));
+				String starting_space = get_starting_space(line);
+
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() >= 1) {
+					String line_new;
+
+					// linear_velocity
+					line_new += starting_space + base_obj + "set_linear_velocity(" + parts[0] + ")\n";
+
+					// snap
+					if (parts.size() >= 2) {
+						line_new += starting_space + "# TODOConverter40 looks that snap in Godot 4.0 is float, not vector like in Godot 3 - previous value `" + parts[1] + "`\n";
+					}
+
+					// up_direction
+					if (parts.size() >= 3) {
+						line_new += starting_space + base_obj + "set_up_direction(" + parts[2] + ")\n";
+					}
+
+					// stop_on_slope
+					if (parts.size() >= 4) {
+						line_new += starting_space + base_obj + "set_floor_stop_on_slope_enabled(" + parts[3] + ")\n";
+					}
+
+					// max_slides
+					if (parts.size() >= 5) {
+						line_new += starting_space + base_obj + "set_max_slides(" + parts[4] + ")\n";
+					}
+
+					// floor_max_angle
+					if (parts.size() >= 6) {
+						line_new += starting_space + base_obj + "set_floor_max_angle(" + parts[5] + ")\n";
+					}
+
+					// infiinite_interia
+					if (parts.size() >= 7) {
+						line_new += starting_space + "# TODOConverter40 infinite_inertia were removed in Godot 4.0 - previous value `" + parts[6] + "`\n";
+					}
+
+					line = line_new + line.substr(0, start) + "move_and_slide()" + line.substr(end + start);
+				}
+			}
+		}
+
+		// -- sort_custom( a , b )  ->  sort_custom(Callable( a , b ))            Object
+		if (line.find("sort_custom(") != -1) {
+			int start = line.find("sort_custom(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 2) {
+					line = line.substr(0, start) + "sort_custom(Callable(" + parts[0] + "," + parts[1] + "))" + line.substr(end + start);
+				}
+			}
+		}
+
+		// -- draw_line(1,2,3,4,5) -> draw_line(1,2,3,4)            CanvasItem
+		if (line.find("draw_line(") != -1) {
+			int start = line.find("draw_line(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 5) {
+					line = line.substr(0, start) + "draw_line(" + parts[0] + "," + parts[1] + "," + parts[2] + "," + parts[3] + ")" + line.substr(end + start);
+				}
+			}
+		}
+
+		// -- func c(var a, var b) -> func c(a, b)
+		if (line.find("func ") != -1 && line.find("var ") != -1) {
+			int start = line.find("func ");
+			start = line.substr(start).find("(") + start;
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+
+				String start_string = line.substr(0, start) + "(";
+				for (int i = 0; i < parts.size(); i++) {
+					start_string += parts[i].strip_edges().trim_prefix("var ");
+					if (i != parts.size() - 1) {
+						start_string += ", ";
+					}
+				}
+				line = start_string + ")" + line.substr(end + start);
+			}
+		}
+
+		// -- yield(this, \"timeout\") -> await this.timeout         GDScript
+		if (line.find("yield(") != -1) {
+			int start = line.find("yield(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 2) {
+					line = line.substr(0, start) + "await " + parts[0] + "." + parts[1].replace("\"", "").replace("\'", "").replace(" ", "") + line.substr(end + start);
+				}
+			}
+		}
+
+		// -- parse_json( AA ) -> TODO       Object
+		if (line.find("parse_json(") != -1) {
+			int start = line.find("parse_json(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				line = line.substr(0, start) + "JSON.new().stringify(" + connect_arguments(parts, 0) + ")" + line.substr(end + start);
+			}
+		}
+
+		// -- .xform(Vector3(a,b,c)) -> * Vector3(a,b,c)            Transform
+		if (line.find(".xform(") != -1) {
+			int start = line.find(".xform(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 1) {
+					line = line.substr(0, start) + " * " + parts[0] + line.substr(end + start);
+				}
+			}
+		}
+
+		// -- .xform_inv(Vector3(a,b,c)) -> / Vector3(a,b,c)       Transform
+		if (line.find(".xform_inv(") != -1) {
+			int start = line.find(".xform_inv(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 1) {
+					line = line.substr(0, start) + " / " + parts[0] + line.substr(end + start);
+				}
+			}
+		}
+
+		// -- connect(,,,things) -> connect(,Callable(,),things)      Object
+		if (line.find("connect(") != -1) {
+			int start = line.find("connect(");
+			// Protection from disconnect
+			if (start == 0 || line.get(start - 1) != 's') {
+				int end = get_end_parenthess(line.substr(start)) + 1;
+				if (end > -1) {
+					Vector<String> parts = parse_arguments(line.substr(start, end));
+					if (parts.size() >= 3) {
+						line = line.substr(0, start) + "connect(" + parts[0] + ",Callable(" + parts[1] + "," + parts[2] + ")" + connect_arguments(parts, 3) + ")" + line.substr(end + start);
+					}
+				}
+			}
+		}
+		// -- disconnect(a,b,c) -> disconnect(a,Callable(b,c))      Object
+		if (line.find("disconnect(") != -1) {
+			int start = line.find("disconnect(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 3) {
+					line = line.substr(0, start) + "disconnect(" + parts[0] + ",Callable(" + parts[1] + "," + parts[2] + "))" + line.substr(end + start);
+				}
+			}
+		}
+		// -- is_connected(a,b,c) -> is_connected(a,Callable(b,c))      Object
+		if (line.find("is_connected(") != -1) {
+			int start = line.find("is_connected(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 3) {
+					line = line.substr(0, start) + "is_connected(" + parts[0] + ",Callable(" + parts[1] + "," + parts[2] + "))" + line.substr(end + start);
+				}
+			}
+		}
+		// -- func _init(p_x:int)->void:  -> func _init(p_x:int):    Object # https://github.com/godotengine/godot/issues/50589
+		if (line.find(" _init(") != -1) {
+			int start = line.find(" _init(");
+			int end = line.rfind(":") + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				line = line.substr(0, start) + " _init(" + connect_arguments(parts, 0) + "):" + line.substr(end + start);
+			}
+		}
+		//  assert(speed < 20, str(randi()%10))  ->  assert(speed < 20) #,str(randi()%10))    GDScript - GDScript bug constant message
+		if (line.find("assert(") != -1) {
+			int start = line.find("assert(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 2) {
+					line = line.substr(0, start) + "assert(" + parts[0] + ") " + line.substr(end + start) + "#," + parts[1] + ")";
+				}
+			}
+		}
+		//  create_from_image(aa, bb)  ->   create_from_image(aa) #, bb   ImageTexture
+		if (line.find("create_from_image(") != -1) {
+			int start = line.find("create_from_image(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 2) {
+					line = line.substr(0, start) + "create_from_image(" + parts[0] + ") " + "#," + parts[1] + line.substr(end + start);
+				}
+			}
+		}
+		//  set_cell_item(a, b, c, d ,e)  ->   set_cell_item(Vector3(a, b, c), d ,e)
+		if (line.find("set_cell_item(") != -1) {
+			int start = line.find("set_cell_item(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() > 2) {
+					line = line.substr(0, start) + "set_cell_item( Vector3(" + parts[0] + parts[1] + parts[2] + ") " + connect_arguments(parts, 3) + ")" + line.substr(end + start);
+				}
+			}
+		}
+		//  get_cell_item(a, b, c)  ->   get_cell_item(Vector3i(a, b, c))
+		if (line.find("get_cell_item(") != -1) {
+			int start = line.find("get_cell_item(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 3) {
+					line = line.substr(0, start) + "get_cell_item(Vector3i(" + parts[0] + "," + parts[1] + "," + parts[2] + "))" + line.substr(end + start);
+				}
+			}
+		}
+		//  get_cell_item_orientation(a, b, c)  ->   get_cell_item_orientation(Vector3i(a, b, c))
+		if (line.find("get_cell_item_orientation(") != -1) {
+			int start = line.find("get_cell_item_orientation(");
+			int end = get_end_parenthess(line.substr(start)) + 1;
+			if (end > -1) {
+				Vector<String> parts = parse_arguments(line.substr(start, end));
+				if (parts.size() == 3) {
+					line = line.substr(0, start) + "get_cell_item_orientation(Vector3i(" + parts[0] + "," + parts[1] + "," + parts[2] + "))" + line.substr(end + start);
+				}
+			}
+		}
+
+		// TODO - add_surface_from_arrays - additional 4 argument
+		// ENetMultiplayerPeer.create_client - additional argument
+		// ENetMultiplayerPeer.create_server - additional argument
+		// Translation.get_message (and similar)
+		// TreeItem.move_after() - new argument
+		// TreeItem.move_before() - new argument
+		// UndoRedo.commit_action() - additional argument
+
+		if (old_line != line) {
+			found_things.append(simple_line_formatter(current_line, old_line, line));
 		}
 	}
-	// TODO manual renamed things
 
 	return found_things;
 }
@@ -2488,7 +2882,96 @@ file_content = reg_tool2.sub(file_content, "@tool", true);
 Vector<String> GodotConverter4::check_for_rename_gdscript_keywords(Vector<String> &file_content) {
 	Vector<String> found_things;
 
-	// TODO
+	int current_line = 1;
+
+	for (String &line : file_content) {
+		String old = line;
+		{
+			RegEx reg_tool2 = RegEx("^tool");
+			CRASH_COND(!reg_tool2.is_valid());
+			line = reg_tool2.sub(line, "@tool", true);
+		}
+		if (old != line) {
+			found_things.append(line_formatter(current_line, "tool", "@tool", line));
+		}
+		{
+			RegEx reg_export = RegEx("([\t]+)export\\b");
+			CRASH_COND(!reg_export.is_valid());
+			line = reg_export.sub(line, "$1@export", true);
+			RegEx reg_export2 = RegEx("^export");
+			CRASH_COND(!reg_export2.is_valid());
+			line = reg_export2.sub(line, "@export", true);
+		}
+		if (old != line) {
+			found_things.append(line_formatter(current_line, "export", "@export", line));
+		}
+		{
+			RegEx reg_onready2 = RegEx("^onready");
+			CRASH_COND(!reg_onready2.is_valid());
+			line = reg_onready2.sub(line, "@onready", true);
+		}
+		if (old != line) {
+			found_things.append(line_formatter(current_line, "onready", "@onready", line));
+		}
+		{
+			RegEx reg_master2 = RegEx("^master func");
+			CRASH_COND(!reg_master2.is_valid());
+			line = reg_master2.sub(line, "@rpc(any) func", true);
+		}
+		if (old != line) {
+			found_things.append(line_formatter(current_line, "master func", "@rpc(any) func", line));
+		}
+		{
+			RegEx reg_puppet2 = RegEx("^puppet func");
+			CRASH_COND(!reg_puppet2.is_valid());
+			line = reg_puppet2.sub(line, "@rpc(auth) func", true);
+		}
+		if (old != line) {
+			found_things.append(line_formatter(current_line, "puppet func", "@rpc(auth) func", line));
+		}
+		{
+			RegEx reg_remote2 = RegEx("^remote func");
+			CRASH_COND(!reg_remote2.is_valid());
+			line = reg_remote2.sub(line, "@rpc(any) func", true);
+		}
+		if (old != line) {
+			found_things.append(line_formatter(current_line, "remote func", "@rpc(any) func", line));
+		}
+		{
+			RegEx reg_remotesync2 = RegEx("^remotesync func");
+			CRASH_COND(!reg_remotesync2.is_valid());
+			line = reg_remotesync2.sub(line, "@rpc(any,sync) func", true);
+		}
+		if (old != line) {
+			found_things.append(line_formatter(current_line, "remotesync func", "@rpc(any,sync) func", line));
+		}
+		{
+			RegEx reg_sync2 = RegEx("^sync func");
+			CRASH_COND(!reg_sync2.is_valid());
+			line = reg_sync2.sub(line, "@rpc(any,sync) func", true);
+		}
+		if (old != line) {
+			found_things.append(line_formatter(current_line, "sync func", "@rpc(any,sync) func", line));
+		}
+		{
+			RegEx reg_puppetsync2 = RegEx("^puppetsync func");
+			CRASH_COND(!reg_puppetsync2.is_valid());
+			line = reg_puppetsync2.sub(line, "@rpc(auth,sync) func", true);
+		}
+		if (old != line) {
+			found_things.append(line_formatter(current_line, "puppetsync func", "@rpc(any,sync) func", line));
+		}
+		{
+			RegEx reg_mastersync2 = RegEx("^mastersync func");
+			CRASH_COND(!reg_mastersync2.is_valid());
+			line = reg_mastersync2.sub(line, "@rpc(any,sync) func", true);
+		}
+		if (old != line) {
+			found_things.append(line_formatter(current_line, "mastersync", "@rpc(any,sync) func", line));
+		}
+
+		current_line++;
+	}
 
 	return found_things;
 }
@@ -2551,5 +3034,9 @@ Vector<String> GodotConverter4::check_for_rename_common(const char *array[][2], 
 
 // Formats data to print them into user console when trying to convert data
 String GodotConverter4::line_formatter(int current_line, String from, String to, String line) {
-	return String("Line (") + itos(current_line) + ") " + from + " -> " + to + "  -  LINE \"\"\" " + line.strip_edges() + " \"\"\"";
+	return String("Line (") + itos(current_line) + ") " + from.replace("\r", "").replace("\n", "") + " -> " + to.replace("\r", "").replace("\n", "") + "  -  LINE \"\"\" " + line.replace("\r", "").replace("\n", "").strip_edges() + " \"\"\"";
+}
+
+String GodotConverter4::simple_line_formatter(int current_line, String old_line, String line) {
+	return String("Line (") + itos(current_line) + ") - FULL LINES - \"\"\"" + old_line.replace("\r", "").replace("\n", "").strip_edges() + "\"\"\"  =====>  \"\"\" " + line.replace("\r", "").replace("\n", "").strip_edges() + " \"\"\"";
 }

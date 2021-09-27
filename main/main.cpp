@@ -2047,11 +2047,13 @@ bool Main::start() {
 	}
 
 	if (converting_project) {
-		GodotConverter4().converter();
+		int exit_code = GodotConverter4().converter();
+		OS::get_singleton()->set_exit_code(exit_code);
 		return false;
 	}
 	if (validating_converting_project) {
-		GodotConverter4().converter_validation();
+		int exit_code = GodotConverter4().converter_validation();
+		OS::get_singleton()->set_exit_code(exit_code);
 		return false;
 	}
 

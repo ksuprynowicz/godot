@@ -64,6 +64,7 @@ class GodotConverter4 {
 	String get_object_of_execution(const String &line) const;
 
 	String line_formatter(int current_line, String from, String to, String line);
+	String simple_line_formatter(int current_line, String old_line, String line);
 
 	bool test_single_array(const char *array[][2], bool ignore_second_check = false);
 	bool test_conversion_single_additional(String name, String expected, void (GodotConverter4::*func)(String &), String what);
@@ -72,8 +73,8 @@ class GodotConverter4 {
 	bool test_conversion();
 
 public:
-	void converter_validation();
-	void converter();
+	int converter_validation();
+	int converter();
 };
 
 #endif // CONVERTER_H
