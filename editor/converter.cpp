@@ -1297,9 +1297,6 @@ int GodotConverter4::converter() {
 				reason.append("    File was not changed, checking took " + itos(end_time - start_time) + " ms.");
 			}
 		}
-		for (int k = 0; k < reason.size(); k++) {
-			print_line(reason[k]);
-		}
 	}
 
 	print_line("Converting ended - all files(" + itos(collected_files.size()) + "), converted files(" + itos(converted_files) + "), not converted files(" + itos(collected_files.size() - converted_files) + ").");
@@ -1328,9 +1325,8 @@ int GodotConverter4::converter_validation() {
 	}
 
 	Vector<String> collected_files = check_for_files();
-
 	uint32_t converted_files = 0;
-
+	
 	// Check file by file
 	for (int i = 0; i < collected_files.size(); i++) {
 		String file_name = collected_files[i];
@@ -1350,10 +1346,8 @@ int GodotConverter4::converter_validation() {
 
 		Vector<String> changed_elements;
 		Vector<String> reason;
-		bool is_ignored = false;
-		uint64_t start_time = Time::get_singleton()->get_ticks_msec();
 
-		if (file_name.ends_with(".sader")) {
+		if (file_name.ends_with(".shader")) {
 			reason.append("\tFile extension will be renamed from `shader` to `gdshader`.");
 		}
 
@@ -1415,24 +1409,8 @@ int GodotConverter4::converter_validation() {
 		}
 	}
 
-	uint64_t end_time = Time::get_singleton()->get_ticks_msec();
-	print_line("    Checking file took " + itos(end_time - start_time) + " ms.");
-
-	for (int k = 0; k < reason.size(); k++) {
-		print_line(reason[k]);
-	}
-
-	if (changed_elements.size() > 0 && !is_ignored) {
-		converted_files++;
-
-		for (int k = 0; k < changed_elements.size(); k++) {
-			print_line(String("\t\t") + changed_elements[k]);
-		}
-	}
-}
-
-print_line("Checking for converting ended - all files(" + itos(collected_files.size()) + "), files which would be converted(" + itos(converted_files) + "), files which would not be converted(" + itos(collected_files.size() - converted_files) + ").");
-return 0;
+	print_line("Checking for converting ended - all files(" + itos(collected_files.size()) + "), files which would be converted(" + itos(converted_files) + "), files which would not be converted(" + itos(collected_files.size() - converted_files) + ").");
+	return 0;
 }
 
 // Collect files which will be checked, it will not touch txt, mp4, wav etc. files
