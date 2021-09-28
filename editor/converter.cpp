@@ -1221,67 +1221,62 @@ int GodotConverter4::converter() {
 			file_name = file_name.replace(".shader", ".gdshader");
 		}
 
-		if (file_size < 1024 * 250 * 1) {
-			// TSCN must be the same work exactly same as .gd file because it may contains builtin script
-			if (file_name.ends_with(".gd")) {
-				rename_classes(file_content); // Using only specialized function
+		// TSCN must be the same work exactly same as .gd file because it may contains builtin script
+		if (file_name.ends_with(".gd")) {
+			rename_classes(file_content); // Using only specialized function
 
-				rename_common(enum_renames, file_content);
-				rename_enums(file_content); // Require to additional rename
+			rename_common(enum_renames, file_content);
+			rename_enums(file_content); // Require to additional rename
 
-				rename_common(gdscript_function_renames, file_content);
-				rename_gdscript_functions(file_content); // Require to additional rename
+			rename_common(gdscript_function_renames, file_content);
+			rename_gdscript_functions(file_content); // Require to additional rename
 
-				rename_common(project_settings_renames, file_content);
-				rename_gdscript_keywords(file_content);
-				rename_common(properties_renames, file_content);
-				rename_common(signals_renames, file_content);
-				rename_common(shaders_renames, file_content);
-				rename_common(builtin_types_renames, file_content);
+			rename_common(project_settings_renames, file_content);
+			rename_gdscript_keywords(file_content);
+			rename_common(properties_renames, file_content);
+			rename_common(signals_renames, file_content);
+			rename_common(shaders_renames, file_content);
+			rename_common(builtin_types_renames, file_content);
 
-				custom_rename(file_content, "\\.shader", ".gdshader");
-				custom_rename(file_content, "instance", "instantiate");
-			} else if (file_name.ends_with(".tscn")) {
-				rename_classes(file_content); // Using only specialized function
+			custom_rename(file_content, "\\.shader", ".gdshader");
+			custom_rename(file_content, "instance", "instantiate");
+		} else if (file_name.ends_with(".tscn")) {
+			rename_classes(file_content); // Using only specialized function
 
-				rename_common(enum_renames, file_content);
-				rename_enums(file_content); // Require to additional rename
+			rename_common(enum_renames, file_content);
+			rename_enums(file_content); // Require to additional rename
 
-				rename_common(gdscript_function_renames, file_content);
-				rename_gdscript_functions(file_content); // Require to additional rename
+			rename_common(gdscript_function_renames, file_content);
+			rename_gdscript_functions(file_content); // Require to additional rename
 
-				rename_common(project_settings_renames, file_content);
-				rename_gdscript_keywords(file_content);
-				rename_common(properties_renames, file_content);
-				rename_common(signals_renames, file_content);
-				rename_common(shaders_renames, file_content);
-				rename_common(builtin_types_renames, file_content);
+			rename_common(project_settings_renames, file_content);
+			rename_gdscript_keywords(file_content);
+			rename_common(properties_renames, file_content);
+			rename_common(signals_renames, file_content);
+			rename_common(shaders_renames, file_content);
+			rename_common(builtin_types_renames, file_content);
 
-				custom_rename(file_content, "\\.shader", ".gdshader");
-			} else if (file_name.ends_with(".cs")) { // TODO, C# should use different methods
-				rename_classes(file_content); // Using only specialized function
-				rename_common(csharp_function_renames, file_content);
-			} else if (file_name.ends_with(".gdshader") || file_name.ends_with(".shader")) {
-				rename_common(shaders_renames, file_content);
-			} else if (file_name.ends_with("tres")) {
-				rename_classes(file_content); // Using only specialized function
+			custom_rename(file_content, "\\.shader", ".gdshader");
+		} else if (file_name.ends_with(".cs")) { // TODO, C# should use different methods
+			rename_classes(file_content); // Using only specialized function
+			rename_common(csharp_function_renames, file_content);
+		} else if (file_name.ends_with(".gdshader") || file_name.ends_with(".shader")) {
+			rename_common(shaders_renames, file_content);
+		} else if (file_name.ends_with("tres")) {
+			rename_classes(file_content); // Using only specialized function
 
-				rename_common(shaders_renames, file_content);
-				rename_common(builtin_types_renames, file_content);
+			rename_common(shaders_renames, file_content);
+			rename_common(builtin_types_renames, file_content);
 
-				custom_rename(file_content, "\\.shader", ".gdshader");
-			} else if (file_name.ends_with("project.godot")) {
-				rename_common(project_settings_renames, file_content);
-				rename_common(builtin_types_renames, file_content);
-			} else if (file_name.ends_with(".csproj")) {
-				// TODO
-			} else {
-				ERR_PRINT(file_name + " is not supported!");
-				continue;
-			}
+			custom_rename(file_content, "\\.shader", ".gdshader");
+		} else if (file_name.ends_with("project.godot")) {
+			rename_common(project_settings_renames, file_content);
+			rename_common(builtin_types_renames, file_content);
+		} else if (file_name.ends_with(".csproj")) {
+			// TODO
 		} else {
-			reason.append("    ERROR: File has exceeded the maximum size allowed - 250 KB");
-			is_ignored = true;
+			ERR_PRINT(file_name + " is not supported!");
+			continue;
 		}
 
 		uint64_t end_time = Time::get_singleton()->get_ticks_msec();
@@ -1362,86 +1357,82 @@ int GodotConverter4::converter_validation() {
 			reason.append("\tFile extension will be renamed from `shader` to `gdshader`.");
 		}
 
-		if (file_size < 1024 * 250 * 1) {
-			if (file_name.ends_with(".gd")) {
-				changed_elements.append_array(check_for_rename_classes(file_content));
+		if (file_name.ends_with(".gd")) {
+			changed_elements.append_array(check_for_rename_classes(file_content));
 
-				changed_elements.append_array(check_for_rename_common(enum_renames, file_content));
-				changed_elements.append_array(check_for_rename_enums(file_content));
+			changed_elements.append_array(check_for_rename_common(enum_renames, file_content));
+			changed_elements.append_array(check_for_rename_enums(file_content));
 
-				changed_elements.append_array(check_for_rename_common(gdscript_function_renames, file_content));
-				changed_elements.append_array(check_for_rename_gdscript_functions(file_content));
+			changed_elements.append_array(check_for_rename_common(gdscript_function_renames, file_content));
+			changed_elements.append_array(check_for_rename_gdscript_functions(file_content));
 
-				changed_elements.append_array(check_for_rename_common(project_settings_renames, file_content));
-				changed_elements.append_array(check_for_rename_gdscript_keywords(file_content));
-				changed_elements.append_array(check_for_rename_common(properties_renames, file_content));
-				changed_elements.append_array(check_for_rename_common(signals_renames, file_content));
-				changed_elements.append_array(check_for_rename_common(shaders_renames, file_content));
-				changed_elements.append_array(check_for_rename_common(builtin_types_renames, file_content));
+			changed_elements.append_array(check_for_rename_common(project_settings_renames, file_content));
+			changed_elements.append_array(check_for_rename_gdscript_keywords(file_content));
+			changed_elements.append_array(check_for_rename_common(properties_renames, file_content));
+			changed_elements.append_array(check_for_rename_common(signals_renames, file_content));
+			changed_elements.append_array(check_for_rename_common(shaders_renames, file_content));
+			changed_elements.append_array(check_for_rename_common(builtin_types_renames, file_content));
 
-				changed_elements.append_array(check_for_custom_rename(file_content, "instance", "instantiate"));
-				changed_elements.append_array(check_for_custom_rename(file_content, "\\.shader", ".gdshader"));
-			} else if (file_name.ends_with(".tscn")) {
-				changed_elements.append_array(check_for_rename_classes(file_content));
+			changed_elements.append_array(check_for_custom_rename(file_content, "instance", "instantiate"));
+			changed_elements.append_array(check_for_custom_rename(file_content, "\\.shader", ".gdshader"));
+		} else if (file_name.ends_with(".tscn")) {
+			changed_elements.append_array(check_for_rename_classes(file_content));
 
-				changed_elements.append_array(check_for_rename_common(enum_renames, file_content));
-				changed_elements.append_array(check_for_rename_enums(file_content));
+			changed_elements.append_array(check_for_rename_common(enum_renames, file_content));
+			changed_elements.append_array(check_for_rename_enums(file_content));
 
-				changed_elements.append_array(check_for_rename_common(gdscript_function_renames, file_content));
-				changed_elements.append_array(check_for_rename_gdscript_functions(file_content));
+			changed_elements.append_array(check_for_rename_common(gdscript_function_renames, file_content));
+			changed_elements.append_array(check_for_rename_gdscript_functions(file_content));
 
-				changed_elements.append_array(check_for_rename_common(project_settings_renames, file_content));
-				changed_elements.append_array(check_for_rename_gdscript_keywords(file_content));
-				changed_elements.append_array(check_for_rename_common(properties_renames, file_content));
-				changed_elements.append_array(check_for_rename_common(signals_renames, file_content));
-				changed_elements.append_array(check_for_rename_common(shaders_renames, file_content));
-				changed_elements.append_array(check_for_rename_common(builtin_types_renames, file_content));
+			changed_elements.append_array(check_for_rename_common(project_settings_renames, file_content));
+			changed_elements.append_array(check_for_rename_gdscript_keywords(file_content));
+			changed_elements.append_array(check_for_rename_common(properties_renames, file_content));
+			changed_elements.append_array(check_for_rename_common(signals_renames, file_content));
+			changed_elements.append_array(check_for_rename_common(shaders_renames, file_content));
+			changed_elements.append_array(check_for_rename_common(builtin_types_renames, file_content));
 
-				changed_elements.append_array(check_for_custom_rename(file_content, "\\.shader", ".gdshader"));
-			} else if (file_name.ends_with(".cs")) {
-				changed_elements.append_array(check_for_rename_common(class_renames, file_content));
-				changed_elements.append_array(check_for_rename_common(csharp_function_renames, file_content));
-			} else if (file_name.ends_with(".gdshader") || file_name.ends_with(".shader")) {
-				changed_elements.append_array(check_for_rename_common(shaders_renames, file_content));
-			} else if (file_name.ends_with("tres")) {
-				changed_elements.append_array(check_for_rename_classes(file_content));
+			changed_elements.append_array(check_for_custom_rename(file_content, "\\.shader", ".gdshader"));
+		} else if (file_name.ends_with(".cs")) {
+			changed_elements.append_array(check_for_rename_common(class_renames, file_content));
+			changed_elements.append_array(check_for_rename_common(csharp_function_renames, file_content));
+		} else if (file_name.ends_with(".gdshader") || file_name.ends_with(".shader")) {
+			changed_elements.append_array(check_for_rename_common(shaders_renames, file_content));
+		} else if (file_name.ends_with("tres")) {
+			changed_elements.append_array(check_for_rename_classes(file_content));
 
-				changed_elements.append_array(check_for_rename_common(shaders_renames, file_content));
-				changed_elements.append_array(check_for_rename_common(builtin_types_renames, file_content));
+			changed_elements.append_array(check_for_rename_common(shaders_renames, file_content));
+			changed_elements.append_array(check_for_rename_common(builtin_types_renames, file_content));
 
-				changed_elements.append_array(check_for_custom_rename(file_content, "\\.shader", ".gdshader"));
-			} else if (file_name.ends_with("project.godot")) {
-				changed_elements.append_array(check_for_rename_common(project_settings_renames, file_content));
-				changed_elements.append_array(check_for_rename_common(builtin_types_renames, file_content));
-			} else if (file_name.ends_with(".csproj")) {
-				// TODO
-			} else {
-				ERR_PRINT(file_name + " is not supported!");
-				continue;
-			}
+			changed_elements.append_array(check_for_custom_rename(file_content, "\\.shader", ".gdshader"));
+		} else if (file_name.ends_with("project.godot")) {
+			changed_elements.append_array(check_for_rename_common(project_settings_renames, file_content));
+			changed_elements.append_array(check_for_rename_common(builtin_types_renames, file_content));
+		} else if (file_name.ends_with(".csproj")) {
+			// TODO
 		} else {
-			reason.append("\tERROR: File has exceeded the maximum size allowed - 250 KB");
-			is_ignored = true;
-		}
-
-		uint64_t end_time = Time::get_singleton()->get_ticks_msec();
-		print_line("    Checking file took " + itos(end_time - start_time) + " ms.");
-
-		for (int k = 0; k < reason.size(); k++) {
-			print_line(reason[k]);
-		}
-
-		if (changed_elements.size() > 0 && !is_ignored) {
-			converted_files++;
-
-			for (int k = 0; k < changed_elements.size(); k++) {
-				print_line(String("\t\t") + changed_elements[k]);
-			}
+			ERR_PRINT(file_name + " is not supported!");
+			continue;
 		}
 	}
 
-	print_line("Checking for converting ended - all files(" + itos(collected_files.size()) + "), files which would be converted(" + itos(converted_files) + "), files which would not be converted(" + itos(collected_files.size() - converted_files) + ").");
-	return 0;
+	uint64_t end_time = Time::get_singleton()->get_ticks_msec();
+	print_line("    Checking file took " + itos(end_time - start_time) + " ms.");
+
+	for (int k = 0; k < reason.size(); k++) {
+		print_line(reason[k]);
+	}
+
+	if (changed_elements.size() > 0 && !is_ignored) {
+		converted_files++;
+
+		for (int k = 0; k < changed_elements.size(); k++) {
+			print_line(String("\t\t") + changed_elements[k]);
+		}
+	}
+}
+
+print_line("Checking for converting ended - all files(" + itos(collected_files.size()) + "), files which would be converted(" + itos(converted_files) + "), files which would not be converted(" + itos(collected_files.size() - converted_files) + ").");
+return 0;
 }
 
 // Collect files which will be checked, it will not touch txt, mp4, wav etc. files
