@@ -31,7 +31,9 @@
 #ifndef GLTF_DOCUMENT_H
 #define GLTF_DOCUMENT_H
 
+#ifdef TOOLS_ENABLED
 #include "editor/import/resource_importer_scene.h"
+#endif
 #include "gltf_animation.h"
 #include "scene/2d/node_2d.h"
 #include "scene/3d/bone_attachment.h"
