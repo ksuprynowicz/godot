@@ -1737,12 +1737,11 @@ bool GodotConverter4::test_array_names() {
 		int current_element = 0;
 		while (gdscript_function_renames[current_element][0] != nullptr) {
 			if (!all_functions.has(gdscript_function_renames[current_element][1])) {
-				ERR_PRINT(String("Missing gdscript function in pair (") + gdscript_function_renames[current_element][0] + " - ===> " + gdscript_function_renames[current_element][1] + " <===) (Currently not fully functioning properly, waiting for https://github.com/godotengine/godot/pull/49053)");
+				ERR_PRINT(String("Missing gdscript function in pair (") + gdscript_function_renames[current_element][0] + " - ===> " + gdscript_function_renames[current_element][1] + " <===) ( Currently not fully functioning properly, waiting for https://github.com/godotengine/godot/pull/49053 )");
+				// valid = false;
 			}
 			current_element++;
 		}
-
-		valid = false;
 	}
 
 	valid = valid & test_single_array(enum_renames);
