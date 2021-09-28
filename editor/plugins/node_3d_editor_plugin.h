@@ -564,6 +564,7 @@ private:
 
 	struct Gizmo {
 		bool visible = false;
+		bool enable = false;
 		real_t scale = 0;
 		Transform3D transform;
 	} gizmo;
@@ -663,6 +664,7 @@ private:
 	Node3D *selected;
 
 	void _request_gizmo(Object *p_obj);
+	void _set_subgizmo_selection(Object *p_obj, Ref<Node3DGizmo> p_gizmo, int p_id, Transform3D p_transform = Transform3D());
 	void _clear_subgizmo_selection(Object *p_obj = nullptr);
 
 	static Node3DEditor *singleton;
@@ -756,7 +758,8 @@ public:
 	float get_fov() const { return settings_fov->get_value(); }
 
 	Transform3D get_gizmo_transform() const { return gizmo.transform; }
-	bool is_gizmo_visible() const { return gizmo.visible; }
+	void set_gizmo_visible(bool p_visible) { gizmo.visible = p_visible; }
+	bool is_gizmo_visible() const { return gizmo.enable && gizmo.visible; }
 
 	ToolMode get_tool_mode() const { return tool_mode; }
 	bool are_local_coords_enabled() const { return tool_option_button[Node3DEditor::TOOL_OPT_LOCAL_COORDS]->is_pressed(); }
