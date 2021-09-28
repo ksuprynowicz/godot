@@ -5455,7 +5455,7 @@ void GLTFDocument::_convert_skeleton_to_gltf(Skeleton3D *p_skeleton3d, Ref<GLTFS
 		Transform3D xform = skeleton->get_bone_rest(bone_i) * skeleton->get_bone_pose(bone_i);
 		joint_node->scale = xform.basis.get_scale();
 		joint_node->rotation = xform.basis.get_rotation_quaternion();
-		joint_node->translation = xform.origin;
+		joint_node->position = xform.origin;
 		joint_node->joint = true;
 		GLTFNodeIndex current_node_i = state->nodes.size();
 		state->scene_nodes.insert(current_node_i, skeleton);
