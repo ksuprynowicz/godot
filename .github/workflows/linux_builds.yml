@@ -24,6 +24,7 @@ jobs:
             tools: true
             tests: true
             doc-test: true
+            proj-conv: true
             bin: "./bin/godot.linuxbsd.opt.tools.64"
             artifact: true
 
@@ -103,6 +104,17 @@ jobs:
           echo -e "If a diff is shown, it means that your code/doc changes are incomplete and you should update the class reference with --doctool.\n\n"
           VK_ICD_FILENAMES=$(pwd)/vk_swiftshader_icd.json DRI_PRIME=0 xvfb-run ${{ matrix.bin }} --doctool . 2>&1 > /dev/null || true
           git diff --color --exit-code && ! git ls-files --others --exclude-standard | sed -e 's/^/New doc file missing in PR: /' | grep 'xml$'
+
+      # Test 3.x -> 4.0 project converter
+      - name: Test project converter
+        if: ${{ matrix.proj-conv }}
+        run: |
+          mkdir converter_test
+          cd converter_test
+          touch project.godot
+          VK_ICD_FILENAMES=$(pwd)/../vk_swiftshader_icd.json DRI_PRIME=0 xvfb-run ../${{ matrix.bin }} --audio-driver Dummy --validate-convert-to-godot40
+          cd ..
+          rm converter_test -rf
 
       # Download and extract zip archive with project, folder is renamed to be able to easy change used project
       - name: Download test project
