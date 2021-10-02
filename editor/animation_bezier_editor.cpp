@@ -1020,7 +1020,7 @@ void AnimationBezierTrackEdit::_menu_selected(int p_index) {
 			new_point[2] = 0;
 			new_point[3] = 0.25;
 			new_point[4] = 0;
-			new_point[5] = 0;
+			new_point[5] = Animation::HANDLE_MODE_BALANCED;
 
 			float time = ((menu_insert_key.x - timeline->get_name_limit()) / timeline->get_zoom_scale()) + timeline->get_value();
 			while (animation->track_find_key(track, time, true) != -1) {
