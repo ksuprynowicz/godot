@@ -88,6 +88,14 @@
 			<description>
 			</description>
 		</method>
+		<method name="compute_image_metrics">
+			<return type="Dictionary" />
+			<argument index="0" name="second_image" type="Image" />
+			<argument index="1" name="use_luma" type="bool" />
+			</argument>
+			<description>
+			</description>
+		</method>
 		<method name="convert">
 			<return type="void" />
 			<argument index="0" name="format" type="int" enum="Image.Format" />
