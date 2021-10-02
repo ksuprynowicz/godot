@@ -976,13 +976,12 @@ void AnimationBezierTrackEdit::gui_input(const Ref<InputEvent> &p_event) {
 		const Vector2 key_pos = Vector2(animation->track_get_key_time(track, moving_handle_key), animation->bezier_track_get_key_value(track, moving_handle_key));
 		const Vector2 moving_handle_value = Vector2(x, y) - key_pos;
 
-		const Vector2 scale = Vector2(timeline->get_zoom_scale(), v_zoom);
 		if (moving_handle == -1) {
-			animation->bezier_track_set_key_in_handle(track, moving_handle_key, moving_handle_value, scale);
+			animation->bezier_track_set_key_in_handle(track, moving_handle_key, moving_handle_value);
 			moving_handle_left = moving_handle_value;
 			moving_handle_right = animation->bezier_track_get_key_out_handle(track, moving_handle_key);
 		} else if (moving_handle == 1) {
-			animation->bezier_track_set_key_out_handle(track, moving_handle_key, moving_handle_value, scale);
+			animation->bezier_track_set_key_out_handle(track, moving_handle_key, moving_handle_value);
 			moving_handle_right = moving_handle_value;
 			moving_handle_left = animation->bezier_track_get_key_in_handle(track, moving_handle_key);
 		}
@@ -992,12 +991,11 @@ void AnimationBezierTrackEdit::gui_input(const Ref<InputEvent> &p_event) {
 	const bool is_finishing_key_handle_drag = moving_handle != 0 && mb.is_valid() && !mb->is_pressed() && mb->get_button_index() == MOUSE_BUTTON_LEFT;
 	if (is_finishing_key_handle_drag) {
 		undo_redo->create_action(TTR("Move Bezier Points"));
-		const Vector2 scale = Vector2(timeline->get_zoom_scale(), v_zoom);
 		if (moving_handle == -1) {
-			undo_redo->add_do_method(animation.ptr(), "bezier_track_set_key_in_handle", track, moving_handle_key, moving_handle_left, scale);
+			undo_redo->add_do_method(animation.ptr(), "bezier_track_set_key_in_handle", track, moving_handle_key, moving_handle_left);
 			undo_redo->add_undo_method(animation.ptr(), "bezier_track_set_key_in_handle", track, moving_handle_key, animation->bezier_track_get_key_in_handle(track, moving_handle_key));
 		} else if (moving_handle == 1) {
-			undo_redo->add_do_method(animation.ptr(), "bezier_track_set_key_out_handle", track, moving_handle_key, moving_handle_right, scale);
+			undo_redo->add_do_method(animation.ptr(), "bezier_track_set_key_out_handle", track, moving_handle_key, moving_handle_right);
 			undo_redo->add_undo_method(animation.ptr(), "bezier_track_set_key_out_handle", track, moving_handle_key, animation->bezier_track_get_key_out_handle(track, moving_handle_key));
 		}
 		undo_redo->commit_action();

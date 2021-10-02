@@ -2134,7 +2134,7 @@ StringName Animation::method_track_get_name(int p_track, int p_key_idx) const {
 	return pm->methods[p_key_idx].method;
 }
 
-int Animation::bezier_track_insert_key(int p_track, double p_time, real_t p_value, const Vector2 &p_in_handle, const Vector2 &p_out_handle, const HandleMode p_handle_mode = HandleMode::HANDLE_MODE_BALANCED) {
+int Animation::bezier_track_insert_key(int p_track, double p_time, real_t p_value, const Vector2 &p_in_handle, const Vector2 &p_out_handle, const HandleMode p_handle_mode) {
 	ERR_FAIL_INDEX_V(p_track, tracks.size(), -1);
 	Track *t = tracks[p_track];
 	ERR_FAIL_COND_V(t->type != TYPE_BEZIER, -1);
@@ -2198,7 +2198,7 @@ void Animation::bezier_track_set_key_value(int p_track, int p_index, real_t p_va
 	emit_changed();
 }
 
-void Animation::bezier_track_set_key_in_handle(int p_track, int p_index, const Vector2 &p_handle, const Vector2 &p_balanced_scale) {
+void Animation::bezier_track_set_key_in_handle(int p_track, int p_index, const Vector2 &p_handle) {
 	ERR_FAIL_INDEX(p_track, tracks.size());
 	Track *t = tracks[p_track];
 	ERR_FAIL_COND(t->type != TYPE_BEZIER);
@@ -2208,20 +2208,22 @@ void Animation::bezier_track_set_key_in_handle(int p_track, int p_index, const V
 	ERR_FAIL_INDEX(p_index, bt->values.size());
 
 	Vector2 in_handle = p_handle;
-	if (in_handle.x > 0) {
-		in_handle.x = 0;
+	if (in_handle.x >= 0) {
+		in_handle.x = -0.000001;
 	}
 	bt->values.write[p_index].value.in_handle = in_handle;
 
 	if (bezier_track_get_key_handle_mode(p_track, p_index) == HANDLE_MODE_BALANCED) {
-		const Vector2 out_handle = (-(in_handle * p_balanced_scale).normalized() * (bt->values[p_index].value.out_handle * p_balanced_scale).length()) / p_balanced_scale;
-		bt->values.write[p_index].value.out_handle = out_handle;
+		const Vector2 direction = in_handle.normalized();
+		float out_time = bt->values[p_index].value.out_handle.x;
+		float out_scale = out_time / direction.x;
+		bt->values.write[p_index].value.out_handle = direction * out_scale;
 	}
 
 	emit_changed();
 }
 
-void Animation::bezier_track_set_key_out_handle(int p_track, int p_index, const Vector2 &p_handle, const Vector2 &p_balanced_scale) {
+void Animation::bezier_track_set_key_out_handle(int p_track, int p_index, const Vector2 &p_handle) {
 	ERR_FAIL_INDEX(p_track, tracks.size());
 	Track *t = tracks[p_track];
 	ERR_FAIL_COND(t->type != TYPE_BEZIER);
@@ -2231,14 +2233,16 @@ void Animation::bezier_track_set_key_out_handle(int p_track, int p_index, const 
 	ERR_FAIL_INDEX(p_index, bt->values.size());
 
 	Vector2 out_handle = p_handle;
-	if (out_handle.x < 0) {
-		out_handle.x = 0;
+	if (out_handle.x <= 0) {
+		out_handle.x = 0.000001;
 	}
 	bt->values.write[p_index].value.out_handle = out_handle;
 
 	if (bezier_track_get_key_handle_mode(p_track, p_index) == HANDLE_MODE_BALANCED) {
-		const Vector2 in_handle = (-(out_handle * p_balanced_scale).normalized() * (bt->values[p_index].value.in_handle * p_balanced_scale).length()) / p_balanced_scale;
-		bt->values.write[p_index].value.in_handle = in_handle;
+		const Vector2 direction = out_handle.normalized();
+		float in_time = bt->values[p_index].value.in_handle.x;
+		float in_scale = in_time / direction.x;
+		bt->values.write[p_index].value.in_handle = direction * in_scale;
 	}
 
 	emit_changed();
@@ -2695,7 +2699,7 @@ void Animation::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("method_track_get_name", "track_idx", "key_idx"), &Animation::method_track_get_name);
 	ClassDB::bind_method(D_METHOD("method_track_get_params", "track_idx", "key_idx"), &Animation::method_track_get_params);
 
-	ClassDB::bind_method(D_METHOD("bezier_track_insert_key", "track_idx", "time", "value", "in_handle", "out_handle", "handle_mode"), &Animation::bezier_track_insert_key, DEFVAL(Vector2()), DEFVAL(Vector2()));
+	ClassDB::bind_method(D_METHOD("bezier_track_insert_key", "track_idx", "time", "value", "in_handle", "out_handle", "handle_mode"), &Animation::bezier_track_insert_key, DEFVAL(Vector2()), DEFVAL(Vector2()), DEFVAL(1));
 
 	ClassDB::bind_method(D_METHOD("bezier_track_set_key_value", "track_idx", "key_idx", "value"), &Animation::bezier_track_set_key_value);
 	ClassDB::bind_method(D_METHOD("bezier_track_set_key_in_handle", "track_idx", "key_idx", "in_handle"), &Animation::bezier_track_set_key_in_handle);
