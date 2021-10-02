@@ -260,6 +260,9 @@ void EditorSceneImporterMesh::generate_lods(float p_normal_merge_angle, float p_
 		if (surfaces[i].primitive != Mesh::PRIMITIVE_TRIANGLES) {
 			continue;
 		}
+		if (get_mesh()->get_blend_shape_count()) {
+			continue;
+		}
 
 		surfaces.write[i].lods.clear();
 		Vector<Vector3> vertices = surfaces[i].arrays[RS::ARRAY_VERTEX];
