@@ -155,6 +155,7 @@ public:
 
 	void set_disable_gizmos(bool p_enabled);
 	void update_gizmos();
+	void set_subgizmo_selection(Ref<Node3DGizmo> p_gizmo, int p_id, Transform3D p_transform = Transform3D());
 	void clear_subgizmo_selection();
 	Vector<Ref<Node3DGizmo>> get_gizmos() const;
 	Array get_gizmos_bind() const;
