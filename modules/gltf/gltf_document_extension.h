@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  fbx_bone.cpp                                                         */
+/*  gltf_document_extension.h                                            */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,29 +28,36 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "fbx_bone.h"
+#ifndef GLTF_DOCUMENT_EXTENSION_H
+#define GLTF_DOCUMENT_EXTENSION_H
 
-#include "fbx_node.h"
-#include "import_state.h"
+#include "core/io/resource.h"
+#include "core/variant/dictionary.h"
+#include "core/variant/typed_array.h"
+#include "core/variant/variant.h"
+class GLTFDocument;
+class GLTFDocumentExtension : public Resource {
+	GDCLASS(GLTFDocumentExtension, Resource);
 
-Ref<FBXNode> FBXSkinDeformer::get_link(const ImportState &state) const {
-	print_verbose("bone name: " + bone->bone_name);
+	Dictionary import_settings;
+	Dictionary export_settings;
 
-	// safe for when deformers must be polyfilled when skin has different count of binds to bones in the scene ;)
-	if (!cluster) {
-		return nullptr;
-	}
+protected:
+	static void _bind_methods();
 
-	ERR_FAIL_COND_V_MSG(cluster->TargetNode() == nullptr, nullptr, "bone has invalid target node");
+public:
+	virtual Array get_import_setting_keys() const;
+	virtual Variant get_import_setting(const StringName &p_key) const;
+	virtual void set_import_setting(const StringName &p_key, Variant p_var);
+	virtual Error import_preflight(Ref<GLTFDocument> p_document) { return OK; }
+	virtual Error import_post(Ref<GLTFDocument> p_document, Node *p_node) { return OK; }
 
-	Ref<FBXNode> link_node;
-	uint64_t id = cluster->TargetNode()->ID();
-	if (state.fbx_target_map.has(id)) {
-		link_node = state.fbx_target_map[id];
-	} else {
-		print_error("link node not found for " + itos(id));
-	}
+public:
+	virtual Array get_export_setting_keys() const;
+	virtual Variant get_export_setting(const StringName &p_key) const;
+	virtual void set_export_setting(const StringName &p_key, Variant p_var);
+	virtual Error export_preflight(Ref<GLTFDocument> p_document, Node *p_node) { return OK; }
+	virtual Error export_post(Ref<GLTFDocument> p_document) { return OK; }
+};
 
-	// the node in space this is for, like if it's FOR a target.
-	return link_node;
-}
+#endif // GLTF_DOCUMENT_EXTENSION_H

@@ -49,6 +49,7 @@
 #include "core/version.h"
 #include "core/version_hash.gen.h"
 #include "main/main.h"
+#include "scene/3d/importer_mesh_instance_3d.h"
 #include "scene/gui/center_container.h"
 #include "scene/gui/control.h"
 #include "scene/gui/dialogs.h"
@@ -98,7 +99,6 @@
 #include "editor/export_template_manager.h"
 #include "editor/filesystem_dock.h"
 #include "editor/import/dynamicfont_import_settings.h"
-#include "editor/import/editor_import_collada.h"
 #include "editor/import/resource_importer_bitmask.h"
 #include "editor/import/resource_importer_bmfont.h"
 #include "editor/import/resource_importer_csv_translation.h"
@@ -113,7 +113,6 @@
 #include "editor/import/resource_importer_texture_atlas.h"
 #include "editor/import/resource_importer_wav.h"
 #include "editor/import/scene_import_settings.h"
-#include "editor/import/scene_importer_mesh_node_3d.h"
 #include "editor/import_dock.h"
 #include "editor/multi_node_edit.h"
 #include "editor/node_dock.h"
@@ -169,7 +168,6 @@
 #include "editor/plugins/shader_file_editor_plugin.h"
 #include "editor/plugins/skeleton_2d_editor_plugin.h"
 #include "editor/plugins/skeleton_3d_editor_plugin.h"
-#include "editor/plugins/skeleton_ik_3d_editor_plugin.h"
 #include "editor/plugins/sprite_2d_editor_plugin.h"
 #include "editor/plugins/sprite_frames_editor_plugin.h"
 #include "editor/plugins/style_box_editor_plugin.h"
@@ -3852,8 +3850,6 @@ void EditorNode::register_editor_types() {
 	GDREGISTER_CLASS(EditorSpinSlider);
 	GDREGISTER_CLASS(EditorResourcePicker);
 	GDREGISTER_CLASS(EditorScriptPicker);
-	GDREGISTER_CLASS(EditorSceneImporterMesh);
-	GDREGISTER_CLASS(EditorSceneImporterMeshNode3D);
 
 	GDREGISTER_VIRTUAL_CLASS(FileSystemDock);
 
@@ -5931,10 +5927,6 @@ EditorNode::EditorNode() {
 		ResourceFormatImporter::get_singleton()->add_importer(import_scene);
 
 		{
-			Ref<EditorSceneImporterCollada> import_collada;
-			import_collada.instantiate();
-			import_scene->add_importer(import_collada);
-
 			Ref<EditorOBJImporter> import_obj2;
 			import_obj2.instantiate();
 			import_scene->add_importer(import_obj2);
@@ -6977,7 +6969,6 @@ EditorNode::EditorNode() {
 	add_editor_plugin(memnew(AudioStreamEditorPlugin(this)));
 	add_editor_plugin(memnew(AudioBusesEditorPlugin(audio_bus_editor)));
 	add_editor_plugin(memnew(Skeleton3DEditorPlugin(this)));
-	add_editor_plugin(memnew(SkeletonIK3DEditorPlugin(this)));
 	add_editor_plugin(memnew(PhysicalBone3DEditorPlugin(this)));
 	add_editor_plugin(memnew(MeshEditorPlugin(this)));
 	add_editor_plugin(memnew(MaterialEditorPlugin(this)));

@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  validation_tools.h                                                   */
+/*  importer_mesh_instance_3d.h                                          */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,65 +28,37 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef FBX_VALIDATION_TOOLS_H
-#define FBX_VALIDATION_TOOLS_H
+#ifndef SCENE_IMPORTER_MESH_INSTANCE_3D_H
+#define SCENE_IMPORTER_MESH_INSTANCE_3D_H
 
-#ifdef TOOLS_ENABLED
+#include "scene/3d/node_3d.h"
+#include "scene/resources/immediate_mesh.h"
+#include "scene/resources/skin.h"
 
-#include "core/io/file_access.h"
-#include "core/string/print_string.h"
-#include "core/templates/local_vector.h"
-#include "core/templates/map.h"
+class ImporterMesh;
 
-class ValidationTracker {
+class ImporterMeshInstance3D : public Node3D {
+	GDCLASS(ImporterMeshInstance3D, Node3D)
+
+	Ref<ImporterMesh> mesh;
+	Ref<Skin> skin;
+	NodePath skeleton_path;
+	Vector<Ref<Material>> surface_materials;
+
 protected:
-	struct Entries {
-		Map<String, LocalVector<String>> validation_entries = Map<String, LocalVector<String>>();
-
-		// for printing our CSV to dump validation problems of files
-		// later we can make some agnostic tooling for this but this is fine for the time being.
-		void add_validation_error(String asset_path, String message);
-		void print_to_csv() {
-			print_verbose("Exporting assset validation log please wait");
-			String massive_log_file;
-
-			String csv_header = "file_path, error message, extra data\n";
-			massive_log_file += csv_header;
-
-			for (const KeyValue<String, LocalVector<String>> &element : validation_entries) {
-				for (unsigned int x = 0; x < element.value.size(); x++) {
-					const String &line_entry = element.key + ", " + element.value[x].c_escape() + "\n";
-					massive_log_file += line_entry;
-				}
-			}
-
-			String path = "asset_validation_errors.csv";
-			Error err;
-			FileAccess *file = FileAccess::open(path, FileAccess::WRITE, &err);
-			if (!file || err) {
-				if (file) {
-					memdelete(file);
-				}
-				print_error("ValidationTracker Error - failed to create file - path: %s\n" + path);
-				return;
-			}
-
-			file->store_string(massive_log_file);
-			if (file->get_error() != OK && file->get_error() != ERR_FILE_EOF) {
-				print_error("ValidationTracker Error - failed to write to file - path: %s\n" + path);
-			}
-			file->close();
-			memdelete(file);
-		}
-	};
-	// asset path, error messages
-	static Entries *entries_singleton;
+	static void _bind_methods();
 
 public:
-	static Entries *get_singleton() {
-		return entries_singleton;
-	}
-};
+	void set_mesh(const Ref<ImporterMesh> &p_mesh);
+	Ref<ImporterMesh> get_mesh() const;
 
-#endif // TOOLS_ENABLED
-#endif // FBX_VALIDATION_TOOLS_H
+	void set_skin(const Ref<Skin> &p_skin);
+	Ref<Skin> get_skin() const;
+
+	void set_surface_material(int p_idx, const Ref<Material> &p_material);
+	Ref<Material> get_surface_material(int p_idx) const;
+
+	void set_skeleton_path(const NodePath &p_path);
+	NodePath get_skeleton_path() const;
+};
+#endif
