@@ -53,6 +53,7 @@ protected:
 
 	GDVIRTUAL0RC(int, _get_import_flags)
 	GDVIRTUAL0RC(Vector<String>, _get_extensions)
+	GDVIRTUAL0RC(float, _get_priority)
 	GDVIRTUAL3R(Object *, _import_scene, String, uint32_t, uint32_t)
 	GDVIRTUAL3R(Ref<Animation>, _import_animation, String, uint32_t, uint32_t)
 
@@ -69,6 +70,7 @@ public:
 	virtual void get_extensions(List<String> *r_extensions) const;
 	virtual Node *import_scene(const String &p_path, uint32_t p_flags, int p_bake_fps, List<String> *r_missing_deps, Error *r_err = nullptr);
 	virtual Ref<Animation> import_animation(const String &p_path, uint32_t p_flags, int p_bake_fps);
+	virtual float get_priority() const;
 
 	EditorSceneImporter() {}
 };
@@ -93,7 +95,7 @@ public:
 class ResourceImporterScene : public ResourceImporter {
 	GDCLASS(ResourceImporterScene, ResourceImporter);
 
-	Set<Ref<EditorSceneImporter>> importers;
+	Map<StringName, List<Ref<EditorSceneImporter>>> importers;
 
 	static ResourceImporterScene *singleton;
 
@@ -143,14 +145,49 @@ class ResourceImporterScene : public ResourceImporter {
 	void _replace_owner(Node *p_node, Node *p_scene, Node *p_new_owner);
 	void _generate_meshes(Node *p_node, const Dictionary &p_mesh_data, bool p_generate_lods, bool p_create_shadow_meshes, LightBakeMode p_light_bake_mode, float p_lightmap_texel_size, const Vector<uint8_t> &p_src_lightmap_cache, Vector<Vector<uint8_t>> &r_lightmap_caches);
 	void _add_shapes(Node *p_node, const Vector<Ref<Shape3D>> &p_shapes);
+	class ScenePriorityComparator {
+		bool operator()(const EditorSceneImporter &p_a, const EditorSceneImporter &p_b) const {
+			return p_a.get_priority() >= p_b.get_priority();
+		}
+	};
+	const List<Ref<EditorSceneImporter>> empty_list_of_importers;
 
 public:
 	static ResourceImporterScene *get_singleton() { return singleton; }
 
-	const Set<Ref<EditorSceneImporter>> &get_importers() const { return importers; }
+	const List<Ref<EditorSceneImporter>> &get_importers(const StringName &p_extension) const {
+		if (!importers.has(p_extension)) {
+			return empty_list_of_importers;
+		}
+		return importers[p_extension];
+	}
 
-	void add_importer(Ref<EditorSceneImporter> p_importer) { importers.insert(p_importer); }
-	void remove_importer(Ref<EditorSceneImporter> p_importer) { importers.erase(p_importer); }
+	void add_importer(Ref<EditorSceneImporter> p_importer) {
+		List<String> extensions;
+		p_importer->get_extensions(&extensions);
+		for (const String &ext : extensions) {
+			if (!importers.has(ext)) {
+				List<Ref<EditorSceneImporter>> new_exts;
+				new_exts.push_back(p_importer);
+				importers.insert(ext, new_exts);
+				continue;
+			}
+			List<Ref<EditorSceneImporter>> &old_exts = importers[ext];
+			old_exts.push_back(p_importer);
+			old_exts.sort_custom<ScenePriorityComparator>();
+		}
+	}
+	void remove_importer(Ref<EditorSceneImporter> p_importer) {
+		List<String> extensions;
+		p_importer->get_extensions(&extensions);
+		for (const String &ext : extensions) {
+			if (!importers.has(ext)) {
+				continue;
+			}
+			List<Ref<EditorSceneImporter>> &old_exts = importers[ext];
+			old_exts.erase(p_importer);
+		}
+	}
 
 	virtual String get_importer_name() const override;
 	virtual String get_visible_name() const override;
