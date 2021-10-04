@@ -234,7 +234,6 @@
 #include "scene/3d/reflection_probe.h"
 #include "scene/3d/remote_transform_3d.h"
 #include "scene/3d/skeleton_3d.h"
-#include "scene/3d/skeleton_ik_3d.h"
 #include "scene/3d/soft_dynamic_body_3d.h"
 #include "scene/3d/spring_arm_3d.h"
 #include "scene/3d/sprite_3d.h"
@@ -498,7 +497,6 @@ void register_scene_types() {
 	GDREGISTER_CLASS(PhysicalBone3D);
 	GDREGISTER_CLASS(SoftDynamicBody3D);
 
-	GDREGISTER_CLASS(SkeletonIK3D);
 	GDREGISTER_CLASS(BoneAttachment3D);
 
 	GDREGISTER_CLASS(VehicleBody3D);
@@ -962,7 +960,6 @@ void register_scene_types() {
 	ClassDB::add_compatibility_class("Shape", "Shape3D");
 	ClassDB::add_compatibility_class("ShortCut", "Shortcut");
 	ClassDB::add_compatibility_class("Skeleton", "Skeleton3D");
-	ClassDB::add_compatibility_class("SkeletonIK", "SkeletonIK3D");
 	ClassDB::add_compatibility_class("SliderJoint", "SliderJoint3D");
 	ClassDB::add_compatibility_class("SoftBody", "SoftDynamicBody3D");
 	ClassDB::add_compatibility_class("Spatial", "Node3D");
