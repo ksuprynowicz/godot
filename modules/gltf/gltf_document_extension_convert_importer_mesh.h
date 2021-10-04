@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  fbx_node.h                                                           */
+/*  gltf_document_extension_convert_importer_mesh.h                      */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,36 +28,28 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef FBX_NODE_H
-#define FBX_NODE_H
+#ifndef GLTF_EXTENSION_EDITOR_H
+#define GLTF_EXTENSION_EDITOR_H
 
-#include "fbx_skeleton.h"
-#include "model_abstraction.h"
-#include "pivot_transform.h"
+#include "core/io/resource.h"
+#include "core/variant/dictionary.h"
 
-#include "fbx_parser/FBXDocument.h"
+#include "gltf_document.h"
+#include "gltf_document_extension.h"
+#include "scene/3d/importer_mesh_instance_3d.h"
+#include "scene/3d/mesh_instance_3d.h"
+#include "scene/main/node.h"
+#include "scene/resources/importer_mesh.h"
 
-class Node3D;
-struct PivotTransform;
+class GLTFDocumentExtension;
+class GLTFDocument;
+class GLTFDocumentExtensionConvertImporterMesh : public GLTFDocumentExtension {
+	GDCLASS(GLTFDocumentExtensionConvertImporterMesh, GLTFDocumentExtension);
 
-struct FBXNode : RefCounted, ModelAbstraction {
-	uint64_t current_node_id = 0;
-	String node_name = String();
-	Node3D *godot_node = nullptr;
+protected:
+	static void _bind_methods();
 
-	// used to parent the skeleton once the tree is built.
-	Ref<FBXSkeleton> skeleton_node = Ref<FBXSkeleton>();
-
-	void set_parent(Ref<FBXNode> p_parent) {
-		fbx_parent = p_parent;
-	}
-
-	void set_pivot_transform(Ref<PivotTransform> p_pivot_transform) {
-		pivot_transform = p_pivot_transform;
-	}
-
-	Ref<PivotTransform> pivot_transform = Ref<PivotTransform>(); // local and global xform data
-	Ref<FBXNode> fbx_parent = Ref<FBXNode>(); // parent node
+public:
+	Error import_post(Ref<GLTFDocument> p_document, Node *p_node) override;
 };
-
-#endif // FBX_NODE_H
+#endif // GLTF_EXTENSION_EDITOR_H
