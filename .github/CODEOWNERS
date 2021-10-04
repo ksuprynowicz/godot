@@ -83,7 +83,6 @@ doc_classes/*                       @godotengine/documentation
 /modules/cvtt/                      @godotengine/import
 /modules/dds/                       @godotengine/import
 /modules/etc/                       @godotengine/import
-/modules/fbx/                       @godotengine/import
 /modules/gltf/                      @godotengine/import
 /modules/hdr/                       @godotengine/import
 /modules/jpg/                       @godotengine/import
