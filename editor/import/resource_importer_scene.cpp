@@ -108,6 +108,7 @@ void EditorSceneImporter::_bind_methods() {
 
 	GDVIRTUAL_BIND(_get_import_flags);
 	GDVIRTUAL_BIND(_get_extensions);
+	GDVIRTUAL_BIND(_get_priority);
 	GDVIRTUAL_BIND(_import_scene, "path", "flags", "bake_fps");
 	GDVIRTUAL_BIND(_import_animation, "path", "flags", "bake_fps");
 
@@ -1692,4 +1693,8 @@ Node *EditorSceneImporterESCN::import_scene(const String &p_path, uint32_t p_fla
 
 Ref<Animation> EditorSceneImporterESCN::import_animation(const String &p_path, uint32_t p_flags, int p_bake_fps) {
 	ERR_FAIL_V(Ref<Animation>());
+}
+
+float EditorSceneImporter::get_priority() const {
+	return 1.0f;
 }
