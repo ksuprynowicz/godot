@@ -131,6 +131,12 @@ class AnimationBezierTrackEdit : public Control {
 	void _draw_track(int p_track, const Color &p_color);
 
 	float _bezier_h_to_pixel(float p_h);
+	float _pixel_to_bezier_h(float p_h);
+
+	Vector2 _bezier_handle_to_pixel(int p_track, int p_key_index, const Vector2 &p_handle, bool p_override_value = false);
+	Vector2 _pixels_to_bezier_handle(int p_track, int p_key_index, const Vector2 &p_handle);
+	Vector2 _bezier_key_to_pixel(int p_track, int p_key_index, const Vector2 &p_pos);
+	void _animation_changed();
 
 protected:
 	static void _bind_methods();

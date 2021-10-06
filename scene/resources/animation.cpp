@@ -2172,16 +2172,6 @@ void Animation::bezier_track_set_key_handle_mode(int p_track, int p_index, Handl
 
 	bt->values.write[p_index].value.handle_mode = p_mode;
 
-	if (p_mode == HANDLE_MODE_BALANCED) {
-		const Vector2 in_handle = bt->values[p_index].value.in_handle;
-		const Vector2 out_handle = bt->values[p_index].value.out_handle;
-		Vector2 target_in_handle = -out_handle.normalized() * in_handle.length();
-		if (target_in_handle.x > 0) {
-			target_in_handle.x = 0;
-		}
-		bt->values.write[p_index].value.in_handle = target_in_handle;
-	}
-
 	emit_changed();
 }
 
@@ -2213,12 +2203,6 @@ void Animation::bezier_track_set_key_in_handle(int p_track, int p_index, const V
 	}
 	bt->values.write[p_index].value.in_handle = in_handle;
 
-	if (bezier_track_get_key_handle_mode(p_track, p_index) == HANDLE_MODE_BALANCED) {
-		const Vector2 direction = in_handle.normalized();
-		const float out_length = bt->values[p_index].value.out_handle.length();
-		bt->values.write[p_index].value.out_handle = -direction * out_length;
-	}
-
 	emit_changed();
 }
 
@@ -2236,12 +2220,6 @@ void Animation::bezier_track_set_key_out_handle(int p_track, int p_index, const 
 		out_handle.x = 0.000001;
 	}
 	bt->values.write[p_index].value.out_handle = out_handle;
-
-	if (bezier_track_get_key_handle_mode(p_track, p_index) == HANDLE_MODE_BALANCED) {
-		const Vector2 direction = out_handle.normalized();
-		const float in_length = bt->values[p_index].value.in_handle.length();
-		bt->values.write[p_index].value.in_handle = -direction * in_length;
-	}
 
 	emit_changed();
 }
