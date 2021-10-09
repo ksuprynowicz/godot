@@ -200,7 +200,7 @@ bool Animation::_set(const StringName &p_name, const Variant &p_value) {
 				Vector<real_t> times = d["times"];
 				Vector<real_t> values = d["points"];
 
-				ERR_FAIL_COND_V(times.size() * 5 != values.size(), false);
+				ERR_FAIL_COND_V(times.size() * 6 != values.size(), false);
 
 				if (times.size()) {
 					int valcount = times.size();
@@ -213,11 +213,12 @@ bool Animation::_set(const StringName &p_name, const Variant &p_value) {
 					for (int i = 0; i < valcount; i++) {
 						bt->values.write[i].time = rt[i];
 						bt->values.write[i].transition = 0; //unused in bezier
-						bt->values.write[i].value.value = rv[i * 5 + 0];
-						bt->values.write[i].value.in_handle.x = rv[i * 5 + 1];
-						bt->values.write[i].value.in_handle.y = rv[i * 5 + 2];
-						bt->values.write[i].value.out_handle.x = rv[i * 5 + 3];
-						bt->values.write[i].value.out_handle.y = rv[i * 5 + 4];
+						bt->values.write[i].value.value = rv[i * 6 + 0];
+						bt->values.write[i].value.in_handle.x = rv[i * 6 + 1];
+						bt->values.write[i].value.in_handle.y = rv[i * 6 + 2];
+						bt->values.write[i].value.out_handle.x = rv[i * 6 + 3];
+						bt->values.write[i].value.out_handle.y = rv[i * 6 + 4];
+						bt->values.write[i].value.handle_mode = (HandleMode)rv[i * 6 + 5];
 					}
 				}
 
@@ -470,7 +471,7 @@ bool Animation::_get(const StringName &p_name, Variant &r_ret) const {
 				int kk = bt->values.size();
 
 				key_times.resize(kk);
-				key_points.resize(kk * 5);
+				key_points.resize(kk * 6);
 
 				real_t *wti = key_times.ptrw();
 				real_t *wpo = key_points.ptrw();
@@ -481,11 +482,12 @@ bool Animation::_get(const StringName &p_name, Variant &r_ret) const {
 
 				for (int i = 0; i < kk; i++) {
 					wti[idx] = vls[i].time;
-					wpo[idx * 5 + 0] = vls[i].value.value;
-					wpo[idx * 5 + 1] = vls[i].value.in_handle.x;
-					wpo[idx * 5 + 2] = vls[i].value.in_handle.y;
-					wpo[idx * 5 + 3] = vls[i].value.out_handle.x;
-					wpo[idx * 5 + 4] = vls[i].value.out_handle.y;
+					wpo[idx * 6 + 0] = vls[i].value.value;
+					wpo[idx * 6 + 1] = vls[i].value.in_handle.x;
+					wpo[idx * 6 + 2] = vls[i].value.in_handle.y;
+					wpo[idx * 6 + 3] = vls[i].value.out_handle.x;
+					wpo[idx * 6 + 4] = vls[i].value.out_handle.y;
+					wpo[idx * 6 + 5] = (double)vls[i].value.handle_mode;
 					idx++;
 				}
 
@@ -1006,7 +1008,7 @@ void Animation::track_insert_key(int p_track, double p_time, const Variant &p_ke
 			BezierTrack *bt = static_cast<BezierTrack *>(t);
 
 			Array arr = p_key;
-			ERR_FAIL_COND(arr.size() != 5);
+			ERR_FAIL_COND(arr.size() != 6);
 
 			TKey<BezierKey> k;
 			k.time = p_time;
@@ -1015,6 +1017,7 @@ void Animation::track_insert_key(int p_track, double p_time, const Variant &p_ke
 			k.value.in_handle.y = arr[2];
 			k.value.out_handle.x = arr[3];
 			k.value.out_handle.y = arr[4];
+			k.value.handle_mode = (HandleMode) int(arr[5]);
 			_insert(p_time, bt->values, k);
 
 		} break;
@@ -1120,12 +1123,13 @@ Variant Animation::track_get_key_value(int p_track, int p_key_idx) const {
 			ERR_FAIL_INDEX_V(p_key_idx, bt->values.size(), Variant());
 
 			Array arr;
-			arr.resize(5);
+			arr.resize(6);
 			arr[0] = bt->values[p_key_idx].value.value;
 			arr[1] = bt->values[p_key_idx].value.in_handle.x;
 			arr[2] = bt->values[p_key_idx].value.in_handle.y;
 			arr[3] = bt->values[p_key_idx].value.out_handle.x;
 			arr[4] = bt->values[p_key_idx].value.out_handle.y;
+			arr[5] = (double)bt->values[p_key_idx].value.handle_mode;
 			return arr;
 
 		} break;
@@ -1345,13 +1349,14 @@ void Animation::track_set_key_value(int p_track, int p_key_idx, const Variant &p
 			ERR_FAIL_INDEX(p_key_idx, bt->values.size());
 
 			Array arr = p_value;
-			ERR_FAIL_COND(arr.size() != 5);
+			ERR_FAIL_COND(arr.size() != 6);
 
 			bt->values.write[p_key_idx].value.value = arr[0];
 			bt->values.write[p_key_idx].value.in_handle.x = arr[1];
 			bt->values.write[p_key_idx].value.in_handle.y = arr[2];
 			bt->values.write[p_key_idx].value.out_handle.x = arr[3];
 			bt->values.write[p_key_idx].value.out_handle.y = arr[4];
+			bt->values.write[p_key_idx].value.handle_mode = (HandleMode) int(arr[5]);
 
 		} break;
 		case TYPE_AUDIO: {
@@ -2129,7 +2134,7 @@ StringName Animation::method_track_get_name(int p_track, int p_key_idx) const {
 	return pm->methods[p_key_idx].method;
 }
 
-int Animation::bezier_track_insert_key(int p_track, double p_time, real_t p_value, const Vector2 &p_in_handle, const Vector2 &p_out_handle) {
+int Animation::bezier_track_insert_key(int p_track, double p_time, real_t p_value, const Vector2 &p_in_handle, const Vector2 &p_out_handle, const HandleMode p_handle_mode) {
 	ERR_FAIL_INDEX_V(p_track, tracks.size(), -1);
 	Track *t = tracks[p_track];
 	ERR_FAIL_COND_V(t->type != TYPE_BEZIER, -1);
@@ -2147,12 +2152,27 @@ int Animation::bezier_track_insert_key(int p_track, double p_time, real_t p_valu
 	if (k.value.out_handle.x < 0) {
 		k.value.out_handle.x = 0;
 	}
+	k.value.handle_mode = p_handle_mode;
 
 	int key = _insert(p_time, bt->values, k);
 
 	emit_changed();
 
 	return key;
+}
+
+void Animation::bezier_track_set_key_handle_mode(int p_track, int p_index, HandleMode p_mode) {
+	ERR_FAIL_INDEX(p_track, tracks.size());
+	Track *t = tracks[p_track];
+	ERR_FAIL_COND(t->type != TYPE_BEZIER);
+
+	BezierTrack *bt = static_cast<BezierTrack *>(t);
+
+	ERR_FAIL_INDEX(p_index, bt->values.size());
+
+	bt->values.write[p_index].value.handle_mode = p_mode;
+
+	emit_changed();
 }
 
 void Animation::bezier_track_set_key_value(int p_track, int p_index, real_t p_value) {
@@ -2177,10 +2197,12 @@ void Animation::bezier_track_set_key_in_handle(int p_track, int p_index, const V
 
 	ERR_FAIL_INDEX(p_index, bt->values.size());
 
-	bt->values.write[p_index].value.in_handle = p_handle;
-	if (bt->values[p_index].value.in_handle.x > 0) {
-		bt->values.write[p_index].value.in_handle.x = 0;
+	Vector2 in_handle = p_handle;
+	if (in_handle.x > 0) {
+		in_handle.x = 0;
 	}
+	bt->values.write[p_index].value.in_handle = in_handle;
+
 	emit_changed();
 }
 
@@ -2193,10 +2215,12 @@ void Animation::bezier_track_set_key_out_handle(int p_track, int p_index, const 
 
 	ERR_FAIL_INDEX(p_index, bt->values.size());
 
-	bt->values.write[p_index].value.out_handle = p_handle;
-	if (bt->values[p_index].value.out_handle.x < 0) {
-		bt->values.write[p_index].value.out_handle.x = 0;
+	Vector2 out_handle = p_handle;
+	if (out_handle.x < 0) {
+		out_handle.x = 0;
 	}
+	bt->values.write[p_index].value.out_handle = out_handle;
+
 	emit_changed();
 }
 
@@ -2210,6 +2234,18 @@ real_t Animation::bezier_track_get_key_value(int p_track, int p_index) const {
 	ERR_FAIL_INDEX_V(p_index, bt->values.size(), 0);
 
 	return bt->values[p_index].value.value;
+}
+
+int Animation::bezier_track_get_key_handle_mode(int p_track, int p_index) const {
+	ERR_FAIL_INDEX_V(p_track, tracks.size(), 0);
+	Track *t = tracks[p_track];
+	ERR_FAIL_COND_V(t->type != TYPE_BEZIER, 0);
+
+	BezierTrack *bt = static_cast<BezierTrack *>(t);
+
+	ERR_FAIL_INDEX_V(p_index, bt->values.size(), 0);
+
+	return bt->values[p_index].value.handle_mode;
 }
 
 Vector2 Animation::bezier_track_get_key_in_handle(int p_track, int p_index) const {
@@ -2639,7 +2675,7 @@ void Animation::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("method_track_get_name", "track_idx", "key_idx"), &Animation::method_track_get_name);
 	ClassDB::bind_method(D_METHOD("method_track_get_params", "track_idx", "key_idx"), &Animation::method_track_get_params);
 
-	ClassDB::bind_method(D_METHOD("bezier_track_insert_key", "track_idx", "time", "value", "in_handle", "out_handle"), &Animation::bezier_track_insert_key, DEFVAL(Vector2()), DEFVAL(Vector2()));
+	ClassDB::bind_method(D_METHOD("bezier_track_insert_key", "track_idx", "time", "value", "in_handle", "out_handle", "handle_mode"), &Animation::bezier_track_insert_key, DEFVAL(Vector2()), DEFVAL(Vector2()), DEFVAL(Animation::HandleMode::HANDLE_MODE_BALANCED));
 
 	ClassDB::bind_method(D_METHOD("bezier_track_set_key_value", "track_idx", "key_idx", "value"), &Animation::bezier_track_set_key_value);
 	ClassDB::bind_method(D_METHOD("bezier_track_set_key_in_handle", "track_idx", "key_idx", "in_handle"), &Animation::bezier_track_set_key_in_handle);
@@ -2658,6 +2694,9 @@ void Animation::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("audio_track_get_key_stream", "track_idx", "key_idx"), &Animation::audio_track_get_key_stream);
 	ClassDB::bind_method(D_METHOD("audio_track_get_key_start_offset", "track_idx", "key_idx"), &Animation::audio_track_get_key_start_offset);
 	ClassDB::bind_method(D_METHOD("audio_track_get_key_end_offset", "track_idx", "key_idx"), &Animation::audio_track_get_key_end_offset);
+
+	ClassDB::bind_method(D_METHOD("bezier_track_set_key_handle_mode", "track_idx", "key_idx", "key_handle_mode"), &Animation::bezier_track_set_key_handle_mode);
+	ClassDB::bind_method(D_METHOD("bezier_track_get_key_handle_mode", "track_idx", "key_idx"), &Animation::bezier_track_get_key_handle_mode);
 
 	ClassDB::bind_method(D_METHOD("animation_track_insert_key", "track_idx", "time", "animation"), &Animation::animation_track_insert_key);
 	ClassDB::bind_method(D_METHOD("animation_track_set_key_animation", "track_idx", "key_idx", "animation"), &Animation::animation_track_set_key_animation);
@@ -2696,6 +2735,9 @@ void Animation::_bind_methods() {
 	BIND_ENUM_CONSTANT(UPDATE_DISCRETE);
 	BIND_ENUM_CONSTANT(UPDATE_TRIGGER);
 	BIND_ENUM_CONSTANT(UPDATE_CAPTURE);
+
+	BIND_ENUM_CONSTANT(HANDLE_MODE_FREE);
+	BIND_ENUM_CONSTANT(HANDLE_MODE_BALANCED);
 }
 
 void Animation::clear() {
