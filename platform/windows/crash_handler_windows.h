@@ -34,9 +34,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include "thirdparty/crashpad/crashpad/client/crashpad_client.h"
-#include "thirdparty/crashpad/crashpad/client/settings.h"
-#include "thirdparty/crashpad/crashpad/third_party/mini_chromium/mini_chromium/base/files/file_path.h"
+#include "thirdparty/backtrace/backtrace.h"
+#include "thirdparty/backtrace/backtrace-supported.h"
 
 // Crash handler exception only enabled with MSVC
 #if defined(DEBUG_ENABLED) && defined(MSVC)
@@ -44,21 +43,19 @@
 extern DWORD CrashHandlerException(EXCEPTION_POINTERS *ep);
 #endif
 
-static crashpad::CrashpadClient client;
 static bool disable_crash_reporter;
+static void error_callback (void *vdata, const char *msg,
+	int errnum) {}
+static void *state = nullptr;
 
 class String;
 
 class CrashHandler {
-	bool disabled = false;
-
-	base::FilePath database;
-	// Path to the out-of-process handler executable
-	base::FilePath handler;
+	bool disabled = false;	
 
 public:
 	void initialize();
-	void initialize_crashpad(String p_crashpad_handler_path, String p_crashpad_server);
+	void initialize_crashpad(String p_crashpad_server);
 
 	void disable();
 	bool is_disabled() const { return disabled; };

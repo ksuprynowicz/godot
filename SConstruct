@@ -678,8 +678,6 @@ if selected_platform in platform_list:
             print(
                 "Build option 'disable_3d=yes' cannot be used with 'tools=yes' (editor), only with 'tools=no' (export template)."
             )
-    if env.use_ptrcall:
-        env.Append(CPPDEFINES=["PTRCALL_ENABLED"])
     if env["tools"]:
         env.Append(CPPDEFINES=["TOOLS_ENABLED"])
     if env["disable_3d"]:

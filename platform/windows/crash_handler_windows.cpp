@@ -40,16 +40,10 @@
 #include "core/version.h"
 #include "core/version_hash.gen.h"
 #include "main/main.h"
-#include "servers/rendering/rendering_server_raster.h"
 
 #include <map>
 #include <string>
 #include <vector>
-
-#include "thirdparty/crashpad/crashpad/client/crash_report_database.h"
-#include "thirdparty/crashpad/crashpad/client/crashpad_client.h"
-#include "thirdparty/crashpad/crashpad/client/settings.h"
-#include "thirdparty/crashpad/crashpad/third_party/mini_chromium/mini_chromium/base/files/file_path.h"
 
 #ifdef CRASH_HANDLER_EXCEPTION
 
@@ -61,6 +55,11 @@
 #include <vector>
 
 #include <psapi.h>
+
+#include "thirdparty/backtrace/backtrace-supported.h"
+
+state = backtrace_create_state (NULL, BACKTRACE_SUPPORTS_THREADS,
+				  error_callback, NULL);
 
 #pragma comment(lib, "psapi.lib")
 #pragma comment(lib, "dbghelp.lib")
@@ -280,92 +279,44 @@ void CrashHandler::initialize() {
 	if (is_editor) {
 		if (ProjectSettings::get_singleton()->get("application/crashpad/disable_editor_crashpad").booleanize()) {
 			return;
-		}
-		String handler_exe = ProjectSettings::get_singleton()->get("application/crashpad/editor_crashpad_handler");
-		if (handler_exe.empty()) {
-			return;
-		}
-		String crashpad_server = ProjectSettings::get_singleton()->get("application/crashpad/editor_crashpad_server");
-		if (crashpad_server.empty()) {
-			return;
-		}
-		initialize_crashpad(handler_exe, crashpad_server);
+		}	
+		String crashpad_server = ProjectSettings::get_singleton()->get("application/crashpad/project_crashpad_server");
+		initialize_crashpad(crashpad_server);
 	} else {
 		if (ProjectSettings::get_singleton()->get("application/crashpad/disable_project_crashpad").booleanize()) {
 			return;
 		}
-		String handler_exe = ProjectSettings::get_singleton()->get("application/crashpad/project_crashpad_handler");
-		if (handler_exe.empty()) {
-			return;
-		}
 		String crashpad_server = ProjectSettings::get_singleton()->get("application/crashpad/project_crashpad_server");
-		if (crashpad_server.empty()) {
+		if (crashpad_server.is_empty()) {
 			return;
 		}
-		initialize_crashpad(handler_exe, crashpad_server);
+		initialize_crashpad(crashpad_server);
 	}
 }
 
-void CrashHandler::initialize_crashpad(String p_crashpad_handler_path, String p_crashpad_server) {
-	//Cache directory that will store crashpad information and minidumps
-	String database_path = OS::get_singleton()->get_user_data_dir() + "/crashpad/db";
-	_Directory dir;
-	if (!dir.dir_exists(database_path)) {
-		dir.make_dir_recursive(database_path);
-	}
-	{
-		const char *string = ProjectSettings::get_singleton()->globalize_path(database_path).utf8().ptr();
-		size_t len = MultiByteToWideChar(CP_ACP, 0, string, -1, nullptr, 0);
-		wchar_t *wide_string = new wchar_t[len];
-		MultiByteToWideChar(CP_ACP, 0, string, -1, wide_string, (int)len);
-		database = base::FilePath(wide_string);
-	}
-	{
-		// Path to the out-of-process handler executable
-		const char *string = ProjectSettings::get_singleton()->globalize_path(p_crashpad_handler_path).utf8().ptr();
-		size_t len = MultiByteToWideChar(CP_ACP, 0, string, -1, nullptr, 0);
-		wchar_t *wide_string = new wchar_t[len];
-		MultiByteToWideChar(CP_ACP, 0, string, -1, wide_string, (int)len);
-		handler = base::FilePath(wide_string);
-	}
-	// URL used to submit minidumps to
-	std::string url = p_crashpad_server.utf8().ptr();
-	// Optional annotations passed via --annotations to the handler
-	std::map<std::string, std::string> annotations;
+void CrashHandler::initialize_crashpad(String p_crashpad_server) {
+	// // Optional annotations passed via --annotations to the handler
+	// std::map<std::string, std::string> annotations;
 
-	String hash = String(VERSION_HASH);
-	if (hash.length()) {
-		hash = "." + hash.left(7);
-	}
-	annotations["ver"] = String(String("v") + String(VERSION_FULL_BUILD) + hash).utf8().ptr();
-	String prod = ProjectSettings::get_singleton()->get("application/config/name");
-	if (!prod.empty()) {
-		annotations["prod"] = prod.utf8().ptr();
-	}
-	String video = RenderingServerRaster::get_singleton()->get_video_adapter_vendor();
-	if (!video.empty()) {
-		annotations["video"] = video.utf8().ptr();
-	}
-	// Optional arguments to pass to the handler
-	std::vector<std::string> arguments;
-	arguments.push_back("--no-upload-gzip");
-	// For debugging purposes, don't limit rate.
-	// arguments.push_back("--no-rate-limit");
-	bool success = client.StartHandler(
-			handler,
-			database,
-			database,
-			url,
-			annotations,
-			arguments,
-			/* restartable */ true,
-			/* asynchronous_start */ true);
-
-	if (!success) {
-		return;
-	}
-	success = client.WaitForHandlerStart(5000);
-	if (!success) {
+	// String hash = String(VERSION_HASH);
+	// if (hash.length()) {
+	// 	hash = "." + hash.left(7);
+	// }
+	// annotations["ver"] = String(String("v") + String(VERSION_FULL_BUILD) + hash).utf8().ptr();
+	// String prod = ProjectSettings::get_singleton()->get("application/config/name");
+	// if (!prod.is_empty()) {
+	// 	annotations["prod"] = prod.utf8().ptr();
+	// }
+	// String video = RenderingServerRaster::get_singleton()->get_video_adapter_vendor();
+	// if (!video.is_empty()) {
+	// 	annotations["video"] = video.utf8().ptr();
+	// }
+	// // Optional arguments to pass to the handler
+	// std::vector<std::string> arguments;
+	// arguments.push_back("--no-upload-gzip");
+	// // For debugging purposes, don't limit rate.
+	// // arguments.push_back("--no-rate-limit");
+	if (!state) {
 		return;
 	}
 	disable_crash_reporter = false;

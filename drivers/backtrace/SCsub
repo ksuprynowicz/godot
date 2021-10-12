@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+Import("env")
+
+env.Prepend(CPPPATH=["thirdparty/backtrace"])
+env.Prepend(CPPPATH=["thirdparty/backtrace/config"])
+
+thirdparty_dir = "#thirdparty/backtrace/"
+thirdparty_sources = [
+    "alloc.c",
+    "allocfail.c",
+    "atomic.c",
+    "backtrace.c",
+    "dwarf.c",
+    "fileline.c",
+    "instrumented_alloc.c",
+    "macho.c",
+    "mmap.c",
+    "mmapio.c",
+    "nounwind.c",
+    "pecoff.c",
+    "posix.c",
+    "print.c",
+    "read.c",
+    "simple.c",
+    "sort.c",
+    "state.c",
+    "stest.c",
+    "test_format.c",
+    "unknown.c",
+    "xcoff.c",
+    "elf.c",
+]
+
+thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
+
+env.disable_warnings()
+env.add_source_files(env.drivers_sources, thirdparty_sources)
+

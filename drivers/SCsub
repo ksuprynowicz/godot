@@ -27,8 +27,8 @@ if env["vulkan"]:
     SConscript("vulkan/SCsub")
 
 # Crash reporter
-if env["platform"] == "windows":
-    SConscript("crashpad/SCsub")
+if env["platform"] == "windows" and env["use_llvm"]:
+    SConscript("backtrace/SCsub")
 
 # Core dependencies
 SConscript("png/SCsub")
