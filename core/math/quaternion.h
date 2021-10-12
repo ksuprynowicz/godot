@@ -86,15 +86,12 @@ public:
 	// https://creativecommons.org/publicdomain/zero/1.0/legalcode.txt
 	// https://gist.github.com/usefulslug
 	// Returns a smooth approximation between the current quaternion and post using a and b as 'tangents'
-	Quaternion squad(const Quaternion p_a, const Quaternion p_b, const Quaternion p_post, const float p_weight) const;
+	Quaternion sqlerp(const Quaternion p_a, const Quaternion p_b, const Quaternion p_post, const float p_weight) const;
 	Quaternion log() const;
 	Quaternion exp() const;
 
 	// Tries to compute sensible tangent values for the quaternion
 	Quaternion intermediate(Quaternion p_a, Quaternion p_b) const;
-
-	// Returns a quaternion between a and b as part of a smooth squad segment
-	Quaternion spline_segment(const Quaternion p_a, const Quaternion p_b, const Quaternion p_post, const float p_weight) const;
 
 	void operator*=(const Quaternion &q);
 	Quaternion operator*(const Quaternion &q) const;
