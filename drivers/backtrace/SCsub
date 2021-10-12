@@ -8,7 +8,6 @@ env.Prepend(CPPPATH=["thirdparty/backtrace/config"])
 thirdparty_dir = "#thirdparty/backtrace/"
 thirdparty_sources = [
     "alloc.c",
-    "allocfail.c",
     "atomic.c",
     "backtrace.c",
     "dwarf.c",
