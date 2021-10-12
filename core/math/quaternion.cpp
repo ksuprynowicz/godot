@@ -178,13 +178,6 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_q, const Quaternion &p_pr
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
 	ERR_FAIL_COND_V_MSG(!p_q.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
 #endif
-	// // Modify quaternions for shortest path
-	// // https://math.stackexchange.com/questions/2650188/super-confused-by-squad-algorithm-for-quaternion-interpolation
-	// const Quaternion q_a = *this;
-	// Quaternion prep = (q_a - p_prep).length_squared() < (q_a + p_prep).length_squared() ? p_prep : p_prep * -1.0f;
-	// Quaternion q_b = (q_a - p_q).length_squared() < (q_a + p_q).length_squared() ? p_q : p_q * -1.0f;
-	// Quaternion postq = (p_q - p_postq).length_squared() < (p_q + p_postq).length_squared() ? p_postq : p_postq * -1.0f;
-
 	return p_prep.spline_segment(*this, p_q, p_postq, p_t);
 }
 
