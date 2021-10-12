@@ -178,7 +178,7 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_q, const Quaternion &p_pr
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
 	ERR_FAIL_COND_V_MSG(!p_q.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
 #endif
-	return p_prep.spline_segment(*this, p_q, p_postq, p_weight);
+	return spline_segment(p_q, p_prep, p_postq, p_weight);
 }
 
 Quaternion Quaternion::squad(const Quaternion p_a, const Quaternion p_b, const Quaternion p_post, const float p_weight) const {
@@ -237,11 +237,10 @@ Quaternion Quaternion::intermediate(Quaternion p_1, Quaternion p_2) const {
 	return r.normalized();
 }
 
-Quaternion Quaternion::spline_segment(const Quaternion p_a, const Quaternion p_b, const Quaternion p_post, const float p_weight) const {
-	Quaternion pre = *this;
-	Quaternion q_a = pre.intermediate(p_a, p_b);
-	Quaternion q_b = p_a.intermediate(p_b, p_post);
-	return p_a.squad(q_a, q_b, p_b, p_weight);
+Quaternion Quaternion::spline_segment(const Quaternion p_b, const Quaternion p_pre, const Quaternion p_post, const float p_weight) const {
+	Quaternion q_a = p_pre.intermediate(*this, p_b);
+	Quaternion q_b = intermediate(p_b, p_post);
+	return squad(q_a, q_b, p_b, p_weight);
 }
 
 Quaternion::operator String() const {
