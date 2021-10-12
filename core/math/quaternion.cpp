@@ -173,19 +173,19 @@ Quaternion Quaternion::slerpni(const Quaternion &p_to, const real_t &p_weight) c
 			invFactor * from.w + newFactor * p_to.w);
 }
 
-Quaternion Quaternion::cubic_slerp(const Quaternion &p_q, const Quaternion &p_prep, const Quaternion &p_postq, const real_t &p_t) const {
+Quaternion Quaternion::cubic_slerp(const Quaternion &p_q, const Quaternion &p_prep, const Quaternion &p_postq, const real_t &p_weight) const {
 #ifdef MATH_CHECKS
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
 	ERR_FAIL_COND_V_MSG(!p_q.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
 #endif
-	return p_prep.spline_segment(*this, p_q, p_postq, p_t);
+	return p_prep.spline_segment(*this, p_q, p_postq, p_weight);
 }
 
-Quaternion Quaternion::squad(const Quaternion p_a, const Quaternion p_b, const Quaternion p_post, const float p_t) const {
+Quaternion Quaternion::squad(const Quaternion p_a, const Quaternion p_b, const Quaternion p_post, const float p_weight) const {
 	Quaternion pre = *this;
-	float slerp_t = 2.0 * p_t * (1.0 - p_t);
-	Quaternion slerp_1 = pre.slerp(p_post, p_t);
-	Quaternion slerp_2 = p_a.slerpni(p_b, p_t);
+	float slerp_t = 2.0 * p_weight * (1.0 - p_weight);
+	Quaternion slerp_1 = pre.slerp(p_post, p_weight);
+	Quaternion slerp_2 = p_a.slerpni(p_b, p_weight);
 	return slerp_1.slerpni(slerp_2, slerp_t);
 }
 
@@ -237,11 +237,11 @@ Quaternion Quaternion::intermediate(Quaternion p_1, Quaternion p_2) const {
 	return r.normalized();
 }
 
-Quaternion Quaternion::spline_segment(const Quaternion p_a, const Quaternion p_b, const Quaternion p_post, const float p_t) const {
+Quaternion Quaternion::spline_segment(const Quaternion p_a, const Quaternion p_b, const Quaternion p_post, const float p_weight) const {
 	Quaternion pre = *this;
 	Quaternion q_a = pre.intermediate(p_a, p_b);
 	Quaternion q_b = p_a.intermediate(p_b, p_post);
-	return p_a.squad(q_a, q_b, p_b, p_t);
+	return p_a.squad(q_a, q_b, p_b, p_weight);
 }
 
 Quaternion::operator String() const {
