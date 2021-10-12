@@ -178,20 +178,20 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_q, const Quaternion &p_pr
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
 	ERR_FAIL_COND_V_MSG(!p_q.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
 #endif
-	// Modify quaternions for shortest path
-	// https://math.stackexchange.com/questions/2650188/super-confused-by-squad-algorithm-for-quaternion-interpolation
-	const Quaternion q_a = *this;
-	Quaternion prep = (q_a - p_prep).length_squared() < (q_a + p_prep).length_squared() ? p_prep : p_prep * -1.0f;
-	Quaternion q_b = (q_a - p_q).length_squared() < (q_a + p_q).length_squared() ? p_q : p_q * -1.0f;
-	Quaternion postq = (p_q - p_postq).length_squared() < (p_q + p_postq).length_squared() ? p_postq : p_postq * -1.0f;
+	// // Modify quaternions for shortest path
+	// // https://math.stackexchange.com/questions/2650188/super-confused-by-squad-algorithm-for-quaternion-interpolation
+	// const Quaternion q_a = *this;
+	// Quaternion prep = (q_a - p_prep).length_squared() < (q_a + p_prep).length_squared() ? p_prep : p_prep * -1.0f;
+	// Quaternion q_b = (q_a - p_q).length_squared() < (q_a + p_q).length_squared() ? p_q : p_q * -1.0f;
+	// Quaternion postq = (p_q - p_postq).length_squared() < (p_q + p_postq).length_squared() ? p_postq : p_postq * -1.0f;
 
-	return prep.spline_segment(q_a, q_b, postq, p_t);
+	return p_prep.spline_segment(*this, p_q, p_postq, p_t);
 }
 
 Quaternion Quaternion::squad(const Quaternion p_a, const Quaternion p_b, const Quaternion p_post, const float p_t) const {
 	Quaternion pre = *this;
 	float slerp_t = 2.0 * p_t * (1.0 - p_t);
-	Quaternion slerp_1 = pre.slerpni(p_post, p_t);
+	Quaternion slerp_1 = pre.slerp(p_post, p_t);
 	Quaternion slerp_2 = p_a.slerpni(p_b, p_t);
 	return slerp_1.slerpni(slerp_2, slerp_t);
 }
