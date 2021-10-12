@@ -25,7 +25,6 @@ thirdparty_sources = [
     "sort.c",
     "state.c",
     "stest.c",
-    "test_format.c",
     "unknown.c",
     "xcoff.c",
     "elf.c",
