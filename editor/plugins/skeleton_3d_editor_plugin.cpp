@@ -1289,7 +1289,7 @@ void Skeleton3DGizmoPlugin::set_subgizmo_transform(const EditorNode3DGizmo *p_gi
 	if (parent_idx >= 0) {
 		original_to_local = original_to_local * skeleton->get_bone_global_pose(parent_idx);
 	}
-	original_to_local = original_to_local * skeleton->get_bone_rest(p_id) * skeleton->get_bone_custom_pose(p_id);
+	original_to_local = original_to_local * skeleton->get_bone_custom_pose(p_id);
 	Basis to_local = original_to_local.get_basis().inverse();
 
 	// Prepare transform.
@@ -1518,5 +1518,5 @@ void Skeleton3DGizmoPlugin::redraw(EditorNode3DGizmo *p_gizmo) {
 	}
 
 	Ref<ArrayMesh> m = surface_tool->commit();
-	p_gizmo->add_mesh(m, Ref<Material>(), Transform3D(), skeleton->register_skin(Ref<Skin>()));
+	p_gizmo->add_mesh(m, Ref<Material>(), Transform3D(), skeleton->register_skin(skeleton->create_skin_from_rest_transforms()));
 }

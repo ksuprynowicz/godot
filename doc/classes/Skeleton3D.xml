@@ -47,6 +47,11 @@
 				Removes the local pose override on all bones in the skeleton.
 			</description>
 		</method>
+		<method name="create_skin_from_rest_transforms">
+			<return type="Skin" />
+			<description>
+			</description>
+		</method>
 		<method name="execute_modifications">
 			<return type="void" />
 			<argument index="0" name="delta" type="float" />
@@ -214,13 +219,6 @@
 				Returns whether the bone pose for the bone at [code]bone_idx[/code] is enabled.
 			</description>
 		</method>
-		<method name="is_bone_rest_disabled" qualifiers="const">
-			<return type="bool" />
-			<argument index="0" name="bone_idx" type="int" />
-			<description>
-				Returns whether the bone rest for the bone at [code]bone_idx[/code] is disabled.
-			</description>
-		</method>
 		<method name="local_pose_to_global_pose">
 			<return type="Transform3D" />
 			<argument index="0" name="bone_idx" type="int" />
@@ -297,14 +295,6 @@
 			<description>
 				Sets the custom pose transform, [code]custom_pose[/code], for the bone at [code]bone_idx[/code]. This pose is an addition to the bone rest pose.
 				[b]Note:[/b] The pose transform needs to be in bone space. Use [method world_transform_to_global_pose] to convert a world transform, like one you can get from a [Node3D], to bone space.
-			</description>
-		</method>
-		<method name="set_bone_disable_rest">
-			<return type="void" />
-			<argument index="0" name="bone_idx" type="int" />
-			<argument index="1" name="disable" type="bool" />
-			<description>
-				Disables the rest pose for the bone at [code]bone_idx[/code] if [code]true[/code], enables the bone rest if [code]false[/code].
 			</description>
 		</method>
 		<method name="set_bone_enabled">
