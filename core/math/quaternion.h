@@ -86,7 +86,7 @@ public:
 	// https://creativecommons.org/publicdomain/zero/1.0/legalcode.txt
 	// https://gist.github.com/usefulslug
 	// Returns a smooth approximation between the current quaternion and post using a and b as 'tangents'
-	Quaternion sqlerp(const Quaternion p_a, const Quaternion p_b, const Quaternion p_post, const float p_weight) const;
+	Quaternion sqlerp(const Quaternion p_q, Quaternion p_pre_p , Quaternion p_post_q, const float p_weight) const; 
 	Quaternion log() const;
 	Quaternion exp() const;
 

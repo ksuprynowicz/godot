@@ -180,14 +180,17 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 #endif	
 	Quaternion q_a = p_pre_a.intermediate(*this, p_b);
 	Quaternion q_b = intermediate(p_b, p_post_b);
-	return sqlerp(q_a, q_b, p_b, p_weight);
+	return q_a.sqlerp(q_b, *this, p_b, p_weight);
 }
 
-Quaternion Quaternion::sqlerp(const Quaternion p_a, const Quaternion p_b, const Quaternion p_post, const float p_weight) const {
-	Quaternion pre = *this;
+Quaternion Quaternion::sqlerp(const Quaternion p_q, Quaternion p_pre_p , Quaternion p_post_q, const float p_weight) const {	 
+#ifdef MATH_CHECKS
+	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
+	ERR_FAIL_COND_V_MSG(!p_q.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
+#endif
 	float slerp_t = 2.0 * p_weight * (1.0 - p_weight);
-	Quaternion slerp_1 = pre.slerp(p_post, p_weight);
-	Quaternion slerp_2 = p_a.slerpni(p_b, p_weight);
+	Quaternion slerp_1 = p_pre_p.slerp(p_post_q, p_weight);
+	Quaternion slerp_2 = slerpni(p_q, p_weight);
 	return slerp_1.slerpni(slerp_2, slerp_t);
 }
 
@@ -229,7 +232,7 @@ Quaternion Quaternion::intermediate(Quaternion p_1, Quaternion p_2) const {
 	c_1 = c_1.log();
 	c_2 = c_2.log();
 	Quaternion c_3 = c_2 + c_1;
-	real_t scale = -0.25f;
+	constexpr real_t scale = -0.25f;
 	c_3.x *= scale;
 	c_3.y *= scale;
 	c_3.z *= scale;
