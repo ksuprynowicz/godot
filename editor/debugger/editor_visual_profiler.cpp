@@ -366,10 +366,6 @@ void EditorVisualProfiler::_update_frame(bool p_focus_selected) {
 		TreeItem *category = variables->create_item(parent);
 
 		for (TreeItem *E : stack) {
-			float total_cpu = E->get_metadata(1);
-			float total_gpu = E->get_metadata(2);
-			total_cpu += cpu_time;
-			total_gpu += gpu_time;
 			E->set_metadata(1, cpu_time);
 			E->set_metadata(2, gpu_time);
 		}
