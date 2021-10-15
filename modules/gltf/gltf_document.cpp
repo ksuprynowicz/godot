@@ -6006,7 +6006,7 @@ void GLTFDocument::_import_animation(Ref<GLTFState> state, AnimationPlayer *ap, 
 			const String blend_path = String(node_path) + ":" + prop;
 
 			const int track_idx = animation->get_track_count();
-			animation->add_track(Animation::TYPE_VALUE);
+			animation->add_track(Animation::TYPE_BLEND_SHAPE);
 			animation->track_set_path(track_idx, blend_path);
 
 			// Only LINEAR and STEP (NEAREST) can be supported out of the box by Godot's Animation,
