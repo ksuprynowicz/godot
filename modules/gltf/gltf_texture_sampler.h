@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  gltf_texture.h                                                       */
+/*  gltf_texture_sampler.h                                               */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,27 +28,75 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef GLTF_TEXTURE_H
-#define GLTF_TEXTURE_H
+#ifndef GLTF_TEXTURE_SAMPLER_H
+#define GLTF_TEXTURE_SAMPLER_H
 
 #include "core/io/resource.h"
-#include "gltf_document.h"
 
-class GLTFTexture : public Resource {
-	GDCLASS(GLTFTexture, Resource);
+class GLTFTextureSampler : public Resource {
+	GDCLASS(GLTFTextureSampler, Resource);
 
-private:
-	GLTFImageIndex src_image = 0;
-	GLTFTextureSamplerIndex sampler = 0;
+public:
+	enum {
+		MAG_FILTER_NEAREST = 9728,
+		MAG_FILTER_LINEAR = 9729
+	};
+
+	enum {
+		MIN_FILTER_NEAREST = 9728,
+		MIN_FILTER_LINEAR = 9729,
+		MIN_FILTER_NEAREST_MIPMAP_NEAREST = 9984,
+		MIN_FILTER_LINEAR_MIPMAP_NEAREST = 9985,
+		MIN_FILTER_NEAREST_MIPMAP_LINEAR = 9986,
+		MIN_FILTER_LINEAR_MIPMAP_LINEAR = 9987
+	};
+
+	enum {
+		WRAP_MODE_REPEAT = 10497,
+		WRAP_MODE_CLAMP_TO_EDGE = 33071,
+		WRAP_MODE_MIRRORED_REPEAT = 33648,
+	};
+
+	int get_mag_filter() const {
+		return mag_filter;
+	};
+
+	void set_mag_filter(const int filter_mode) {
+		mag_filter = filter_mode;
+	};
+
+	int get_min_filter() const {
+		return min_filter;
+	};
+
+	void set_min_filter(const int filter_mode) {
+		min_filter = filter_mode;
+	};
+
+	int get_wrap_s() const {
+		return wrap_s;
+	};
+
+	void set_wrap_s(const int wrap_mode) {
+		wrap_s = wrap_mode;
+	};
+
+	int get_wrap_t() const {
+		return wrap_t;
+	};
+
+	void set_wrap_t(const int wrap_mode) {
+		wrap_s = wrap_mode;
+	};
 
 protected:
 	static void _bind_methods();
 
-public:
-	GLTFImageIndex get_src_image() const;
-	void set_src_image(GLTFImageIndex val);
-	GLTFTextureSamplerIndex get_sampler() const;
-	void set_sampler(GLTFTextureSamplerIndex val);
+private:
+	int32_t mag_filter = MAG_FILTER_LINEAR;
+	int32_t min_filter = MIN_FILTER_LINEAR_MIPMAP_LINEAR;
+	int32_t wrap_s = WRAP_MODE_REPEAT;
+	int32_t wrap_t = WRAP_MODE_REPEAT;
 };
 
-#endif // GLTF_TEXTURE_H
+#endif

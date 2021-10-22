@@ -72,6 +72,7 @@ using GLTFNodeIndex = int;
 using GLTFSkeletonIndex = int;
 using GLTFSkinIndex = int;
 using GLTFTextureIndex = int;
+using GLTFTextureSamplerIndex = int;
 
 class GLTFDocument : public Resource {
 	GDCLASS(GLTFDocument, Resource);
@@ -195,7 +196,7 @@ private:
 	String _gen_unique_bone_name(Ref<GLTFState> state,
 			const GLTFSkeletonIndex skel_i,
 			const String &p_name);
-	GLTFTextureIndex _set_texture(Ref<GLTFState> state, Ref<Texture2D> p_texture);
+	GLTFTextureIndex _set_texture(Ref<GLTFState> state, Ref<Texture2D> p_texture, Ref<BaseMaterial3D> p_base_material);
 	Ref<Texture2D> _get_texture(Ref<GLTFState> state,
 			const GLTFTextureIndex p_texture);
 	Error _parse_json(const String &p_path, Ref<GLTFState> state);
@@ -367,6 +368,7 @@ private:
 	Error _serialize_version(Ref<GLTFState> state);
 	Error _serialize_file(Ref<GLTFState> state, const String p_path);
 	Error _serialize_extensions(Ref<GLTFState> state) const;
+	Error _serialize_texture_samplers(Ref<GLTFState> state) const;
 
 public:
 	// https://www.itu.int/rec/R-REC-BT.601

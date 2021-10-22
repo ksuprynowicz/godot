@@ -43,6 +43,7 @@
 #include "gltf_skeleton.h"
 #include "gltf_skin.h"
 #include "gltf_texture.h"
+#include "gltf_texture_sampler.h"
 
 #include "core/io/resource.h"
 #include "core/templates/map.h"
@@ -77,7 +78,8 @@ class GLTFState : public Resource {
 	String scene_name;
 	Vector<int> root_nodes;
 	Vector<Ref<GLTFTexture>> textures;
-	Vector<Ref<Texture2D>> images;
+	Vector<Ref<GLTFTextureSampler>> texture_samplers;
+	Vector<Ref<Image>> images;
 
 	Vector<Ref<GLTFSkin>> skins;
 	Vector<Ref<GLTFCamera>> cameras;
