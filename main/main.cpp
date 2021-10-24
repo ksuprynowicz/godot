@@ -2531,9 +2531,6 @@ bool Main::iteration() {
 
 	bool exit = false;
 
-	// process all our active interfaces
-	XRServer::get_singleton()->_process();
-
 	for (int iters = 0; iters < advance.physics_steps; ++iters) {
 		if (Input::get_singleton()->is_using_input_buffering() && agile_input_event_flushing) {
 			Input::get_singleton()->flush_buffered_events();
@@ -2648,6 +2645,9 @@ bool Main::iteration() {
 	}
 
 	OS::get_singleton()->add_frame_delay(DisplayServer::get_singleton()->window_can_draw());
+
+	// process all our active interfaces
+	XRServer::get_singleton()->_process();
 
 #ifdef TOOLS_ENABLED
 	if (auto_build_solutions) {
