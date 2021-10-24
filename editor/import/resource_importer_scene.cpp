@@ -31,6 +31,7 @@
 #include "resource_importer_scene.h"
 
 #include "core/io/resource_saver.h"
+#include "core/math/math_defs.h"
 #include "editor/editor_node.h"
 
 #include "editor/import/scene_import_settings.h"

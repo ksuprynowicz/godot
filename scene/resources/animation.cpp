@@ -30,9 +30,16 @@
 
 #include "animation.h"
 
+#include "core/error/error_macros.h"
+#include "core/math/basis.h"
 #include "core/io/marshalls.h"
 #include "core/math/geometry_3d.h"
+#include "core/math/quaternion.h"
+#include "core/math/vector3.h"
+#include "core/templates/local_vector.h"
+#include "modules/keyframe_reduce/keyframe_reduce.h"
 #include "scene/scene_string_names.h"
+#include <stdint.h>
 
 bool Animation::_set(const StringName &p_name, const Variant &p_value) {
 	String name = p_name;
@@ -3565,301 +3572,274 @@ void Animation::clear() {
 	emit_signal(SceneStringNames::get_singleton()->tracks_changed);
 }
 
-bool Animation::_position_track_optimize_key(const TKey<Vector3> &t0, const TKey<Vector3> &t1, const TKey<Vector3> &t2, real_t p_allowed_linear_err, real_t p_allowed_angular_error, const Vector3 &p_norm) {
-	const Vector3 &v0 = t0.value;
-	const Vector3 &v1 = t1.value;
-	const Vector3 &v2 = t2.value;
-
-	if (v0.is_equal_approx(v2)) {
-		//0 and 2 are close, let's see if 1 is close
-		if (!v0.is_equal_approx(v1)) {
-			//not close, not optimizable
-			return false;
-		}
-
-	} else {
-		Vector3 pd = (v2 - v0);
-		real_t d0 = pd.dot(v0);
-		real_t d1 = pd.dot(v1);
-		real_t d2 = pd.dot(v2);
-		if (d1 < d0 || d1 > d2) {
-			return false;
-		}
-
-		Vector3 s[2] = { v0, v2 };
-		real_t d = Geometry3D::get_closest_point_to_segment(v1, s).distance_to(v1);
-
-		if (d > pd.length() * p_allowed_linear_err) {
-			return false; //beyond allowed error for collinearity
-		}
-
-		if (p_norm != Vector3() && Math::acos(pd.normalized().dot(p_norm)) > p_allowed_angular_error) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-bool Animation::_rotation_track_optimize_key(const TKey<Quaternion> &t0, const TKey<Quaternion> &t1, const TKey<Quaternion> &t2, real_t p_allowed_angular_error, float p_max_optimizable_angle) {
-	const Quaternion &q0 = t0.value;
-	const Quaternion &q1 = t1.value;
-	const Quaternion &q2 = t2.value;
-
-	//localize both to rotation from q0
-
-	if (q0.is_equal_approx(q2)) {
-		if (!q0.is_equal_approx(q1)) {
-			return false;
-		}
-
-	} else {
-		Quaternion r02 = (q0.inverse() * q2).normalized();
-		Quaternion r01 = (q0.inverse() * q1).normalized();
-
-		Vector3 v02, v01;
-		real_t a02, a01;
-
-		r02.get_axis_angle(v02, a02);
-		r01.get_axis_angle(v01, a01);
-
-		if (Math::abs(a02) > p_max_optimizable_angle) {
-			return false;
-		}
-
-		if (v01.dot(v02) < 0) {
-			//make sure both rotations go the same way to compare
-			v02 = -v02;
-			a02 = -a02;
-		}
-
-		real_t err_01 = Math::acos(v01.normalized().dot(v02.normalized())) / Math_PI;
-		if (err_01 > p_allowed_angular_error) {
-			//not rotating in the same axis
-			return false;
-		}
-
-		if (a01 * a02 < 0) {
-			//not rotating in the same direction
-			return false;
-		}
-
-		real_t tr = a01 / a02;
-		if (tr < 0 || tr > 1) {
-			return false; //rotating too much or too less
-		}
-	}
-
-	return true;
-}
-
-bool Animation::_scale_track_optimize_key(const TKey<Vector3> &t0, const TKey<Vector3> &t1, const TKey<Vector3> &t2, real_t p_allowed_linear_error) {
-	const Vector3 &v0 = t0.value;
-	const Vector3 &v1 = t1.value;
-	const Vector3 &v2 = t2.value;
-
-	if (v0.is_equal_approx(v2)) {
-		//0 and 2 are close, let's see if 1 is close
-		if (!v0.is_equal_approx(v1)) {
-			//not close, not optimizable
-			return false;
-		}
-
-	} else {
-		Vector3 pd = (v2 - v0);
-		real_t d0 = pd.dot(v0);
-		real_t d1 = pd.dot(v1);
-		real_t d2 = pd.dot(v2);
-		if (d1 < d0 || d1 > d2) {
-			return false; //beyond segment range
-		}
-
-		Vector3 s[2] = { v0, v2 };
-		real_t d = Geometry3D::get_closest_point_to_segment(v1, s).distance_to(v1);
-
-		if (d > pd.length() * p_allowed_linear_error) {
-			return false; //beyond allowed error for colinearity
-		}
-	}
-
-	return true;
-}
-
-bool Animation::_blend_shape_track_optimize_key(const TKey<float> &t0, const TKey<float> &t1, const TKey<float> &t2, real_t p_allowed_unit_error) {
-	float v0 = t0.value;
-	float v1 = t1.value;
-	float v2 = t2.value;
-
-	if (Math::is_equal_approx(v1, v2, p_allowed_unit_error)) {
-		//0 and 2 are close, let's see if 1 is close
-		if (!Math::is_equal_approx(v0, v1, p_allowed_unit_error)) {
-			//not close, not optimizable
-			return false;
-		}
-
-	} else {
-		/*
-		TODO eventually discuss a way to optimize these better.
-		float pd = (v2 - v0);
-		real_t d0 = pd.dot(v0);
-		real_t d1 = pd.dot(v1);
-		real_t d2 = pd.dot(v2);
-		if (d1 < d0 || d1 > d2) {
-			return false; //beyond segment range
-		}
-
-		float s[2] = { v0, v2 };
-		real_t d = Geometry3D::get_closest_point_to_segment(v1, s).distance_to(v1);
-
-		if (d > pd.length() * p_allowed_linear_error) {
-			return false; //beyond allowed error for colinearity
-		}
-*/
-	}
-
-	return true;
-}
-
 void Animation::_position_track_optimize(int p_idx, real_t p_allowed_linear_err, real_t p_allowed_angular_err) {
 	ERR_FAIL_INDEX(p_idx, tracks.size());
 	ERR_FAIL_COND(tracks[p_idx]->type != TYPE_POSITION_3D);
-	PositionTrack *tt = static_cast<PositionTrack *>(tracks[p_idx]);
-	bool prev_erased = false;
-	TKey<Vector3> first_erased;
-
-	Vector3 norm;
-
-	for (int i = 1; i < tt->positions.size() - 1; i++) {
-		TKey<Vector3> &t0 = tt->positions.write[i - 1];
-		TKey<Vector3> &t1 = tt->positions.write[i];
-		TKey<Vector3> &t2 = tt->positions.write[i + 1];
-
-		bool erase = _position_track_optimize_key(t0, t1, t2, p_allowed_linear_err, p_allowed_angular_err, norm);
-		if (erase && !prev_erased) {
-			norm = (t2.value - t1.value).normalized();
-		}
-
-		if (prev_erased && !_position_track_optimize_key(t0, first_erased, t2, p_allowed_linear_err, p_allowed_angular_err, norm)) {
-			//avoid error to go beyond first erased key
-			erase = false;
-		}
-
-		if (erase) {
-			if (!prev_erased) {
-				first_erased = t1;
-				prev_erased = true;
-			}
-
-			tt->positions.remove(i);
-			i--;
-
-		} else {
-			prev_erased = false;
-			norm = Vector3();
+	PositionTrack *track = static_cast<PositionTrack *>(tracks[p_idx]);
+	track->interpolation = Animation::INTERPOLATION_CUBIC;
+	Ref<BezierKeyframeReduce> reduce;
+	reduce.instantiate();
+	BezierKeyframeReduce::KeyframeReductionSetting settings;
+	settings.max_error = p_allowed_linear_err;
+	Vector<Vector<BezierKeyframeReduce::Bezier>> beziers;
+	Vector<BezierTrack> bezier_tracks;
+	Vector<Vector<BezierKeyframeReduce::Bezier>> out_curves;
+	constexpr const int32_t elem_in_vector3 = 3;
+	for (int32_t i = 0; i < elem_in_vector3; i++) {
+		beziers.push_back(Vector<BezierKeyframeReduce::Bezier>());
+		bezier_tracks.push_back(BezierTrack());
+		out_curves.push_back(Vector<BezierKeyframeReduce::Bezier>());
+	}
+	for (int rotation_i = 0; rotation_i < track->positions.size();
+			rotation_i++) {
+		const TKey<Vector3> &key = track->positions[rotation_i];
+		double time = key.time;
+		Vector3 value = key.value;
+		LocalVector<float> values_split;
+		values_split.resize(3);
+		values_split[0] = value.x;
+		values_split[1] = value.y;
+		values_split[2] = value.z;
+		for (int32_t elem_i = 0; elem_i < elem_in_vector3; elem_i++) {
+			BezierKeyframeReduce::Vector2Bezier point =
+					BezierKeyframeReduce::Vector2Bezier(time, values_split[elem_i]);
+			beziers.write[elem_i].push_back(
+					BezierKeyframeReduce::Bezier(point, Vector2(), Vector2()));
 		}
 	}
-}
-
-void Animation::_rotation_track_optimize(int p_idx, real_t p_allowed_angular_err, real_t p_max_optimizable_angle) {
-	ERR_FAIL_INDEX(p_idx, tracks.size());
-	ERR_FAIL_COND(tracks[p_idx]->type != TYPE_ROTATION_3D);
-	RotationTrack *tt = static_cast<RotationTrack *>(tracks[p_idx]);
-	bool prev_erased = false;
-	TKey<Quaternion> first_erased;
-
-	for (int i = 1; i < tt->rotations.size() - 1; i++) {
-		TKey<Quaternion> &t0 = tt->rotations.write[i - 1];
-		TKey<Quaternion> &t1 = tt->rotations.write[i];
-		TKey<Quaternion> &t2 = tt->rotations.write[i + 1];
-
-		bool erase = _rotation_track_optimize_key(t0, t1, t2, p_allowed_angular_err, p_max_optimizable_angle);
-
-		if (prev_erased && !_rotation_track_optimize_key(t0, first_erased, t2, p_allowed_angular_err, p_max_optimizable_angle)) {
-			//avoid error to go beyond first erased key
-			erase = false;
-		}
-
-		if (erase) {
-			if (!prev_erased) {
-				first_erased = t1;
-				prev_erased = true;
-			}
-
-			tt->rotations.remove(i);
-			i--;
-
-		} else {
-			prev_erased = false;
+	Vector<double> segment_times;
+	for (int32_t bezier_i = 0; bezier_i < elem_in_vector3; bezier_i++) {
+		reduce->reduce(beziers[bezier_i], out_curves.write[bezier_i], settings);
+		for (const BezierKeyframeReduce::Bezier &bezier : out_curves.write[bezier_i]) {
+			double time = bezier.time_value.x;
+			segment_times.push_back(time);
 		}
 	}
-}
-
-void Animation::_scale_track_optimize(int p_idx, real_t p_allowed_linear_err) {
-	ERR_FAIL_INDEX(p_idx, tracks.size());
-	ERR_FAIL_COND(tracks[p_idx]->type != TYPE_SCALE_3D);
-	ScaleTrack *tt = static_cast<ScaleTrack *>(tracks[p_idx]);
-	bool prev_erased = false;
-	TKey<Vector3> first_erased;
-
-	for (int i = 1; i < tt->scales.size() - 1; i++) {
-		TKey<Vector3> &t0 = tt->scales.write[i - 1];
-		TKey<Vector3> &t1 = tt->scales.write[i];
-		TKey<Vector3> &t2 = tt->scales.write[i + 1];
-
-		bool erase = _scale_track_optimize_key(t0, t1, t2, p_allowed_linear_err);
-
-		if (prev_erased && !_scale_track_optimize_key(t0, first_erased, t2, p_allowed_linear_err)) {
-			//avoid error to go beyond first erased key
-			erase = false;
+	track->positions.clear();
+	segment_times.sort();
+	for (double &time : segment_times) {
+		Vector3 pos;
+		bool ok = true;
+		pos.x = BezierKeyframeReduce::_interpolate(out_curves[0], time, length, &ok);
+		if (!ok) {
+			continue;
 		}
-
-		if (erase) {
-			if (!prev_erased) {
-				first_erased = t1;
-				prev_erased = true;
-			}
-
-			tt->scales.remove(i);
-			i--;
-
-		} else {
-			prev_erased = false;
+		pos.y = BezierKeyframeReduce::_interpolate(out_curves[1], time, length, &ok);
+		if (!ok) {
+			continue;
 		}
+		pos.z = BezierKeyframeReduce::_interpolate(out_curves[2], time, length, &ok);
+		if (!ok) {
+			continue;
+		}
+		TKey<Vector3> key;
+		key.time = time;
+		key.value = pos;
+		track->positions.push_back(key);
 	}
 }
 
 void Animation::_blend_shape_track_optimize(int p_idx, real_t p_allowed_linear_err) {
 	ERR_FAIL_INDEX(p_idx, tracks.size());
 	ERR_FAIL_COND(tracks[p_idx]->type != TYPE_BLEND_SHAPE);
-	BlendShapeTrack *tt = static_cast<BlendShapeTrack *>(tracks[p_idx]);
-	bool prev_erased = false;
-	TKey<float> first_erased;
-	first_erased.value = 0.0;
-
-	for (int i = 1; i < tt->blend_shapes.size() - 1; i++) {
-		TKey<float> &t0 = tt->blend_shapes.write[i - 1];
-		TKey<float> &t1 = tt->blend_shapes.write[i];
-		TKey<float> &t2 = tt->blend_shapes.write[i + 1];
-
-		bool erase = _blend_shape_track_optimize_key(t0, t1, t2, p_allowed_linear_err);
-
-		if (prev_erased && !_blend_shape_track_optimize_key(t0, first_erased, t2, p_allowed_linear_err)) {
-			//avoid error to go beyond first erased key
-			erase = false;
+	BlendShapeTrack *track = static_cast<BlendShapeTrack *>(tracks[p_idx]);
+	track->interpolation = Animation::INTERPOLATION_CUBIC;
+	Ref<BezierKeyframeReduce> reduce;
+	reduce.instantiate();
+	BezierKeyframeReduce::KeyframeReductionSetting settings;
+	settings.max_error = p_allowed_linear_err;
+	Vector<BezierKeyframeReduce::Bezier> bezier;
+	BezierTrack bezier_track;
+	Vector<BezierKeyframeReduce::Bezier> out_curve;
+	for (int rotation_i = 0; rotation_i < track->blend_shapes.size();
+			rotation_i++) {
+		const TKey<float> &key = track->blend_shapes[rotation_i];
+		double time = key.time;
+		float value = key.value;
+		BezierKeyframeReduce::Vector2Bezier point =
+				BezierKeyframeReduce::Vector2Bezier(time, value);
+		bezier.push_back(
+				BezierKeyframeReduce::Bezier(point, Vector2(), Vector2()));
+	}
+	Vector<double> segment_times;
+	reduce->reduce(bezier, out_curve, settings);
+	for (const BezierKeyframeReduce::Bezier &bezier : out_curve) {
+		double time = bezier.time_value.x;
+		segment_times.push_back(time);
+	}
+	track->blend_shapes.clear();
+	segment_times.sort();
+	for (double &time : segment_times) {
+		float elem;
+		bool ok = true;
+		elem = BezierKeyframeReduce::_interpolate(out_curve, time, length, &ok);
+		if (!ok) {
+			continue;
 		}
+		TKey<float> key;
+		key.time = time;
+		key.value = elem;
+		track->blend_shapes.push_back(key);
+	}
+}
 
-		if (erase) {
-			if (!prev_erased) {
-				first_erased = t1;
-				prev_erased = true;
-			}
-
-			tt->blend_shapes.remove(i);
-			i--;
-
-		} else {
-			prev_erased = false;
+void Animation::_rotation_track_optimize(int p_idx, real_t p_allowed_angular_err, real_t p_max_optimizable_angle) {
+	ERR_FAIL_INDEX(p_idx, tracks.size());
+	ERR_FAIL_COND(tracks[p_idx]->type != TYPE_ROTATION_3D);
+	RotationTrack *track = static_cast<RotationTrack *>(tracks[p_idx]);
+	track->interpolation = Animation::INTERPOLATION_CUBIC;
+	Ref<BezierKeyframeReduce> reduce;
+	reduce.instantiate();
+	BezierKeyframeReduce::KeyframeReductionSetting settings;
+	settings.max_error = p_allowed_angular_err;
+	settings.tangent_split_angle_threshold_value = p_max_optimizable_angle;
+	Vector<Vector<BezierKeyframeReduce::Bezier>> beziers;
+	Vector<Vector<BezierKeyframeReduce::Bezier>> out_curves;
+	constexpr const int32_t elem_in_log_quat = 6;
+	for (int32_t i = 0; i < elem_in_log_quat; i++) {
+		beziers.push_back(Vector<BezierKeyframeReduce::Bezier>());
+		out_curves.push_back(Vector<BezierKeyframeReduce::Bezier>());
+	}
+	for (int rotation_i = 0; rotation_i < track->rotations.size();
+			rotation_i++) {
+		const TKey<Quaternion> &key = track->rotations[rotation_i];
+		double time = key.time;
+		Basis value = key.value.normalized();
+		LocalVector<float> values_split;
+		values_split.resize(elem_in_log_quat);
+		Vector3 axis_x = value.get_axis(Vector3::AXIS_X);
+		values_split[0] = axis_x.x;
+		values_split[1] = axis_x.y;
+		values_split[2] = axis_x.z;
+		Vector3 axis_y = value.get_axis(Vector3::AXIS_Y);
+		values_split[3] = axis_y.x;
+		values_split[4] = axis_y.y;
+		values_split[5] = axis_y.z;
+		for (int32_t elem_i = 0; elem_i < elem_in_log_quat; elem_i++) {
+			BezierKeyframeReduce::Vector2Bezier point =
+					BezierKeyframeReduce::Vector2Bezier(time, values_split[elem_i]);
+			beziers.write[elem_i].push_back(
+					BezierKeyframeReduce::Bezier(point, Vector2(), Vector2()));
 		}
+	}
+	Vector<double> segment_times;
+	for (int32_t bezier_i = 0; bezier_i < elem_in_log_quat; bezier_i++) {
+		reduce->reduce(beziers[bezier_i], out_curves.write[bezier_i], settings);
+		for (const BezierKeyframeReduce::Bezier &bezier : out_curves.write[bezier_i]) {
+			double time = bezier.time_value.x;
+			segment_times.push_back(time);
+		}
+	}
+	track->rotations.clear();
+	segment_times.sort();
+	for (double &time : segment_times) {
+		bool ok = true;
+		Vector3 axis_x;
+		axis_x.x = BezierKeyframeReduce::_interpolate(out_curves[0], time, length, &ok);
+		if (!ok) {
+			continue;
+		}
+		axis_x.y = BezierKeyframeReduce::_interpolate(out_curves[1], time, length, &ok);
+		if (!ok) {
+			continue;
+		}
+		axis_x.z = BezierKeyframeReduce::_interpolate(out_curves[2], time, length, &ok);
+		if (!ok) {
+			continue;
+		}
+		Vector3 axis_y;
+		axis_y.x = BezierKeyframeReduce::_interpolate(out_curves[3], time, length, &ok);
+		if (!ok) {
+			continue;
+		}
+		axis_y.y = BezierKeyframeReduce::_interpolate(out_curves[4], time, length, &ok);
+		if (!ok) {
+			continue;
+		}
+		axis_y.z = BezierKeyframeReduce::_interpolate(out_curves[5], time, length, &ok);
+		if (!ok) {
+			continue;
+		}
+		// Compute rotation matrix from orthogonal basis from 6 dimensions.
+		Vector3 x = axis_x.normalized();
+		Vector3 z = x.cross(axis_y);
+		z = z.normalized();
+		Vector3 y = z.cross(x);
+		Basis basis;
+		basis.set_axis(Vector3::AXIS_X, x);
+		basis.set_axis(Vector3::AXIS_Y, y);
+		basis.set_axis(Vector3::AXIS_Z, z);
+		TKey<Quaternion> key;
+		key.time = time;
+		key.value = basis.get_rotation_quaternion();
+		track->rotations.push_back(key);
+	}
+}
+
+void Animation::_scale_track_optimize(int p_idx, real_t p_allowed_linear_err) {
+	ERR_FAIL_INDEX(p_idx, tracks.size());
+	ERR_FAIL_COND(tracks[p_idx]->type != TYPE_SCALE_3D);
+	ScaleTrack *track = static_cast<ScaleTrack *>(tracks[p_idx]);
+	track->interpolation = Animation::INTERPOLATION_CUBIC;
+	Ref<BezierKeyframeReduce> reduce;
+	reduce.instantiate();
+	BezierKeyframeReduce::KeyframeReductionSetting settings;
+	settings.max_error = p_allowed_linear_err;
+	Vector<Vector<BezierKeyframeReduce::Bezier>> beziers;
+	Vector<BezierTrack> bezier_tracks;
+	Vector<Vector<BezierKeyframeReduce::Bezier>> out_curves;
+	constexpr const int32_t elem_in_vector3 = 3;
+	for (int32_t i = 0; i < elem_in_vector3; i++) {
+		beziers.push_back(Vector<BezierKeyframeReduce::Bezier>());
+		bezier_tracks.push_back(BezierTrack());
+		out_curves.push_back(Vector<BezierKeyframeReduce::Bezier>());
+	}
+	for (int rotation_i = 0; rotation_i < track->scales.size();
+			rotation_i++) {
+		const TKey<Vector3> &key = track->scales[rotation_i];
+		double time = key.time;
+		Vector3 value = key.value;
+		LocalVector<float> values_split;
+		values_split.resize(3);
+		values_split[0] = value.x;
+		values_split[1] = value.y;
+		values_split[2] = value.z;
+		for (int32_t elem_i = 0; elem_i < elem_in_vector3; elem_i++) {
+			BezierKeyframeReduce::Vector2Bezier point =
+					BezierKeyframeReduce::Vector2Bezier(time, values_split[elem_i]);
+			beziers.write[elem_i].push_back(
+					BezierKeyframeReduce::Bezier(point, Vector2(), Vector2()));
+		}
+	}
+	Vector<double> segment_times;
+	for (int32_t bezier_i = 0; bezier_i < elem_in_vector3; bezier_i++) {
+		reduce->reduce(beziers[bezier_i], out_curves.write[bezier_i], settings);
+		for (const BezierKeyframeReduce::Bezier &bezier : out_curves.write[bezier_i]) {
+			double time = bezier.time_value.x;
+			segment_times.push_back(time);
+		}
+	}
+	track->scales.clear();
+	segment_times.sort();
+	for (double &time : segment_times) {
+		Vector3 pos;
+		bool ok = true;
+		pos.x = BezierKeyframeReduce::_interpolate(out_curves[0], time, length, &ok);
+		if (!ok) {
+			continue;
+		}
+		pos.y = BezierKeyframeReduce::_interpolate(out_curves[1], time, length, &ok);
+		if (!ok) {
+			continue;
+		}
+		pos.z = BezierKeyframeReduce::_interpolate(out_curves[2], time, length, &ok);
+		if (!ok) {
+			continue;
+		}
+		TKey<Vector3> key;
+		key.time = time;
+		key.value = pos;
+		track->scales.push_back(key);
 	}
 }
 
