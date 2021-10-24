@@ -179,8 +179,8 @@ bool ImageLoaderSVG::_convert_tvg_paints(const tvg::Paint *p_paint) {
 		if (tvg::Fill *fill = shape->fill()) {
 			tvg::Fill::ColorStop *colorStop;
 			uint32_t count = fill->colorStops(&colorStop);
-			for (int i = 0; i < count; ++i) {
-				tvg::Fill::ColorStop &p = colorStop[i];
+			for (int count_i = 0; count_i < count; ++count_i) {
+				tvg::Fill::ColorStop &p = colorStop[count_i];
 				for (int i = 0; i < replace_colors.old_colors.size(); i++) {
 					ByteColor old_color = {};
 					old_color.b[0] = p.r;
