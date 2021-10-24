@@ -197,7 +197,6 @@ bool ImageLoaderSVG::_convert_tvg_paints(const tvg::Paint *p_paint) {
 						p.g = replace_color.b[1];
 						p.b = replace_color.b[2];
 						p.a = replace_color.b[3];
-						return true;
 					}
 				}
 			}
