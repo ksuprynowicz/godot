@@ -225,7 +225,7 @@ def configure_msvc(env, manual_msvc_config):
     else:
         env.AppendUnique(CCFLAGS=["/MD"])
 
-    env.AppendUnique(CCFLAGS=["/Gd", "/GR", "/nologo"])
+    env.AppendUnique(CCFLAGS=["/Gd", "/GR", "/nologo", "/bigobj"])
     # Force to use Unicode encoding
     env.AppendUnique(CCFLAGS=["/utf-8"])
     env.AppendUnique(CXXFLAGS=["/TP"])  # assume all sources are C++
