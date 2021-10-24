@@ -306,7 +306,7 @@ Result Shape::fillColor(uint8_t* r, uint8_t* g, uint8_t* b, uint8_t* a) const no
     return Result::Success;
 }
 
-const Fill* Shape::fill() const noexcept
+Fill* Shape::fill() noexcept
 {
     return pImpl->fill;
 }
@@ -354,7 +354,7 @@ Result Shape::stroke(unique_ptr<Fill> f) noexcept
 }
 
 
-const Fill* Shape::strokeFill() const noexcept
+Fill* Shape::strokeFill() noexcept
 {
     if (!pImpl->stroke) return nullptr;
 

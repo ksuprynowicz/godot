@@ -1,5 +1,5 @@
 rm -rf AUTHORS  inc  LICENSE  src *.zip
-curl -L -O https://github.com/Samsung/thorvg/archive/449a8c82faa67b0a34ae7be557c689a278171041.zip
+curl -L -O https://github.com/Samsung/thorvg/archive/041b946175392390c70de185b0a0aace811a7592.zip
 bsdtar --strip-components=1 -xvf  *.zip
 rm *.zip
 rm -rf .github docs pc res test tools .git* *.md *.txt wasm_build.sh
@@ -12,11 +12,17 @@ cat << 'EOF' > inc/config.h
 
 #pragma once
 
-#define THORVG_SVG_LOADER_SUPPORT 1
-
 #define THORVG_SW_RASTER_SUPPORT 1
 
-#define THORVG_PNG_RASTER_SUPPORT 1
+#define THORVG_SVG_LOADER_SUPPORT 1
+
+#define THORVG_PNG_LOADER_SUPPORT 1
+
+#define THORVG_TVG_LOADER_SUPPORT 1
+
+#define THORVG_JPG_LOADER_SUPPORT 1
+
+#define THORVG_LOG_ENABLED 1
 
 #define THORVG_VERSION_STRING "master"
 EOF

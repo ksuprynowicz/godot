@@ -51,8 +51,10 @@ public:
 
 	virtual Error load_image(Ref<Image> p_image, FileAccess *p_fileaccess, bool p_force_linear, float p_scale) override;
 	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
-
-	virtual ~ImageLoaderSVG() {}
+	ImageLoaderSVG();
+	virtual ~ImageLoaderSVG() {
+		tvg::Initializer::term(tvg::CanvasEngine::Sw);
+	}
 };
 
 #endif // IMAGE_LOADER_SVG_H

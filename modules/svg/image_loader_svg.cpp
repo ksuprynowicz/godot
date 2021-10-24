@@ -81,9 +81,9 @@ void ImageLoaderSVG::create_image_from_string(Ref<Image> p_image, String p_strin
 	uint32_t height = MIN(fh * p_scale * upscale, 16 * 1024);
 	picture->size(width, height);
 
-	std::unique_ptr<tvg::SwCanvas> swCanvas = tvg::SwCanvas::gen();
+	std::unique_ptr<tvg::SwCanvas> sw_canvas = tvg::SwCanvas::gen();
 	uint32_t *buffer = (uint32_t *)malloc(sizeof(uint32_t) * width * height);
-	tvg::Result res = swCanvas->target(buffer, width, width, height, tvg::SwCanvas::ARGB8888);
+	tvg::Result res = sw_canvas->target(buffer, width, width, height, tvg::SwCanvas::ARGB8888);
 	if (res != tvg::Result::Success) {
 		return;
 	}
@@ -97,33 +97,32 @@ void ImageLoaderSVG::create_image_from_string(Ref<Image> p_image, String p_strin
 		shape->appendRect(0, 0, width, height, 0, 0); //x, y, w, h, rx, ry
 		shape->fill(bgColorR, bgColorG, bgColorB, 255); //r, g, b, a
 
-		if (swCanvas->push(move(shape)) != tvg::Result::Success) {
+		if (sw_canvas->push(move(shape)) != tvg::Result::Success) {
 			return;
 		}
 	}
+
 	if (p_convert_color) {
 		std::unique_ptr<tvg::Accessor>
 				accessor = tvg::Accessor::gen();
-		picture = accessor->access(move(picture), ImageLoaderSVG::convert_tvg_color_func);
+		picture = accessor->access(move(picture), convert_tvg_color_func);
 	}
-
-	swCanvas->push(move(picture));
-
-	if (swCanvas->draw() == tvg::Result::Success) {
-		swCanvas->sync();
+	sw_canvas->push(move(picture));
+	if (sw_canvas->draw() == tvg::Result::Success) {
+		sw_canvas->sync();
 	} else {
 		return;
 	}
 
-	LocalVector<uint8_t> image;
-	image.resize(width * height * 4);
-	for (unsigned y = 0; y < height; y++) {
-		for (unsigned x = 0; x < width; x++) {
+	Vector<uint8_t> image;
+	image.resize(width * height * sizeof(uint32_t));
+	for (uint32_t y = 0; y < height; y++) {
+		for (uint32_t x = 0; x < width; x++) {
 			uint32_t n = buffer[y * width + x];
-			image[4 * width * y + 4 * x + 0] = (n >> 16) & 0xff;
-			image[4 * width * y + 4 * x + 1] = (n >> 8) & 0xff;
-			image[4 * width * y + 4 * x + 2] = n & 0xff;
-			image[4 * width * y + 4 * x + 3] = (n >> 24) & 0xff;
+			image.write[sizeof(uint32_t) * width * y + sizeof(uint32_t) * x + 0] = (n >> 16) & 0xff;
+			image.write[sizeof(uint32_t) * width * y + sizeof(uint32_t) * x + 1] = (n >> 8) & 0xff;
+			image.write[sizeof(uint32_t) * width * y + sizeof(uint32_t) * x + 2] = n & 0xff;
+			image.write[sizeof(uint32_t) * width * y + sizeof(uint32_t) * x + 3] = (n >> 24) & 0xff;
 		}
 	}
 
@@ -146,8 +145,11 @@ Error ImageLoaderSVG::load_image(Ref<Image> p_image, FileAccess *p_fileaccess, b
 }
 
 ImageLoaderSVG::ReplaceColors ImageLoaderSVG::replace_colors;
-
 bool ImageLoaderSVG::_convert_tvg_paints(const tvg::Paint *p_paint) {
+	union ByteColor {
+		uint32_t i = 0;
+		uint8_t b[sizeof(float)];
+	};
 	if (p_paint->identifier() == tvg::Shape::identifier()) {
 		tvg::Shape *shape = (tvg::Shape *)p_paint;
 		uint8_t r = 0;
@@ -155,10 +157,6 @@ bool ImageLoaderSVG::_convert_tvg_paints(const tvg::Paint *p_paint) {
 		uint8_t b = 0;
 		uint8_t a = 0;
 		shape->fillColor(&r, &g, &b, &a);
-		union ByteColor {
-			uint32_t i;
-			uint8_t b[sizeof(float)];
-		};
 		for (int i = 0; i < replace_colors.old_colors.size(); i++) {
 			ByteColor old_color = {};
 			old_color.b[0] = r;
@@ -171,31 +169,49 @@ bool ImageLoaderSVG::_convert_tvg_paints(const tvg::Paint *p_paint) {
 			ByteColor replace_color = {};
 			replace_color.i = replace_colors.new_colors[i];
 			if (new_color.i == old_color.i) {
-				r = replace_color.b[0];
-				g = replace_color.b[1];
-				b = replace_color.b[2];
-				a = replace_color.b[3];
+				shape->fill(replace_color.b[0], replace_color.b[1], replace_color.b[2],
+						replace_color.b[3]);
+				return true;
 			}
-			return true;
 		}
-	} else if (p_paint->identifier() == tvg::LinearGradient::identifier()) {
-		// if (p_paint->type == NSVG_PAINT_LINEAR_GRADIENT || p_paint->type ==
-		// NSVG_PAINT_RADIAL_GRADIENT) { 	for (int stop_index = 0; stop_index <
-		// p_paint->gradient->nstops; stop_index++) { 		if
-		// (p_paint->gradient->stops[stop_index].color << 8 == p_old << 8) {
-		// 			p_paint->gradient->stops[stop_index].color = p_new;
-		// 		}
-		// 	}
-		// }
-	} else if (p_paint->identifier() == tvg::RadialGradient::identifier()) {
-		// if (p_paint->type == NSVG_PAINT_LINEAR_GRADIENT || p_paint->type ==
-		// NSVG_PAINT_RADIAL_GRADIENT) { 	for (int stop_index = 0; stop_index <
-		// p_paint->gradient->nstops; stop_index++) { 		if
-		// (p_paint->gradient->stops[stop_index].color << 8 == p_old << 8) {
-		// 			p_paint->gradient->stops[stop_index].color = p_new;
-		// 		}
-		// 	}
-		// }
+	} else if (p_paint->identifier() == tvg::LinearGradient::identifier() || p_paint->identifier() == tvg::RadialGradient::identifier()) {
+		tvg::Shape *shape = (tvg::Shape *)p_paint;
+		if (tvg::Fill *fill = shape->fill()) {
+			tvg::Fill::ColorStop *colorStop;
+			uint32_t count = fill->colorStops(&colorStop);
+			for (int i = 0; i < count; ++i) {
+				tvg::Fill::ColorStop &p = colorStop[i];
+				for (int i = 0; i < replace_colors.old_colors.size(); i++) {
+					ByteColor old_color = {};
+					old_color.b[0] = p.r;
+					old_color.b[1] = p.g;
+					old_color.b[2] = p.b;
+					old_color.b[3] = p.a;
+
+					ByteColor new_color = {};
+					new_color.i = replace_colors.new_colors[i];
+					ByteColor replace_color = {};
+					replace_color.i = replace_colors.new_colors[i];
+					if (new_color.i == old_color.i) {
+						p.r = replace_color.b[0];
+						p.g = replace_color.b[1];
+						p.b = replace_color.b[2];
+						p.a = replace_color.b[3];
+						return true;
+					}
+				}
+			}
+		}
 	}
 	return true;
+};
+ImageLoaderSVG::ImageLoaderSVG() {
+	tvg::CanvasEngine tvgEngine = tvg::CanvasEngine::Sw;
+	uint32_t threads = std::thread::hardware_concurrency();
+	if (threads > 0) {
+		--threads;
+	}
+	if (tvg::Initializer::init(tvgEngine, threads) != tvg::Result::Success) {
+		return;
+	}
 }

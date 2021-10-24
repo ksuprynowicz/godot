@@ -390,7 +390,7 @@ public:
      *
      * @return Result::Success when succeed.
      */
-    Result colorStops(const ColorStop* colorStops, uint32_t cnt) noexcept;
+    Result colorStops(ColorStop* colorStops, uint32_t cnt) noexcept;
 
     /**
      * @brief Sets the FillSpread value, which specifies how to fill the area outside the gradient bounds.
@@ -421,7 +421,7 @@ public:
      *
      * @return The number of colors used in the gradient. This value corresponds to the length of the @p colorStops array.
      */
-    uint32_t colorStops(const ColorStop** colorStops) const noexcept;
+    uint32_t colorStops(ColorStop** colorStops) noexcept;
 
     /**
      * @brief Gets the FillSpread value of the fill.
@@ -985,7 +985,7 @@ public:
      *
      * @return The pointer to the gradient fill of the stroke when succeed, @c nullptr in case no fill was set.
      */
-    const Fill* fill() const noexcept;
+    Fill* fill() noexcept;
 
     /**
      * @brief Gets the solid color of the shape.
@@ -1030,7 +1030,7 @@ public:
      *
      * @return The pointer to the gradient fill of the stroke when succeed, @c nullptr otherwise.
      */
-    const Fill* strokeFill() const noexcept;
+    Fill* strokeFill() noexcept;
 
     /**
      * @brief Gets the dash pattern of the stroke.

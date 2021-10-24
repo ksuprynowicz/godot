@@ -41,7 +41,7 @@ Fill::~Fill()
 }
 
 
-Result Fill::colorStops(const ColorStop* colorStops, uint32_t cnt) noexcept
+Result Fill::colorStops(ColorStop* colorStops, uint32_t cnt) noexcept
 {
     if ((!colorStops && cnt > 0) || (colorStops && cnt == 0)) return Result::InvalidArguments;
 
@@ -65,7 +65,7 @@ Result Fill::colorStops(const ColorStop* colorStops, uint32_t cnt) noexcept
 }
 
 
-uint32_t Fill::colorStops(const ColorStop** colorStops) const noexcept
+uint32_t Fill::colorStops(ColorStop** colorStops) noexcept
 {
     if (colorStops) *colorStops = pImpl->colorStops;
 

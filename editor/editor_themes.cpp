@@ -30,6 +30,7 @@
 
 #include "editor_themes.h"
 
+#include "core/error/error_macros.h"
 #include "core/io/resource_loader.h"
 #include "editor_fonts.h"
 #include "editor_icons.gen.h"

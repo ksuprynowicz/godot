@@ -33,14 +33,14 @@
 #define FIXPT_SIZE (1<<FIXPT_BITS)
 
 
-static bool _updateColorTable(SwFill* fill, const Fill* fdata, const SwSurface* surface, uint32_t opacity)
+static bool _updateColorTable(SwFill* fill, Fill* fdata, const SwSurface* surface, uint32_t opacity)
 {
     if (!fill->ctable) {
         fill->ctable = static_cast<uint32_t*>(malloc(GRADIENT_STOP_SIZE * sizeof(uint32_t)));
         if (!fill->ctable) return false;
     }
 
-    const Fill::ColorStop* colors;
+    Fill::ColorStop* colors;
     auto cnt = fdata->colorStops(&colors);
     if (cnt == 0 || !colors) return false;
 
@@ -266,7 +266,7 @@ void fillFetchLinear(const SwFill* fill, uint32_t* dst, uint32_t y, uint32_t x, 
 }
 
 
-bool fillGenColorTable(SwFill* fill, const Fill* fdata, const Matrix* transform, SwSurface* surface, uint32_t opacity, bool ctable)
+bool fillGenColorTable(SwFill* fill, Fill* fdata, const Matrix* transform, SwSurface* surface, uint32_t opacity, bool ctable)
 {
     if (!fill) return false;
 

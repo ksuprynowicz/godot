@@ -242,6 +242,7 @@ struct BitStreamReader
     }
 };
 
+namespace {
 
 struct Dictionary
 {
@@ -303,6 +304,8 @@ struct Dictionary
         return false;
     }
 };
+
+}
 
 
 static bool outputByte(int code, uint8_t*& output, int outputSizeBytes, int& bytesDecodedSoFar)

@@ -62,7 +62,7 @@ struct SwTask : Task
 struct SwShapeTask : SwTask
 {
     SwShape shape;
-    const Shape* sdata = nullptr;
+    Shape* sdata = nullptr;
     bool cmpStroking = false;
 
     void run(unsigned tid) override
@@ -597,7 +597,7 @@ RenderData SwRenderer::prepare(const Picture& pdata, RenderData data, const Rend
 }
 
 
-RenderData SwRenderer::prepare(const Shape& sdata, RenderData data, const RenderTransform* transform, uint32_t opacity, Array<RenderData>& clips, RenderUpdateFlag flags)
+RenderData SwRenderer::prepare(Shape& sdata, RenderData data, const RenderTransform* transform, uint32_t opacity, Array<RenderData>& clips, RenderUpdateFlag flags)
 {
     //prepare task
     auto task = static_cast<SwShapeTask*>(data);
