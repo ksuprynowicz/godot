@@ -132,6 +132,7 @@ opts.Add(BoolVariable("deprecated", "Enable deprecated features", True))
 opts.Add(BoolVariable("minizip", "Enable ZIP archive support using minizip", True))
 opts.Add(BoolVariable("xaudio2", "Enable the XAudio2 audio driver", False))
 opts.Add(BoolVariable("vulkan", "Enable the vulkan video driver", True))
+opts.Add(BoolVariable("opengl3", "Enable the OpenGL/GLES3 video driver", True))
 opts.Add("custom_modules", "A list of comma-separated directory paths containing custom modules to build.", "")
 opts.Add(BoolVariable("custom_modules_recursive", "Detect custom modules recursively for each specified path.", True))
 opts.Add(BoolVariable("use_volk", "Use the volk library to load the Vulkan loader dynamically", True))
@@ -705,19 +706,13 @@ if selected_platform in platform_list:
             suffix="glsl.gen.h",
             src_suffix=".glsl",
         ),
+        "GLES3_GLSL": env.Builder(
+            action=run_in_subprocess(gles3_builders.build_gles3_headers),
+            suffix="glsl.gen.h",
+            src_suffix=".glsl",
+        ),
     }
     env.Append(BUILDERS=GLSL_BUILDERS)
-
-    if not env["platform"] == "server":
-        env.Append(
-            BUILDERS={
-                "GLES3_GLSL": env.Builder(
-                    action=run_in_subprocess(gles3_builders.build_gles3_headers),
-                    suffix="glsl.gen.h",
-                    src_suffix=".glsl",
-                )
-            }
-        )
 
     scons_cache_path = os.environ.get("SCONS_CACHE")
     if scons_cache_path != None:
