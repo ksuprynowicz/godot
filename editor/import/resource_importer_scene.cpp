@@ -30,9 +30,11 @@
 
 #include "resource_importer_scene.h"
 
+#include "core/error/error_macros.h"
 #include "core/io/resource_saver.h"
 #include "editor/editor_node.h"
-
+#include "editor/import/editor_importer_bake_reset.h"
+#include "editor/import/editor_importer_point_parent_to_child.h"
 #include "editor/import/scene_import_settings.h"
 #include "scene/3d/area_3d.h"
 #include "scene/3d/collision_shape_3d.h"
@@ -1426,6 +1428,8 @@ void ResourceImporterScene::get_import_options(List<ImportOption> *r_options, in
 	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, "meshes/lightmap_texel_size", PROPERTY_HINT_RANGE, "0.001,100,0.001"), 0.1));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "skins/use_named_skins"), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "animation/import"), true));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "animation/point_parent_bone_to_children"), true));
+	r_options->push_back(ImportOption(PropertyInfo(Variant::BOOL, "animation/bake_reset_animation"), true));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::FLOAT, "animation/fps", PROPERTY_HINT_RANGE, "1,120,1"), 15));
 	r_options->push_back(ImportOption(PropertyInfo(Variant::STRING, "import_script/path", PROPERTY_HINT_FILE, script_ext_hint), ""));
 
@@ -1950,6 +1954,18 @@ Error ResourceImporterScene::import(const String &p_source_file, const String &p
 	}
 
 	_post_fix_node(scene, scene, collision_map, scanned_meshes, node_data, material_data, animation_data, fps);
+
+	bool use_point_parent_bone_to_children = p_options["animation/point_parent_bone_to_children"];
+	if (use_point_parent_bone_to_children) {
+		PointParentToChild parent_to_child;
+		parent_to_child._parent_to_child(scene);
+	}
+
+	bool use_bake_reset_animation = p_options["animation/bake_reset_animation"];
+	if (use_bake_reset_animation) {
+		BakeReset bake_reset;
+		bake_reset._bake_animation_pose(scene, "RESET");
+	}
 
 	String root_type = p_options["nodes/root_type"];
 	root_type = root_type.split(" ")[0]; // full root_type is "ClassName (filename.gd)" for a script global class.
