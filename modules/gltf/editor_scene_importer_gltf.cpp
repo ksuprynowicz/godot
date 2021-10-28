@@ -53,7 +53,15 @@ Node *EditorSceneFormatImporterGLTF::import_scene(const String &p_path,
 		Error *r_err) {
 	Ref<GLTFDocument> doc;
 	doc.instantiate();
-	return doc->import_scene_gltf(p_path, p_flags, p_bake_fps, Ref<GLTFState>(), r_missing_deps, r_err);
+	Ref<GLTFState> state;
+	state.instantiate();
+	Error err = doc->load_from_file(p_path, p_flags, p_bake_fps, state);
+	if (err != OK) {
+		*r_err = err;
+		return nullptr;
+	}
+	Node *root = doc->generate_scene(p_bake_fps, state);
+	return root;
 }
 
 Ref<Animation> EditorSceneFormatImporterGLTF::import_animation(const String &p_path,
