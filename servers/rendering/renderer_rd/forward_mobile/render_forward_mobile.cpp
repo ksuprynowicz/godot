@@ -2362,6 +2362,8 @@ void RenderForwardMobile::_geometry_instance_add_surface(GeometryInstanceForward
 		material = (SceneShaderForwardMobile::MaterialData *)storage->material_get_data(m_src, RendererStorageRD::SHADER_TYPE_3D);
 		if (!material || !material->shader_data->valid) {
 			material = nullptr;
+		} else if (!RD::get_singleton()->uniform_set_is_valid(material->uniform_set)) {
+			storage->material_force_update_textures(m_src, RendererStorageRD::SHADER_TYPE_3D);
 		}
 	}
 
@@ -2383,6 +2385,8 @@ void RenderForwardMobile::_geometry_instance_add_surface(GeometryInstanceForward
 		material = (SceneShaderForwardMobile::MaterialData *)storage->material_get_data(next_pass, RendererStorageRD::SHADER_TYPE_3D);
 		if (!material || !material->shader_data->valid) {
 			break;
+		} else if (!RD::get_singleton()->uniform_set_is_valid(material->uniform_set)) {
+			storage->material_force_update_textures(m_src, RendererStorageRD::SHADER_TYPE_3D);
 		}
 		if (ginstance->data->dirty_dependencies) {
 			storage->material_update_dependency(next_pass, &ginstance->data->dependency_tracker);
