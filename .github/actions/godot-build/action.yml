@@ -34,3 +34,18 @@ runs:
         echo "Building with flags:" ${{ env.SCONSFLAGS }}
         scons p=${{ inputs.platform }} target=${{ inputs.target }} tools=${{ inputs.tools }} tests=${{ inputs.tests }} --jobs=2 ${{ env.SCONSFLAGS }}
         ls -l bin/
+    - name: Archive Build
+      uses: thedoctor0/zip-release@master
+      with:
+        type: 'zip'
+        filename: groups_${{ inputs.platform }}
+        directory: bin
+        path: .
+    - uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: latest-groups-${{ inputs.platform }}
+        prerelease: true
+        title: Groups packages
+        files: |
+          bin/groups_${{ inputs.platform }}.zip
