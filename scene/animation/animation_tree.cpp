@@ -112,6 +112,7 @@ void AnimationNode::blend_animation(const StringName &p_animation, float p_time,
 	anim_state.time = p_time;
 	anim_state.animation = animation;
 	anim_state.seeked = p_seeked;
+	anim_state.add_directly = add_directly;
 
 	state->animation_states.push_back(anim_state);
 }
@@ -141,7 +142,7 @@ void AnimationNode::make_invalid(const String &p_reason) {
 	state->invalid_reasons += String::utf8("• ") + p_reason;
 }
 
-float AnimationNode::blend_input(int p_input, float p_time, bool p_seek, float p_blend, FilterAction p_filter, bool p_optimize) {
+float AnimationNode::blend_input(int p_input, float p_time, bool p_seek, float p_blend, FilterAction p_filter, bool p_optimize, bool p_add_directly) {
 	ERR_FAIL_INDEX_V(p_input, inputs.size(), 0);
 	ERR_FAIL_COND_V(!state, 0);
 
@@ -154,6 +155,9 @@ float AnimationNode::blend_input(int p_input, float p_time, bool p_seek, float p
 		String name = blend_tree->get_node_name(Ref<AnimationNode>(this));
 		make_invalid(vformat(RTR("Nothing connected to input '%s' of node '%s'."), get_input_name(p_input), name));
 		return 0;
+	} else {
+		Ref<AnimationNode> node = blend_tree->get_node(node_name);
+		node->add_directly = p_add_directly;
 	}
 
 	Ref<AnimationNode> node = blend_tree->get_node(node_name);
@@ -443,6 +447,7 @@ AnimationNode::AnimationNode() {
 	state = nullptr;
 	parent = nullptr;
 	filter_enabled = false;
+	add_directly = false;
 }
 
 ////////////////////
@@ -921,16 +926,23 @@ void AnimationTree::_process_graph(float p_delta) {
 								continue;
 							}
 
-							t->loc = t->loc.linear_interpolate(loc, blend);
-							if (t->rot_blend_accum == 0) {
-								t->rot = rot;
-								t->rot_blend_accum = blend;
+							if (!as.add_directly) {
+								t->loc = t->loc.linear_interpolate(loc, blend);
+								if (t->rot_blend_accum == 0) {
+									t->rot = rot;
+									t->rot_blend_accum = blend;
+								} else {
+									float rot_total = t->rot_blend_accum + blend;
+									t->rot = rot.slerp(t->rot, t->rot_blend_accum / rot_total).normalized();
+									t->rot_blend_accum = rot_total;
+								}
+								t->scale = t->scale.linear_interpolate(scale, blend);
 							} else {
-								float rot_total = t->rot_blend_accum + blend;
-								t->rot = rot.slerp(t->rot, t->rot_blend_accum / rot_total).normalized();
-								t->rot_blend_accum = rot_total;
+								t->loc += (loc)*blend;
+								t->scale = t->scale.linear_interpolate(scale, blend);
+								Quat q = Quat().slerp(rot.normalized(), blend).normalized();
+								t->rot = (t->rot * q).normalized();
 							}
-							t->scale = t->scale.linear_interpolate(scale, blend);
 						}
 
 					} break;
