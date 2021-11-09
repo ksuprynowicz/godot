@@ -103,8 +103,8 @@ Ref<Animation> EditorSceneFormatImporter::import_animation_from_other_importer(c
 }
 
 void EditorSceneFormatImporter::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("import_scene_from_other_importer", "path", "flags", "bake_fps"), &EditorSceneFormatImporter::import_scene_from_other_importer);
-	ClassDB::bind_method(D_METHOD("import_animation_from_other_importer", "path", "flags", "bake_fps"), &EditorSceneFormatImporter::import_animation_from_other_importer);
+	ClassDB::bind_method(D_METHOD("_import_scene_from_other_importer", "path", "flags", "bake_fps"), &EditorSceneFormatImporter::import_scene_from_other_importer);
+	ClassDB::bind_method(D_METHOD("_import_animation_from_other_importer", "path", "flags", "bake_fps"), &EditorSceneFormatImporter::import_animation_from_other_importer);
 
 	GDVIRTUAL_BIND(_get_import_flags);
 	GDVIRTUAL_BIND(_get_extensions);
