@@ -51,6 +51,10 @@ private:
 	};
 	JSKeyEvent key_event;
 
+#ifdef GLES3_ENABLED
+	EMSCRIPTEN_WEBGL_CONTEXT_HANDLE webgl_ctx = 0;
+#endif
+
 	WindowMode window_mode = WINDOW_MODE_WINDOWED;
 	ObjectID window_attached_instance_id = {};
 
