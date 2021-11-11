@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorSceneFormatImporterBlend" inherits="EditorSceneFormatImporter" version="4.0">
+	<brief_description>
+	EditorSceneFormatImporterBlend imports ".blend" files.
+	</brief_description>
+	<description>
+	EditorSceneFormatImporterBlend imports ".blend" files through the glTF2 3d import pipeline.
+	
+	The "filesystem/blend/blender_path" editor setting sets the location of the blender binary. Set an empty string to disable EditorSceneFormatImporterBlend.
+
+	See also the ".blend" export tool.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>
