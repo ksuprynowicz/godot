@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  register_types.cpp                                                   */
+/*  editor_scene_exporter_blend_plugin.h                                 */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,48 +28,25 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "register_types.h"
+#ifndef EDITOR_SCENE_EXPORTER_BLEND_PLUGIN_H
+#define EDITOR_SCENE_EXPORTER_BLEND_PLUGIN_H
 
-#include "core/config/project_settings.h"
-#include "editor/editor_node.h"
-#include "editor_scene_exporter_blend_plugin.h"
+#if TOOLS_ENABLED
+#include "editor/editor_plugin.h"
+
 #include "editor_scene_importer_blend.h"
 
-#ifndef _3D_DISABLED
-#ifdef TOOLS_ENABLED
-static void _editor_init() {
-	_GLOBAL_DEF("filesystem/import/blend/enabled", true, true);
-	bool blender_enabled =
-			EditorSettings::get_singleton()->get("filesystem/import/blend/enabled");
-	if (!blender_enabled) {
-		return;
-	}
-	_EDITOR_DEF("filesystem/blend/blender_path", "blender", true);
-	EditorSettings::get_singleton()->add_property_hint(
-			PropertyInfo(Variant::STRING, "filesystem/blend/blender_path",
-					PROPERTY_HINT_GLOBAL_FILE));
-	String blender_path =
-			EditorSettings::get_singleton()->get("filesystem/blend/blender_path");
-	if (blender_path.is_empty()) {
-		return;
-	}
-	Ref<EditorSceneFormatImporterBlend> import_gltf;
-	import_gltf.instantiate();
-	ResourceImporterScene::get_singleton()->add_importer(import_gltf);
-}
-#endif
-#endif
+class SceneExporterBlendPlugin : public EditorPlugin {
+	GDCLASS(SceneExporterBlendPlugin, EditorPlugin);
+	EditorNode *editor = nullptr;
+	EditorFileDialog *file_export_lib = nullptr;
+	void _blend_dialog_action(String p_file);
+	void convert_scene_to_blend();
 
-void register_gltf_blend_types() {
-#ifndef _3D_DISABLED
-#ifdef TOOLS_ENABLED
-	ClassDB::APIType prev_api = ClassDB::get_current_api();
-	ClassDB::set_current_api(ClassDB::API_EDITOR);
-	EditorPlugins::add_by_type<SceneExporterBlendPlugin>();
-	ClassDB::set_current_api(prev_api);
-	EditorNode::add_init_callback(_editor_init);
-#endif
-#endif
-}
-
-void unregister_gltf_blend_types() {}
+public:
+	virtual String get_name() const override;
+	bool has_main_screen() const override;
+	SceneExporterBlendPlugin(class EditorNode *p_node);
+};
+#endif // TOOLS_ENABLED
+#endif // EDITOR_SCENE_EXPORTER_BLEND_PLUGIN_H
