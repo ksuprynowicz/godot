@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  resource_importer_obj.h                                              */
+/*  register_types.cpp                                                   */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,46 +28,47 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef RESOURCEIMPORTEROBJ_H
-#define RESOURCEIMPORTEROBJ_H
+#include "register_types.h"
 
-#include "resource_importer_scene.h"
+#include "core/config/project_settings.h"
+#include "editor/editor_node.h"
+#include "editor_scene_importer_blend.h"
 
-class EditorOBJImporter : public EditorSceneFormatImporter {
-	GDCLASS(EditorOBJImporter, EditorSceneFormatImporter);
+#ifndef _3D_DISABLED
+#ifdef TOOLS_ENABLED
+static void _editor_init() {
+	_GLOBAL_DEF("filesystem/import/blend/enabled", true, true);
+	bool blender_enabled =
+			ProjectSettings::get_singleton()->get("filesystem/import/blend/enabled");
+	if (!blender_enabled) {
+		return;
+	}
+	_EDITOR_DEF("filesystem/blend/blender_path", "blender", true);
+	EditorSettings::get_singleton()->add_property_hint(
+			PropertyInfo(Variant::STRING, "filesystem/blend/blender_path",
+					PROPERTY_HINT_GLOBAL_FILE));
+	String blender_path =
+			EditorSettings::get_singleton()->get("filesystem/blend/blender_path");
+	if (blender_path.is_empty()) {
+		return;
+	}
+	Ref<EditorSceneFormatImporterBlend> import_gltf;
+	import_gltf.instantiate();
+	ResourceImporterScene::get_singleton()->add_importer(import_gltf);
+}
+#endif
+#endif
 
-public:
-	virtual uint32_t get_import_flags() const override;
-	virtual void get_extensions(List<String> *r_extensions) const override;
-	virtual Node *import_scene(const String &p_path, uint32_t p_flags, const Dictionary &p_options, int p_bake_fps, List<String> *r_missing_deps, Error *r_err = nullptr) override;
-	virtual Ref<Animation> import_animation(const String &p_path, uint32_t p_flags, const Dictionary &p_options, int p_bake_fps) override;
+void register_gltf_blend_types() {
+#ifndef _3D_DISABLED
+#ifdef TOOLS_ENABLED
+	ClassDB::APIType prev_api = ClassDB::get_current_api();
+	ClassDB::set_current_api(ClassDB::API_EDITOR);
+	GDREGISTER_CLASS(EditorSceneFormatImporterBlend);
+	ClassDB::set_current_api(prev_api);
+	EditorNode::add_init_callback(_editor_init);
+#endif
+#endif
+}
 
-	EditorOBJImporter();
-};
-
-class ResourceImporterOBJ : public ResourceImporter {
-	GDCLASS(ResourceImporterOBJ, ResourceImporter);
-
-public:
-	virtual String get_importer_name() const override;
-	virtual String get_visible_name() const override;
-	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
-	virtual String get_save_extension() const override;
-	virtual String get_resource_type() const override;
-	virtual int get_format_version() const override;
-
-	virtual int get_preset_count() const override;
-	virtual String get_preset_name(int p_idx) const override;
-
-	virtual void get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset = 0) const override;
-	virtual bool get_option_visibility(const String &p_path, const String &p_option, const Map<StringName, Variant> &p_options) const override;
-
-	virtual Error import(const String &p_source_file, const String &p_save_path, const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files = nullptr, Variant *r_metadata = nullptr) override;
-
-	// Threaded import can currently cause deadlocks, see GH-48265.
-	virtual bool can_import_threaded() const override { return false; }
-
-	ResourceImporterOBJ();
-};
-
-#endif // RESOURCEIMPORTEROBJ_H
+void unregister_gltf_blend_types() {}

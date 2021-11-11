@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  resource_importer_obj.h                                              */
+/*  editor_scene_importer_blend.h                                        */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,46 +28,69 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef RESOURCEIMPORTEROBJ_H
-#define RESOURCEIMPORTEROBJ_H
+#ifndef EDITOR_SCENE_IMPORTER_BLEND_H
+#define EDITOR_SCENE_IMPORTER_BLEND_H
+#include "core/error/error_list.h"
+#include "core/error/error_macros.h"
+#include "core/io/file_access.h"
+#include "core/io/json.h"
+#include "core/string/string_builder.h"
+#include "core/variant/dictionary.h"
+#include "core/variant/variant.h"
+#include "modules/gltf/gltf_document.h"
+#include "modules/gltf/gltf_node.h"
+#ifdef TOOLS_ENABLED
 
-#include "resource_importer_scene.h"
+#include "editor/editor_settings.h"
+#include "editor/import/resource_importer_scene.h"
+#include "scene/main/node.h"
+#include "scene/resources/packed_scene.h"
 
-class EditorOBJImporter : public EditorSceneFormatImporter {
-	GDCLASS(EditorOBJImporter, EditorSceneFormatImporter);
+class Animation;
 
-public:
+class EditorSceneFormatImporterBlend : public EditorSceneFormatImporter {
+	GDCLASS(EditorSceneFormatImporterBlend, EditorSceneFormatImporter);
+	String _import_scene_internal(const String &p_path, uint32_t p_flags,
+			const Dictionary &p_options,
+			int p_bake_fps,
+			List<String> *r_missing_deps,
+			Error *r_err = nullptr);
+	void _add_all_gltf_nodes_to_skin(Dictionary &obj);
+	Error _modify_animations_only(String path);
+        void _remove_gltf_meshes(Dictionary &obj);
+
+      public:
+	enum {
+		BLEND_VISIBLE_VISIBLE_ONLY,
+		BLEND_VISIBLE_RENDERABLE,
+		BLEND_VISIBLE_ALL
+	};
+	enum {
+		BLEND_BONE_INFLUENCES_NONE,
+		BLEND_BONE_INFLUENCES_COMPATIBLE,
+		BLEND_BONE_INFLUENCES_ALL
+	};
+	enum { BLEND_MODIFIERS_NONE,
+		BLEND_MODIFIERS_ALL };
 	virtual uint32_t get_import_flags() const override;
-	virtual void get_extensions(List<String> *r_extensions) const override;
-	virtual Node *import_scene(const String &p_path, uint32_t p_flags, const Dictionary &p_options, int p_bake_fps, List<String> *r_missing_deps, Error *r_err = nullptr) override;
-	virtual Ref<Animation> import_animation(const String &p_path, uint32_t p_flags, const Dictionary &p_options, int p_bake_fps) override;
-
-	EditorOBJImporter();
+	virtual void
+	get_extensions(List<String> *r_extensions) const override;
+	virtual Node *import_scene(const String &p_path,
+			uint32_t p_flags,
+			const Dictionary &p_options,
+			int p_bake_fps,
+			List<String> *r_missing_deps,
+			Error *r_err = nullptr) override;
+	virtual Ref<Animation>
+	import_animation(const String &p_path, uint32_t p_flags,
+			const Dictionary &p_options,
+			int p_bake_fps) override { return Ref<Animation>(); }
+	virtual void get_import_options(
+			const String &p_path,
+			List<ResourceImporter::ImportOption> *r_options) override;
+	virtual Variant get_option_visibility(
+			const String &p_path, const String &p_option,
+			const Map<StringName, Variant> &p_options) override;
 };
-
-class ResourceImporterOBJ : public ResourceImporter {
-	GDCLASS(ResourceImporterOBJ, ResourceImporter);
-
-public:
-	virtual String get_importer_name() const override;
-	virtual String get_visible_name() const override;
-	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
-	virtual String get_save_extension() const override;
-	virtual String get_resource_type() const override;
-	virtual int get_format_version() const override;
-
-	virtual int get_preset_count() const override;
-	virtual String get_preset_name(int p_idx) const override;
-
-	virtual void get_import_options(const String &p_path, List<ImportOption> *r_options, int p_preset = 0) const override;
-	virtual bool get_option_visibility(const String &p_path, const String &p_option, const Map<StringName, Variant> &p_options) const override;
-
-	virtual Error import(const String &p_source_file, const String &p_save_path, const Map<StringName, Variant> &p_options, List<String> *r_platform_variants, List<String> *r_gen_files = nullptr, Variant *r_metadata = nullptr) override;
-
-	// Threaded import can currently cause deadlocks, see GH-48265.
-	virtual bool can_import_threaded() const override { return false; }
-
-	ResourceImporterOBJ();
-};
-
-#endif // RESOURCEIMPORTEROBJ_H
+#endif // TOOLS_ENABLED
+#endif // EDITOR_SCENE_IMPORTER_BLEND_H
