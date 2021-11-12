@@ -299,6 +299,7 @@ bool HTTPRequest::_update_connection() {
 
 		} break;
 		case HTTPClient::STATUS_CONNECTED: {
+			response_code = client->get_response_code();
 			if (request_sent) {
 				if (!got_response) {
 					// No body
@@ -308,7 +309,6 @@ bool HTTPRequest::_update_connection() {
 					if (_handle_response(&ret_value)) {
 						return ret_value;
 					}
-
 					call_deferred(SNAME("_request_done"), RESULT_SUCCESS, response_code, response_headers, PackedByteArray());
 					return true;
 				}
@@ -342,6 +342,7 @@ bool HTTPRequest::_update_connection() {
 
 		} break; // Request in progress
 		case HTTPClient::STATUS_BODY: {
+			response_code = client->get_response_code();
 			if (!got_response) {
 				bool ret_value;
 
