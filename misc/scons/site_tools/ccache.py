@@ -100,14 +100,14 @@ def generate(env):
     # work, we'll just let the compiler ignore them. A better approach might be to pre-filter
     # flags coming in from the environment by passing them through the appropriate *IfSupported
     # method, but that's a much larger effort.
-    if env["use_llvm"]:
+    if env.has_key("use_llvm") and env["use_llvm"]:
         env.AppendUnique(CCFLAGS=["-Qunused-arguments"])
 
     # Set up a performant ccache configuration. Here, we don't use a second preprocessor and
     # pass preprocessor arguments that deterministically expand source files so a stable
     # hash can be calculated on them. This both reduces the amount of work ccache needs to
     # do and increases the likelihood of a cache hit.
-    if env["use_llvm"]:
+    if env.has_key("use_llvm") and env["use_llvm"]:
         env["ENV"].pop("CCACHE_CPP2", None)
         env["ENV"]["CCACHE_NOCPP2"] = "1"
         env.AppendUnique(CCFLAGS=["-frewrite-includes"])
