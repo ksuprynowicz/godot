@@ -1057,6 +1057,11 @@ void RendererSceneSkyRD::setup(RendererSceneEnvironmentRD *p_env, RID p_render_b
 			material = (SkyMaterialData *)storage->material_get_data(sky_material, RendererStorageRD::SHADER_TYPE_SKY);
 			if (!material || !material->shader_data->valid) {
 				material = nullptr;
+			} else if (material->last_frame != RendererCompositorRD::singleton->get_frame_number()) {
+				material->last_frame = RendererCompositorRD::singleton->get_frame_number();
+				if (!RD::get_singleton()->uniform_set_is_valid(material->uniform_set)) {
+					storage->material_force_update_textures(sky_material, RendererStorageRD::SHADER_TYPE_SKY);
+				}
 			}
 		}
 
@@ -1212,6 +1217,11 @@ void RendererSceneSkyRD::update(RendererSceneEnvironmentRD *p_env, const CameraM
 		material = (SkyMaterialData *)storage->material_get_data(sky_material, RendererStorageRD::SHADER_TYPE_SKY);
 		if (!material || !material->shader_data->valid) {
 			material = nullptr;
+		} else if (material->last_frame != RendererCompositorRD::singleton->get_frame_number()) {
+			material->last_frame = RendererCompositorRD::singleton->get_frame_number();
+			if (!RD::get_singleton()->uniform_set_is_valid(material->uniform_set)) {
+				storage->material_force_update_textures(sky_material, RendererStorageRD::SHADER_TYPE_SKY);
+			}
 		}
 	}
 
@@ -1387,6 +1397,11 @@ void RendererSceneSkyRD::draw(RendererSceneEnvironmentRD *p_env, bool p_can_cont
 			material = (SkyMaterialData *)storage->material_get_data(sky_material, RendererStorageRD::SHADER_TYPE_SKY);
 			if (!material || !material->shader_data->valid) {
 				material = nullptr;
+			} else if (material->last_frame != RendererCompositorRD::singleton->get_frame_number()) {
+				material->last_frame = RendererCompositorRD::singleton->get_frame_number();
+				if (!RD::get_singleton()->uniform_set_is_valid(material->uniform_set)) {
+					storage->material_force_update_textures(sky_material, RendererStorageRD::SHADER_TYPE_SKY);
+				}
 			}
 		}
 
@@ -1490,6 +1505,11 @@ void RendererSceneSkyRD::update_res_buffers(RendererSceneEnvironmentRD *p_env, u
 		material = (SkyMaterialData *)storage->material_get_data(sky_material, RendererStorageRD::SHADER_TYPE_SKY);
 		if (!material || !material->shader_data->valid) {
 			material = nullptr;
+		} else if (material->last_frame != RendererCompositorRD::singleton->get_frame_number()) {
+			material->last_frame = RendererCompositorRD::singleton->get_frame_number();
+			if (!RD::get_singleton()->uniform_set_is_valid(material->uniform_set)) {
+				storage->material_force_update_textures(sky_material, RendererStorageRD::SHADER_TYPE_SKY);
+			}
 		}
 	}
 
@@ -1577,6 +1597,11 @@ void RendererSceneSkyRD::draw(RD::DrawListID p_draw_list, RendererSceneEnvironme
 			material = (SkyMaterialData *)storage->material_get_data(sky_material, RendererStorageRD::SHADER_TYPE_SKY);
 			if (!material || !material->shader_data->valid) {
 				material = nullptr;
+			} else if (material->last_frame != RendererCompositorRD::singleton->get_frame_number()) {
+				material->last_frame = RendererCompositorRD::singleton->get_frame_number();
+				if (!RD::get_singleton()->uniform_set_is_valid(material->uniform_set)) {
+					storage->material_force_update_textures(sky_material, RendererStorageRD::SHADER_TYPE_SKY);
+				}
 			}
 		}
 
