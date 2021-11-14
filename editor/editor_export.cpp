@@ -1990,34 +1990,3 @@ EditorExportPlatformPC::EditorExportPlatformPC() {
 	chmod_flags = -1;
 	fixup_embedded_pck_func = nullptr;
 }
-
-///////////////////////
-
-void EditorExportTextSceneToBinaryPlugin::_export_file(const String &p_path, const String &p_type, const Set<String> &p_features) {
-	String extension = p_path.get_extension().to_lower();
-	if (extension != "tres" && extension != "tscn") {
-		return;
-	}
-
-	bool convert = GLOBAL_GET("editor/export/convert_text_resources_to_binary");
-	if (!convert) {
-		return;
-	}
-	String tmp_path = EditorPaths::get_singleton()->get_cache_dir().plus_file("tmpfile.res");
-	Error err = ResourceFormatLoaderText::convert_file_to_binary(p_path, tmp_path);
-	if (err != OK) {
-		DirAccess::remove_file_or_error(tmp_path);
-		ERR_FAIL();
-	}
-	Vector<uint8_t> data = FileAccess::get_file_as_array(tmp_path);
-	if (data.size() == 0) {
-		DirAccess::remove_file_or_error(tmp_path);
-		ERR_FAIL();
-	}
-	DirAccess::remove_file_or_error(tmp_path);
-	add_file(p_path + ".converted.res", data, true);
-}
-
-EditorExportTextSceneToBinaryPlugin::EditorExportTextSceneToBinaryPlugin() {
-	GLOBAL_DEF("editor/export/convert_text_resources_to_binary", false);
-}
