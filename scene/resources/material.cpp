@@ -758,11 +758,6 @@ void BaseMaterial3D::_update_shader() {
 
 	code += "void vertex() {\n";
 
-	if (flags[FLAG_SRGB_VERTEX_COLOR]) {
-		code += "	if (!OUTPUT_IS_SRGB) {\n";
-		code += "		COLOR.rgb = mix(pow((COLOR.rgb + vec3(0.055)) * (1.0 / (1.0 + 0.055)), vec3(2.4)), COLOR.rgb * (1.0 / 12.92), lessThan(COLOR.rgb, vec3(0.04045)));\n";
-		code += "	}\n";
-	}
 	if (flags[FLAG_USE_POINT_SIZE]) {
 		code += "	POINT_SIZE=point_size;\n";
 	}
