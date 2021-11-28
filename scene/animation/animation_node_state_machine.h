@@ -62,6 +62,8 @@ protected:
 	static void _bind_methods();
 
 public:
+	Node *get_root_path();
+
 	void set_switch_mode(SwitchMode p_mode);
 	SwitchMode get_switch_mode() const;
 
