@@ -30,7 +30,21 @@
 
 #include "animation_node_state_machine.h"
 
+#ifdef TOOLS_ENABLED
+#include "editor/plugins/animation_tree_editor_plugin.h"
+#endif
+
 /////////////////////////////////////////////////
+
+Node *AnimationNodeStateMachineTransition::get_root_path() {
+#ifdef TOOLS_ENABLED
+	AnimationTreeEditor *editor = AnimationTreeEditor::get_singleton();
+	if (editor) {
+		return editor->get_tree();
+	}
+#endif
+	return nullptr;
+}
 
 void AnimationNodeStateMachineTransition::set_switch_mode(SwitchMode p_mode) {
 	switch_mode = p_mode;
@@ -123,6 +137,8 @@ int AnimationNodeStateMachineTransition::get_priority() const {
 }
 
 void AnimationNodeStateMachineTransition::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_root_path"), &AnimationNodeStateMachineTransition::get_root_path);
+
 	ClassDB::bind_method(D_METHOD("set_switch_mode", "mode"), &AnimationNodeStateMachineTransition::set_switch_mode);
 	ClassDB::bind_method(D_METHOD("get_switch_mode"), &AnimationNodeStateMachineTransition::get_switch_mode);
 
