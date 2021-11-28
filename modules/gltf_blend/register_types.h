@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  editor_scene_importer_gltf.h                                         */
+/*  register_types.h                                                     */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,28 +28,5 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef EDITOR_SCENE_IMPORTER_GLTF_H
-#define EDITOR_SCENE_IMPORTER_GLTF_H
-#ifdef TOOLS_ENABLED
-#include "gltf_state.h"
-
-#include "gltf_document_extension.h"
-
-#include "editor/import/resource_importer_scene.h"
-#include "scene/main/node.h"
-#include "scene/resources/packed_scene.h"
-
-class Animation;
-
-class EditorSceneFormatImporterGLTF : public EditorSceneFormatImporter {
-	GDCLASS(EditorSceneFormatImporterGLTF, EditorSceneFormatImporter);
-
-public:
-	virtual uint32_t get_import_flags() const override;
-	virtual void get_extensions(List<String> *r_extensions) const override;
-	virtual Node *import_scene(const String &p_path, uint32_t p_flags, const Map<StringName, Variant> &p_options, int p_bake_fps, List<String> *r_missing_deps, Error *r_err = nullptr) override;
-	virtual Ref<Animation> import_animation(const String &p_path,
-			uint32_t p_flags, const Map<StringName, Variant> &p_options, int p_bake_fps) override;
-};
-#endif // TOOLS_ENABLED
-#endif // EDITOR_SCENE_IMPORTER_GLTF_H
+void register_gltf_blend_types();
+void unregister_gltf_blend_types();
