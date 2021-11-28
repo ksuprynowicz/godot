@@ -4160,10 +4160,10 @@ void VisualScriptEditor::_member_rmb_selected(const Vector2 &p_pos) {
 	ERR_FAIL_COND(!ti);
 
 	member_popup->clear();
-	member_popup->set_position(members->get_global_position() + p_pos);
+	member_popup->set_position(members->get_screen_position() + p_pos);
 	member_popup->reset_size();
 
-	function_name_edit->set_position(members->get_global_position() + p_pos);
+	function_name_edit->set_position(members->get_screen_position() + p_pos);
 	function_name_edit->reset_size();
 
 	TreeItem *root = members->get_root();
