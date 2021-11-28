@@ -2078,6 +2078,7 @@ void VisualShaderEditor::_comment_desc_popup_show(const Point2 &p_position, int 
 	}
 	comment_desc_change_edit->set_text(node->get_description());
 	comment_desc_change_popup->set_meta("id", p_node_id);
+	comment_desc_change_popup->reset_size();
 	comment_desc_change_popup->popup();
 	comment_desc_change_popup->set_position(p_position);
 }
@@ -3190,7 +3191,7 @@ void VisualShaderEditor::_show_members_dialog(bool at_mouse_pos, VisualShaderNod
 	} else {
 		members_dialog->popup();
 		saved_node_pos_dirty = false;
-		members_dialog->set_position(graph->get_global_position() + Point2(5 * EDSCALE, 65 * EDSCALE));
+		members_dialog->set_position(graph->get_screen_position() + Point2(5 * EDSCALE, 65 * EDSCALE));
 	}
 
 	// keep dialog within window bounds

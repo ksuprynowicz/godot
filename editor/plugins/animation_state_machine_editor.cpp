@@ -119,6 +119,7 @@ void AnimationNodeStateMachineEditor::_state_machine_gui_input(const Ref<InputEv
 		menu->add_item(TTR("Load..."), MENU_LOAD_FILE);
 
 		menu->set_position(state_machine_draw->get_screen_transform().xform(mb->get_position()));
+		menu->reset_size();
 		menu->popup();
 		add_node_pos = mb->get_position() / EDSCALE + state_machine->get_graph_offset();
 	}
