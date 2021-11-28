@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  editor_scene_importer_gltf.h                                         */
+/*  register_types.cpp                                                   */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,28 +28,45 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef EDITOR_SCENE_IMPORTER_GLTF_H
-#define EDITOR_SCENE_IMPORTER_GLTF_H
+#include "register_types.h"
+
+#ifndef _3D_DISABLED
 #ifdef TOOLS_ENABLED
-#include "gltf_state.h"
 
-#include "gltf_document_extension.h"
+#include "core/config/project_settings.h"
+#include "editor/editor_node.h"
+#include "editor_scene_importer_blend.h"
 
-#include "editor/import/resource_importer_scene.h"
-#include "scene/main/node.h"
-#include "scene/resources/packed_scene.h"
+static void _editor_init() {
+	GLOBAL_DEF_RST("filesystem/import/blender/enabled", false);
+	bool blender_enabled = ProjectSettings::get_singleton()->get("filesystem/import/blender/enabled");
+	if (!blender_enabled) {
+		return;
+	}
+	EDITOR_DEF_RST("filesystem/import/blender/blender_path", "blender");
+	EditorSettings::get_singleton()->add_property_hint(PropertyInfo(Variant::STRING, "filesystem/import/blender/blender_path",
+			PROPERTY_HINT_GLOBAL_FILE));
+	String blender_path = EditorSettings::get_singleton()->get("filesystem/import/blender/blender_path");
+	if (blender_path.is_empty()) {
+		return;
+	}
+	Ref<EditorSceneFormatImporterBlend> importer;
+	importer.instantiate();
+	ResourceImporterScene::get_singleton()->add_importer(importer);
+}
+#endif
+#endif
 
-class Animation;
+void register_gltf_blend_types() {
+#ifndef _3D_DISABLED
+#ifdef TOOLS_ENABLED
+	ClassDB::APIType prev_api = ClassDB::get_current_api();
+	ClassDB::set_current_api(ClassDB::API_EDITOR);
+	GDREGISTER_CLASS(EditorSceneFormatImporterBlend);
+	ClassDB::set_current_api(prev_api);
+	EditorNode::add_init_callback(_editor_init);
+#endif
+#endif
+}
 
-class EditorSceneFormatImporterGLTF : public EditorSceneFormatImporter {
-	GDCLASS(EditorSceneFormatImporterGLTF, EditorSceneFormatImporter);
-
-public:
-	virtual uint32_t get_import_flags() const override;
-	virtual void get_extensions(List<String> *r_extensions) const override;
-	virtual Node *import_scene(const String &p_path, uint32_t p_flags, const Map<StringName, Variant> &p_options, int p_bake_fps, List<String> *r_missing_deps, Error *r_err = nullptr) override;
-	virtual Ref<Animation> import_animation(const String &p_path,
-			uint32_t p_flags, const Map<StringName, Variant> &p_options, int p_bake_fps) override;
-};
-#endif // TOOLS_ENABLED
-#endif // EDITOR_SCENE_IMPORTER_GLTF_H
+void unregister_gltf_blend_types() {}
