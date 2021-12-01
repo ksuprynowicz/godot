@@ -440,33 +440,35 @@ bool EditorHelpSearch::Runner::_phase_member_items_init() {
 bool EditorHelpSearch::Runner::_phase_member_items() {
 	ClassMatch &match = iterator_match->value();
 
-	TreeItem *parent = (search_flags & SEARCH_SHOW_HIERARCHY) ? class_items[match.doc->name] : root_item;
-	bool constructor_created = false;
-	for (int i = 0; i < match.methods.size(); i++) {
-		String text = match.methods[i]->name;
-		if (!constructor_created) {
-			if (match.doc->name == match.methods[i]->name) {
-				text += " " + TTR("(constructors)");
-				constructor_created = true;
+	if (match.doc) {
+		TreeItem *parent = (search_flags & SEARCH_SHOW_HIERARCHY) ? class_items[match.doc->name] : root_item;
+		bool constructor_created = false;
+		for (int i = 0; i < match.methods.size(); i++) {
+			String text = match.methods[i]->name;
+			if (!constructor_created) {
+				if (match.doc->name == match.methods[i]->name) {
+					text += " " + TTR("(constructors)");
+					constructor_created = true;
+				}
+			} else {
+				if (match.doc->name == match.methods[i]->name) {
+					continue;
+				}
 			}
-		} else {
-			if (match.doc->name == match.methods[i]->name) {
-				continue;
-			}
+			_create_method_item(parent, match.doc, text, match.methods[i]);
 		}
-		_create_method_item(parent, match.doc, text, match.methods[i]);
-	}
-	for (int i = 0; i < match.signals.size(); i++) {
-		_create_signal_item(parent, match.doc, match.signals[i]);
-	}
-	for (int i = 0; i < match.constants.size(); i++) {
-		_create_constant_item(parent, match.doc, match.constants[i]);
-	}
-	for (int i = 0; i < match.properties.size(); i++) {
-		_create_property_item(parent, match.doc, match.properties[i]);
-	}
-	for (int i = 0; i < match.theme_properties.size(); i++) {
-		_create_theme_property_item(parent, match.doc, match.theme_properties[i]);
+		for (int i = 0; i < match.signals.size(); i++) {
+			_create_signal_item(parent, match.doc, match.signals[i]);
+		}
+		for (int i = 0; i < match.constants.size(); i++) {
+			_create_constant_item(parent, match.doc, match.constants[i]);
+		}
+		for (int i = 0; i < match.properties.size(); i++) {
+			_create_property_item(parent, match.doc, match.properties[i]);
+		}
+		for (int i = 0; i < match.theme_properties.size(); i++) {
+			_create_theme_property_item(parent, match.doc, match.theme_properties[i]);
+		}
 	}
 
 	iterator_match = iterator_match->next();
@@ -518,7 +520,15 @@ TreeItem *EditorHelpSearch::Runner::_create_class_hierarchy(const ClassMatch &p_
 			parent = class_items[p_match.doc->inherits];
 		} else {
 			ClassMatch &base_match = matches[p_match.doc->inherits];
-			parent = _create_class_hierarchy(base_match);
+			if (base_match.doc) {
+				parent = _create_class_hierarchy(base_match);
+			} else {
+				ERR_PRINT("\
+Bug: base class doc '" + p_match.doc->inherits +
+						"' for class '" + p_match.doc->name + "' could not be found. \
+This is likely a result of the base class's name changing. Support will need to be added for rebuilding documentation \
+for all script dependencies when a name change occurs. Restarting the editor will correct this for now.");
+			}
 		}
 	}
 
