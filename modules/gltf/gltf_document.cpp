@@ -3465,7 +3465,12 @@ Error GLTFDocument::_serialize_materials(Ref<GLTFState> state) {
 		}
 		if (material->get_transparency() == BaseMaterial3D::TRANSPARENCY_ALPHA_SCISSOR) {
 			d["alphaMode"] = "MASK";
-			d["alphaCutoff"] = material->get_alpha_scissor_threshold();
+			float alpha_scissor_threshold = material->get_alpha_scissor_threshold();
+			if (Math::is_zero_approx(alpha_scissor_threshold)) {
+				d["alphaCutoff"] = material->get_alpha_antialiasing_edge();
+			} else {
+				d["alphaCutoff"] = alpha_scissor_threshold;
+			}
 		} else if (material->get_transparency() != BaseMaterial3D::TRANSPARENCY_DISABLED) {
 			d["alphaMode"] = "BLEND";
 		}
@@ -3645,6 +3650,7 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> state) {
 				material->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA_DEPTH_PRE_PASS);
 			} else if (am == "MASK") {
 				material->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA_SCISSOR);
+				material->set_alpha_antialiasing(BaseMaterial3D::ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE_AND_TO_ONE);
 				if (d.has("alphaCutoff")) {
 					material->set_alpha_scissor_threshold(d["alphaCutoff"]);
 				} else {
