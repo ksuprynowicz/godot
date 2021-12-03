@@ -168,7 +168,16 @@ public:
 	bool is_diagonal() const;
 	bool is_rotation() const;
 
-	Basis slerp(const Basis &p_to, const real_t &p_weight) const;
+	Basis slerp(const Basis &p_to, const real_t &p_weight) const {
+		const Basis p_prev = *this;
+		Basis result;
+		// Generic interpolate function.
+		// Use when you don't know what method should be used.
+		// The interpolate function will be slower.
+		Basis::Method method = find_basis_interpolate_method(p_prev, p_to);
+		interpolate_basis_via_method(p_prev, p_to, result, p_weight, method);
+		return result;
+	}
 	void rotate_sh(real_t *p_values);
 
 	operator String() const;
@@ -238,6 +247,31 @@ public:
 #endif
 	Basis diagonalize();
 
+public:
+	enum Method {
+		BASIS_INTERP_LERP,
+		BASIS_INTERP_SLERP,
+		BASIS_INTERP_SCALED_SLERP,
+	};
+
+private:
+	static Basis _basis_slerp_unchecked(Basis p_from, Basis p_to, real_t p_weight);
+	static real_t _vector3_normalize(Vector3 &p_vec);
+	static Vector3 _basis_orthonormalize(Basis &r_basis);
+	static Basis::Method _test_basis(Basis p_basis, bool r_needed_normalize, Quaternion &r_quat);
+	static bool _basis_is_orthogonal_any_scale(const Basis &p_basis);
+	static bool _is_vector3_equal_approx(const Vector3 &p_a, const Vector3 &p_b, real_t p_tolerance);
+	static bool _basis_is_orthogonal(const Basis &p_basis, real_t p_epsilon = 0.01);
+	static real_t _vector3_sum(const Vector3 &p_pt);
+
+public:
+	Quaternion get_quaternion_unchecked();
+	static void interpolate_basis_scaled_slerp(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction);
+	static void interpolate_basis_linear(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction);
+	static void interpolate_basis_via_method(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction, Method p_method);
+	static Basis::Method find_basis_interpolate_method(const Basis &p_a, const Basis &p_b);
+
+public:
 	operator Quaternion() const { return get_quaternion(); }
 
 	static Basis looking_at(const Vector3 &p_target, const Vector3 &p_up = Vector3(0, 1, 0));
@@ -259,17 +293,15 @@ public:
 };
 
 _FORCE_INLINE_ void Basis::operator*=(const Basis &p_matrix) {
-	set(
-			p_matrix.tdotx(elements[0]), p_matrix.tdoty(elements[0]), p_matrix.tdotz(elements[0]),
-			p_matrix.tdotx(elements[1]), p_matrix.tdoty(elements[1]), p_matrix.tdotz(elements[1]),
-			p_matrix.tdotx(elements[2]), p_matrix.tdoty(elements[2]), p_matrix.tdotz(elements[2]));
+	Basis result = this->slerp(p_matrix, 0.5);
+	Vector3 *new_elements = result.elements;
+	set(new_elements[0],
+			new_elements[1],
+			new_elements[2]);
 }
 
 _FORCE_INLINE_ Basis Basis::operator*(const Basis &p_matrix) const {
-	return Basis(
-			p_matrix.tdotx(elements[0]), p_matrix.tdoty(elements[0]), p_matrix.tdotz(elements[0]),
-			p_matrix.tdotx(elements[1]), p_matrix.tdoty(elements[1]), p_matrix.tdotz(elements[1]),
-			p_matrix.tdotx(elements[2]), p_matrix.tdoty(elements[2]), p_matrix.tdotz(elements[2]));
+	return this->slerp(p_matrix, 0.5);
 }
 
 _FORCE_INLINE_ void Basis::operator+=(const Basis &p_matrix) {
