@@ -81,6 +81,10 @@ private:
 	float max_distance = 2000.0;
 	float attenuation = 1.0;
 
+#ifdef RESONANCEAUDIO_ENABLED
+	AudioSourceId audio_source_id;
+#endif
+
 protected:
 	void _validate_property(PropertyInfo &property) const override;
 	void _notification(int p_what);
