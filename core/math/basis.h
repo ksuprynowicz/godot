@@ -167,8 +167,8 @@ public:
 	bool is_orthogonal() const;
 	bool is_diagonal() const;
 	bool is_rotation() const;
-
 	Basis slerp(const Basis &p_to, const real_t &p_weight) const;
+	Basis interpolate_with(const Basis &p_to, const real_t &p_weight) const;
 	void rotate_sh(real_t *p_values);
 
 	operator String() const;
@@ -238,6 +238,31 @@ public:
 #endif
 	Basis diagonalize();
 
+public:
+	enum Method {
+		BASIS_INTERP_LERP,
+		BASIS_INTERP_SLERP,
+		BASIS_INTERP_SCALED_SLERP,
+	};
+
+private:
+	static real_t _vector3_normalize(Vector3 &p_vec);
+	static Vector3 _basis_orthonormalize(Basis &r_basis);
+	static Basis::Method _test_basis(Basis p_basis, bool r_needed_normalize, Quaternion &r_quat);
+	static bool _basis_is_orthogonal_any_scale(const Basis &p_basis);
+	static bool _is_vector3_equal_approx(const Vector3 &p_a, const Vector3 &p_b, real_t p_tolerance);
+	static bool _basis_is_orthogonal(const Basis &p_basis, real_t p_epsilon = 0.01);
+	static real_t _vector3_sum(const Vector3 &p_pt);
+
+public:
+	static Basis slerp_unchecked(Basis p_from, Basis p_to, real_t p_weight);
+	static void interpolate_basis_scaled_slerp(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction);
+	static void interpolate_basis_linear(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction);
+	static void interpolate_transform_via_method(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction, Method p_method);
+	static Basis::Method find_method(const Basis &p_a, const Basis &p_b);
+	Quaternion get_quaternion_unchecked() const;
+
+public:
 	operator Quaternion() const { return get_quaternion(); }
 
 	static Basis looking_at(const Vector3 &p_target, const Vector3 &p_up = Vector3(0, 1, 0));
