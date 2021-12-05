@@ -432,7 +432,7 @@ PackedByteArray HTTPClientCurl::read_response_body_chunk() {
 		return PackedByteArray();
 	}
 	PackedByteArray chunk = response_chunks[0];
-	response_chunks.remove(0);
+	response_chunks.remove_at(0);
 
 	return chunk;
 }
