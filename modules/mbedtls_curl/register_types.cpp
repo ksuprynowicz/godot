@@ -42,7 +42,6 @@ void register_mbedtls_curl_types() {
 		curl_ok = true;
 	}
 
-	GDREGISTER_CLASS(HTTPClientCurl);
 	HTTPClientCurl::make_default();
 }
 
