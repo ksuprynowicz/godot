@@ -60,6 +60,7 @@ class HTTPClientCurl : public HTTPClient {
 	int response_code = 0;
 	Vector<PackedByteArray> response_chunks;
 	int body_size = 0;
+	int body_read = 0;
 	bool chunked = false;
 	bool keep_alive = true;
 	List<String> response_headers;

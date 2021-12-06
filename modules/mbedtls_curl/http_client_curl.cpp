@@ -106,8 +106,9 @@ size_t HTTPClientCurl::_write_callback(char *buffer, size_t size, size_t nitems,
 	memcpy(chunk.ptrw(), buffer, size * nitems);
 	client->response_chunks.append(chunk);
 	client->status = STATUS_BODY;
-
-	return size * nitems;
+	const int s = size * nitems;
+	client->body_read += s;
+	return s;
 }
 
 curl_slist *HTTPClientCurl::_ip_addr_to_slist(const IPAddress &p_addr) {
@@ -186,8 +187,26 @@ Error HTTPClientCurl::_poll_curl() {
 			curl_multi_remove_handle(curl, msg->easy_handle);
 			curl_easy_cleanup(msg->easy_handle);
 			in_flight = false;
+
+			// This isn't the ideal place for this check, but I'm not sure
+			// where else to put it. Basically, we need to transition to STATUS_BODY
+			// somewhere and for requests that have a response body, this naturally happens
+			// the first time curl invokes the write callback. However when there is no
+			// response body, that callback is never called, so we need to do it somewhere else.
+			// This issue is compounded by the fact that we don't know the content-length until
+			// all of the headers have been read, and curl doesn't give us an easy way to know when
+			// that is. Doing the check here when the request is completed means that we have guaranteed
+			// to have read all of the headers and thus the content length can be trusted, however it has
+			// the downside that the entire response body will be read into memory while we wait for the
+			// request to complete. It would be nice if we could come up with a better place to do this check
+			// so that we can make better use of memory while the response body chunks are being downloaded
+			// and processed.
+			if (body_size == 0) {
+				status = STATUS_BODY;
+			}
 		}
 	}
+
 	return OK;
 }
 
@@ -331,7 +350,8 @@ Error HTTPClientCurl::connect_to_host(const String &p_host, int p_port, bool p_s
 	}
 
 	response_code = 0;
-	body_size = -1;
+	body_size = 0;
+	body_read = 0;
 	response_headers.clear();
 	response_available = false;
 	response_code = 0;
@@ -406,10 +426,15 @@ PackedByteArray HTTPClientCurl::read_response_body_chunk() {
 			return PackedByteArray();
 		}
 	}
-	if (response_chunks.is_empty()) {
+
+	if (body_read == body_size) {
 		status = keep_alive ? STATUS_CONNECTED : STATUS_DISCONNECTED;
+	}
+
+	if (response_chunks.is_empty()) {
 		return PackedByteArray();
 	}
+
 	PackedByteArray chunk = response_chunks[0];
 	response_chunks.remove_at(0);
 
