@@ -46,15 +46,9 @@ char const *HTTPClientCurl::methods[10] = {
 	"MAX",
 };
 
-RequestContext::~RequestContext() {
-	if (header_list) {
-		memfree(header_list);
-		header_list = nullptr;
-	}
-	if (read_buffer) {
-		memfree(read_buffer);
-		read_buffer = nullptr;
-	}
+void HTTPClientCurl::make_default() {
+	print_verbose("Libcurl HTTP Client enabled.");
+	_create = _create_func;
 }
 
 HTTPClient *HTTPClientCurl::_create_func() {
@@ -62,14 +56,14 @@ HTTPClient *HTTPClientCurl::_create_func() {
 }
 
 size_t HTTPClientCurl::_header_callback(char *buffer, size_t size, size_t nitems, void *userdata) {
-	RequestContext *ctx = (RequestContext *)userdata;
+	HTTPClientCurl *client = (HTTPClientCurl *)userdata;
 	String s((const char *)buffer);
 	Vector<String> parts = s.split(":");
 	if (parts.size() != 2) {
 		return size * nitems;
 	}
 
-	ctx->response_headers->push_back(s);
+	client->response_headers.push_back(s);
 
 	String header = parts[0].to_lower();
 	String val = parts[1];
@@ -80,21 +74,21 @@ size_t HTTPClientCurl::_header_callback(char *buffer, size_t size, size_t nitems
 
 	// Use the content length to determine body size.
 	if (header == "content-length") {
-		*(ctx->body_size) = val.to_int();
+		client->body_size = val.to_int();
 	}
 
 	// If the Connection header is set to "close" then
 	// keep-alive isn't enabled.
 	if (header == "connection" && val == "close") {
-		*(ctx->keep_alive) = false;
+		client->keep_alive = false;
 	}
 
 	if (header == "transfer-encoding" && val == "chunked") {
-		*(ctx->body_size) = -1;
-		*(ctx->chunked) = true;
+		client->body_size = -1;
+		client->chunked = true;
 	}
 
-	*(ctx->has_response) = true;
+	client->response_available = true;
 
 	return size * nitems;
 }
@@ -106,12 +100,12 @@ size_t HTTPClientCurl::_read_callback(char *buffer, size_t size, size_t nitems, 
 }
 
 size_t HTTPClientCurl::_write_callback(char *buffer, size_t size, size_t nitems, void *userdata) {
-	RequestContext *ctx = (RequestContext *)userdata;
+	HTTPClientCurl *client = (HTTPClientCurl *)userdata;
 	PackedByteArray chunk;
 	chunk.resize(size * nitems);
 	memcpy(chunk.ptrw(), buffer, size * nitems);
-	ctx->response_chunks->append(chunk);
-	*(ctx->status) = STATUS_BODY;
+	client->response_chunks.append(chunk);
+	client->status = STATUS_BODY;
 
 	return size * nitems;
 }
@@ -137,9 +131,9 @@ Error HTTPClientCurl::_resolve_dns() {
 		case IP::RESOLVER_STATUS_WAITING:
 			return OK;
 		case IP::RESOLVER_STATUS_DONE: {
-			IPAddress addr = IP::get_singleton()->get_resolve_item_address(resolver_id);
+			addr = IP::get_singleton()->get_resolve_item_address(resolver_id);
 
-			Error err = _request(addr, true);
+			Error err = _request(true);
 
 			IP::get_singleton()->erase_resolve_item(resolver_id);
 			resolver_id = IP::RESOLVER_INVALID_ID;
@@ -183,15 +177,11 @@ Error HTTPClientCurl::_poll_curl() {
 				status = STATUS_DISCONNECTED;
 				return FAILED;
 			}
-			RequestContext *ctx;
 			CURLcode return_code = curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &response_code);
 			if (return_code != CURLE_OK) {
 				ERR_PRINT_ONCE("Couldnt get curl status code. RC:" + String::num_int64(return_code));
 				return FAILED;
 			}
-			curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &ctx);
-
-			memfree(ctx);
 
 			curl_multi_remove_handle(curl, msg->easy_handle);
 			curl_easy_cleanup(msg->easy_handle);
@@ -201,10 +191,10 @@ Error HTTPClientCurl::_poll_curl() {
 	return OK;
 }
 
-RingBuffer<uint8_t> *HTTPClientCurl::_init_upload(CURL *p_chandle, Method p_method, uint8_t *p_body, int p_body_size) {
-	RingBuffer<uint8_t> *b = memnew(RingBuffer<uint8_t>);
-	b->resize(p_body_size);
-	b->write(p_body, p_body_size);
+void HTTPClientCurl::_init_upload(CURL *p_chandle, Method p_method, uint8_t *p_body, int p_body_size) {
+	RingBuffer<uint8_t> b;
+	b.resize(p_body_size);
+	b.write(p_body, p_body_size);
 
 	// Special cases for POST and PUT to configure uploads.
 	switch (p_method) {
@@ -238,21 +228,10 @@ RingBuffer<uint8_t> *HTTPClientCurl::_init_upload(CURL *p_chandle, Method p_meth
 	// while the write function (see below) is used by libcurl to write response data to storage
 	// (or in our case, memory).
 	curl_easy_setopt(p_chandle, CURLOPT_READFUNCTION, _read_callback);
-	curl_easy_setopt(p_chandle, CURLOPT_READDATA, b);
-	return b;
+	curl_easy_setopt(p_chandle, CURLOPT_READDATA, &b);
+	read_buffer = b;
 }
 
-RequestContext *HTTPClientCurl::_create_request_context() {
-	RequestContext *ctx = memnew(RequestContext);
-	ctx->response_headers = &response_headers;
-	ctx->body_size = &body_size;
-	ctx->status = &status;
-	ctx->response_chunks = &response_chunks;
-	ctx->has_response = &response_available;
-	ctx->chunked = &chunked;
-	ctx->keep_alive = &keep_alive;
-	return ctx;
-}
 
 Error HTTPClientCurl::_init_dns(CURL *p_chandle, IPAddress p_addr) {
 	// TODO: Support resolving multiple addresses.
@@ -265,12 +244,13 @@ Error HTTPClientCurl::_init_dns(CURL *p_chandle, IPAddress p_addr) {
 	return OK;
 }
 
-Error HTTPClientCurl::_init_request_headers(CURL *p_chandler, Vector<String> p_headers, RequestContext *p_ctx) {
+Error HTTPClientCurl::_init_request_headers(CURL *p_chandler, Vector<String> p_headers) {
+	curl_slist* h = nullptr;
 	for (int i = 0; i < p_headers.size(); i++) {
-		p_ctx->header_list = curl_slist_append(p_ctx->header_list, p_headers[i].ascii().get_data());
+		h = curl_slist_append(h, p_headers[i].ascii().get_data());
 	}
-	if (p_ctx->header_list) {
-		CURLcode return_code = curl_easy_setopt(p_chandler, CURLOPT_HTTPHEADER, p_ctx->header_list);
+	if (h) {
+		CURLcode return_code = curl_easy_setopt(p_chandler, CURLOPT_HTTPHEADER, h);
 		if (return_code != CURLE_OK) {
 			ERR_PRINT("failed to set request headers: " + String::num_uint64(return_code));
 			return FAILED;
@@ -279,27 +259,25 @@ Error HTTPClientCurl::_init_request_headers(CURL *p_chandler, Vector<String> p_h
 	return OK;
 }
 
-Error HTTPClientCurl::_request(IPAddress p_addr, bool p_init_dns) {
-	String h = p_addr;
-	if (h.find(":") != -1) {
-		h = "[" + h + "]";
+Error HTTPClientCurl::_request(bool p_init_dns) {
+	String a = addr;
+	if (a.find(":") != -1) {
+		a = "[" + a + "]";
 	}
 	CURL *eh = curl_easy_init();
-	curl_easy_setopt(eh, CURLOPT_URL, (scheme + h + ":" + String::num_int64(port) + url).ascii().get_data());
+	curl_easy_setopt(eh, CURLOPT_URL, (scheme + host + ":" + String::num_int64(port) + url).ascii().get_data());
 	curl_easy_setopt(eh, CURLOPT_CUSTOMREQUEST, methods[(int)method]);
 	curl_easy_setopt(eh, CURLOPT_BUFFERSIZE, read_chunk_size);
 	Error err;
 	if (p_init_dns) {
-		err = _init_dns(eh, p_addr);
+		err = _init_dns(eh, addr);
 		if (err != OK) {
 			return err;
 		}
 	}
 
-	RequestContext *ctx = _create_request_context();
-
 	if (request_body_size > 0) {
-		ctx->read_buffer = _init_upload(eh, method, (uint8_t *)request_body, request_body_size);
+		_init_upload(eh, method, (uint8_t *)request_body, request_body_size);
 	}
 
 	if (ssl) {
@@ -317,11 +295,11 @@ Error HTTPClientCurl::_request(IPAddress p_addr, bool p_init_dns) {
 
 	// Initialize callbacks.
 	curl_easy_setopt(eh, CURLOPT_HEADERFUNCTION, _header_callback);
-	curl_easy_setopt(eh, CURLOPT_HEADERDATA, ctx);
+	curl_easy_setopt(eh, CURLOPT_HEADERDATA, this);
 	curl_easy_setopt(eh, CURLOPT_WRITEFUNCTION, _write_callback);
-	curl_easy_setopt(eh, CURLOPT_WRITEDATA, ctx);
+	curl_easy_setopt(eh, CURLOPT_WRITEDATA, this);
 
-	err = _init_request_headers(eh, request_headers, ctx);
+	err = _init_request_headers(eh, request_headers);
 	if (err != OK) {
 		return err;
 	}
@@ -331,7 +309,7 @@ Error HTTPClientCurl::_request(IPAddress p_addr, bool p_init_dns) {
 	// keep track of certain data that needs to be manipulated throughout
 	// the pipeline.
 	// @see https://curl.se/libcurl/c/CURLOPT_PRIVATE.html
-	curl_easy_setopt(eh, CURLOPT_PRIVATE, ctx);
+	curl_easy_setopt(eh, CURLOPT_PRIVATE, this);
 
 	curl_multi_add_handle(curl, eh);
 
@@ -392,7 +370,7 @@ Error HTTPClientCurl::request(Method p_method, const String &p_url, const Vector
 	request_body_size = p_body_size;
 
 	if (host.is_valid_ip_address()) {
-		_request(host, false);
+		_request(false);
 	} else {
 		resolver_id = IP::get_singleton()->resolve_hostname_queue_item(host, IP::Type::TYPE_ANY);
 		status = STATUS_RESOLVING;
@@ -436,5 +414,3 @@ PackedByteArray HTTPClientCurl::read_response_body_chunk() {
 
 	return chunk;
 }
-
-HTTPClient *(*HTTPClient::_create)() = HTTPClientCurl::_create_func;

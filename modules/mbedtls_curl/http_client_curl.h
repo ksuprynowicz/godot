@@ -37,22 +37,6 @@
 #include <curl/curl.h>
 #include <stdio.h>
 
-struct RequestContext {
-	RequestContext(){};
-	~RequestContext();
-
-	List<String> *response_headers = nullptr;
-	int *response_code = nullptr;
-	RingBuffer<uint8_t> *read_buffer = nullptr;
-	curl_slist *header_list = nullptr;
-	int *body_size = nullptr;
-	HTTPClient::Status *status = nullptr;
-	Vector<PackedByteArray> *response_chunks = nullptr;
-	bool *has_response = nullptr;
-	bool *chunked = nullptr;
-	bool *keep_alive = nullptr;
-};
-
 class HTTPClientCurl : public HTTPClient {
 	static const char *methods[10];
 	static size_t _header_callback(char *buffer, size_t size, size_t nitems, void *userdata);
@@ -79,6 +63,7 @@ class HTTPClientCurl : public HTTPClient {
 	bool chunked = false;
 	bool keep_alive = true;
 	List<String> response_headers;
+	IPAddress addr;
 	IP::ResolverID resolver_id = 0;
 
 	HTTPClient::Method method = HTTPClient::METHOD_GET;
@@ -86,21 +71,22 @@ class HTTPClientCurl : public HTTPClient {
 	Vector<String> request_headers;
 	const uint8_t *request_body = nullptr;
 	int request_body_size = 0;
+	RingBuffer<uint8_t> read_buffer;
 
 	curl_slist *_ip_addr_to_slist(const IPAddress &p_addr);
 	String _hostname_from_url(const String &p_url);
 	Error _poll_curl();
-	RingBuffer<uint8_t> *_init_upload(CURL *p_chandle, Method p_method, uint8_t *p_body, int p_body_size);
-	RequestContext *_create_request_context();
+	void _init_upload(CURL *p_chandle, Method p_method, uint8_t *p_body, int p_body_size);
 	Error _init_dns(CURL *p_handle, IPAddress p_addr);
-	Error _init_request_headers(CURL *p_chandler, Vector<String> p_headers, RequestContext *p_ctx);
+	Error _init_request_headers(CURL *p_chandler, Vector<String> p_headers);
 
 protected:
 	virtual Error _resolve_dns();
-	virtual Error _request(IPAddress p_addr, bool p_init_dns);
+	virtual Error _request(bool p_init_dns);
 
 public:
 	virtual ~HTTPClientCurl() override;
+	static void make_default();
 	static HTTPClient *_create_func();
 
 	virtual Error connect_to_host(const String &p_host, int p_port = -1, bool p_ssl = false, bool p_verify_host = true) override;

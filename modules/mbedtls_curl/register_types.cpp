@@ -43,6 +43,7 @@ void register_mbedtls_curl_types() {
 	}
 
 	GDREGISTER_CLASS(HTTPClientCurl);
+	HTTPClientCurl::make_default();
 }
 
 void unregister_mbedtls_curl_types() {
