@@ -260,12 +260,13 @@ Error HTTPClientCurl::_init_request_headers(CURL *p_chandler, Vector<String> p_h
 }
 
 Error HTTPClientCurl::_request(bool p_init_dns) {
-	String a = addr;
-	if (a.find(":") != -1) {
-		a = "[" + a + "]";
+	String h = host;
+	if (h.is_valid_ip_address() && h.find(":") != -1) {
+		h = "[" + h + "]";
 	}
+	
 	CURL *eh = curl_easy_init();
-	curl_easy_setopt(eh, CURLOPT_URL, (scheme + host + ":" + String::num_int64(port) + url).ascii().get_data());
+	curl_easy_setopt(eh, CURLOPT_URL, (scheme + h + ":" + String::num_int64(port) + url).ascii().get_data());
 	curl_easy_setopt(eh, CURLOPT_CUSTOMREQUEST, methods[(int)method]);
 	curl_easy_setopt(eh, CURLOPT_BUFFERSIZE, read_chunk_size);
 	Error err;
