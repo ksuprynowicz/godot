@@ -160,7 +160,7 @@ Error HTTPClientCurl::_resolve_dns() {
 Error HTTPClientCurl::_poll_curl() {
 	CURLMcode rc = curl_multi_perform(curl, &still_running);
 	if (still_running) {
-		rc = curl_multi_wait(curl, nullptr, 0, 1000, nullptr);
+		rc = curl_multi_wait(curl, nullptr, 0, 0, nullptr);
 	}
 
 	if (rc != CURLM_OK) {
