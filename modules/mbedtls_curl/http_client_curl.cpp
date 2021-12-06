@@ -32,6 +32,9 @@
 
 #include "core/string/print_string.h"
 #include "core/templates/ring_buffer.h"
+#include "core/config/project_settings.h"
+#include "core/io/certs_compressed.gen.h"
+#include "core/io/compression.h"
 
 char const *HTTPClientCurl::methods[10] = {
 	"GET",
@@ -302,15 +305,23 @@ Error HTTPClientCurl::_request(bool p_init_dns) {
 
 	if (ssl) {
 		curl_easy_setopt(eh, CURLOPT_USE_SSL, CURLUSESSL_ALL);
+		print_verbose("ca path: " + ca_path);
+		print_verbose("ca data: " + String::num_int64(ca_data.len));
+		if (ca_path != "") {
+			curl_easy_setopt(eh, CURLOPT_CAINFO, ca_path.ascii().get_data());
+		} else {
+			curl_easy_setopt(eh, CURLOPT_CAINFO_BLOB, &ca_data);
+		}
 	}
 
-	if (verify_host) {
-		// When CURLOPT_SSL_VERIFYHOST is 2, that certificate must indicate
+	print_verbose("verify: " + String::num_int64(verify_host));
+	if (!verify_host) {
+		// When CURLOPT_SSL_VERIFYHOST is 2 (the default), that certificate must indicate
 		// that the server is the server to which you meant to connect, or
 		// the connection fails. Simply put, it means it has to have the same
 		// name in the certificate as is in the URL you operate against.
 		// @see https://curl.se/libcurl/c/CURLOPT_SSL_VERIFYHOST.html
-		curl_easy_setopt(eh, CURLOPT_SSL_VERIFYHOST, 2L);
+		curl_easy_setopt(eh, CURLOPT_SSL_VERIFYHOST, 0L);
 	}
 
 	// Initialize callbacks.
@@ -358,11 +369,21 @@ Error HTTPClientCurl::connect_to_host(const String &p_host, int p_port, bool p_s
 	response_chunks.clear();
 	keep_alive = false;
 	status = STATUS_CONNECTED;
-	scheme = p_host.begins_with("https://") ? "https://" : "http://";
+	ssl = p_ssl;
+	scheme = ssl ? "https://" : "http://";
 	host = p_host.trim_prefix("http://").trim_prefix("https://");
 	port = p_port;
-	ssl = p_ssl;
+	
 	verify_host = p_verify_host;
+
+	if (ca_data.data != nullptr) {
+		memfree(ca_data.data);
+		ca_data.data = nullptr;
+	}
+	ca_data.len = 0;
+	ca_data.flags = 0;
+
+	_init_ca_path();
 
 	return OK;
 }
@@ -439,4 +460,18 @@ PackedByteArray HTTPClientCurl::read_response_body_chunk() {
 	response_chunks.remove_at(0);
 
 	return chunk;
+}
+
+void HTTPClientCurl::_init_ca_path() {
+	ca_path = _GLOBAL_DEF("network/ssl/certificate_bundle_override", "");
+	#ifdef BUILTIN_CERTS_ENABLED
+	// Use builtin certs only if user did not override it in project settings.
+	if (ca_path == "") {
+		ca_data.flags = CURL_BLOB_COPY;
+		ca_data.len = _certs_uncompressed_size + 1;
+		ca_data.data = memalloc(ca_data.len);
+		Compression::decompress((uint8_t *)ca_data.data, _certs_uncompressed_size, _certs_compressed, _certs_compressed_size, Compression::MODE_DEFLATE);
+		((uint8_t *)ca_data.data)[_certs_uncompressed_size] = 0; // Make sure it ends with string terminator
+	}
+	#endif
 }

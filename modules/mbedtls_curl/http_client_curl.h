@@ -47,6 +47,8 @@ class HTTPClientCurl : public HTTPClient {
 	int still_running = 0;
 	bool ssl = false;
 	bool verify_host = false;
+	String ca_path;
+	curl_blob ca_data;
 	bool blocking_mode = false;
 	int read_chunk_size = 65536;
 	bool in_flight = false;
@@ -80,6 +82,7 @@ class HTTPClientCurl : public HTTPClient {
 	void _init_upload(CURL *p_chandle, Method p_method, uint8_t *p_body, int p_body_size);
 	Error _init_dns(CURL *p_handle, IPAddress p_addr);
 	Error _init_request_headers(CURL *p_chandler, Vector<String> p_headers);
+	void _init_ca_path();
 
 protected:
 	virtual Error _resolve_dns();
