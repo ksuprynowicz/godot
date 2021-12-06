@@ -376,10 +376,6 @@ Error HTTPClientCurl::connect_to_host(const String &p_host, int p_port, bool p_s
 	
 	verify_host = p_verify_host;
 
-	if (ca_data.data != nullptr) {
-		memfree(ca_data.data);
-		ca_data.data = nullptr;
-	}
 	ca_data.len = 0;
 	ca_data.flags = 0;
 
@@ -396,6 +392,11 @@ void HTTPClientCurl::close() {
 	if (curl) {
 		curl_multi_cleanup(curl);
 		curl = nullptr;
+	}
+
+	if (ca_data.data != nullptr) {
+		memfree(ca_data.data);
+		ca_data.data = nullptr;
 	}
 }
 
