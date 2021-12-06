@@ -49,6 +49,20 @@ Includes some patches in the `patches` folder which have been sent upstream.
 - Version: git (8b263a18fca98ea371e54227837321c5cdaa1ba7, 2021)
 - License: MPL 2.0
 
+File extracted from a recent Fedora install:
+/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+(It can't be extracted directly from the package,
+as it's generated on the user's system.)
+
+## curl
+- Upstream: https://github.com/curl/curl/tree/curl-7_78_0
+- Version: 7.78.0
+- License: Curl License (Inspired by MIT/X)
+
+Files extracted from upstream source:
+
+- all .c and .h files in the src, include, and lib directories (and their descendants).
+- derived configuration header
 
 ## cvtt
 
@@ -201,7 +215,7 @@ Files extracted from upstream source:
 ## harfbuzz
 
 - Upstream: https://github.com/harfbuzz/harfbuzz
-- Version: 3.1.1 (cd5c6cd0419ac5e4de975d6c476fb760bf06d2ce, 2021)
+- Version: 3.1.2 (8aed5c21a31eece6a9f3cd775fda8facb6c28b9b, 2021)
 - License: MIT
 
 Files extracted from upstream source:
@@ -357,6 +371,19 @@ An [experimental upstream feature](https://github.com/zeux/meshoptimizer/tree/si
 has been backported. On top of that, it was modified to report only distance error metrics 
 instead of a combination of distance and attribute errors. Patches for both changes can be
 found in the `patches` directory.
+
+
+## minimp3
+
+- Upstream: https://github.com/lieff/minimp3
+- Version: git (afb604c06bc8beb145fecd42c0ceb5bda8795144, 2021)
+- License: CC0 1.0
+
+Files extracted from upstream repository:
+
+- `minimp3.h`
+- `minimp3_ex.h`
+- `LICENSE`
 
 
 ## miniupnpc

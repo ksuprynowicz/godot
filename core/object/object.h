@@ -285,7 +285,6 @@ struct ObjectNativeExtension {
 
 	GDNativeExtensionClassCreateInstance create_instance;
 	GDNativeExtensionClassFreeInstance free_instance;
-	GDNativeExtensionClassObjectInstance set_object_instance;
 	GDNativeExtensionClassGetVirtual get_virtual;
 };
 
