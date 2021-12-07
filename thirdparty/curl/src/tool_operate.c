@@ -63,7 +63,7 @@
 #include "tool_filetime.h"
 #include "tool_getparam.h"
 #include "tool_helpers.h"
-#include "tool_homedir.h"
+#include "tool_findfile.h"
 #include "tool_libinfo.h"
 #include "tool_main.h"
 #include "tool_msgs.h"
@@ -515,6 +515,21 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
             sleeptime = LONG_MAX;
           else
             sleeptime = (long)retry_after * 1000; /* milliseconds */
+
+          /* if adding retry_after seconds to the process would exceed the
+             maximum time allowed for retrying, then exit the retries right
+             away */
+          if(config->retry_maxtime) {
+            curl_off_t seconds = tvdiff(tvnow(), per->retrystart)/1000;
+
+            if((CURL_OFF_T_MAX - retry_after < seconds) ||
+               (seconds + retry_after > config->retry_maxtime)) {
+              warnf(config->global, "The Retry-After: time would "
+                    "make this command line exceed the maximum allowed time "
+                    "for retries.");
+              goto noretry;
+            }
+          }
         }
       }
       warnf(config->global, "Problem %s. "
@@ -570,6 +585,7 @@ static CURLcode post_per_transfer(struct GlobalConfig *global,
       return CURLE_OK;
     }
   } /* if retry_numretries */
+  noretry:
 
   if((global->progressmode == CURL_PROGRESS_BAR) &&
      per->progressbar.calls)
@@ -643,6 +659,31 @@ static void single_transfer_cleanup(struct OperationConfig *config)
       state->inglob = NULL;
     }
   }
+}
+
+/*
+ * Return the proto bit for the scheme used in the given URL
+ */
+static long url_proto(char *url)
+{
+  CURLU *uh = curl_url();
+  long proto = 0;
+  if(uh) {
+    if(url) {
+      if(!curl_url_set(uh, CURLUPART_URL, url,
+                       CURLU_GUESS_SCHEME | CURLU_NON_SUPPORT_SCHEME)) {
+        char *schemep = NULL;
+        if(!curl_url_get(uh, CURLUPART_SCHEME, &schemep,
+                         CURLU_DEFAULT_SCHEME) &&
+           schemep) {
+          proto = scheme2protocol(schemep);
+          curl_free(schemep);
+        }
+      }
+    }
+    curl_url_cleanup(uh);
+  }
+  return proto;
 }
 
 /* create the next (singular) transfer */
@@ -778,19 +819,101 @@ static CURLcode single_transfer(struct GlobalConfig *global,
                     !strcmp(state->outfiles, "-")) && urlnum > 1);
 
       if(state->up < state->infilenum) {
-        struct per_transfer *per;
+        struct per_transfer *per = NULL;
         struct OutStruct *outs;
         struct InStruct *input;
         struct OutStruct *heads;
         struct OutStruct *etag_save;
         struct HdrCbData *hdrcbdata = NULL;
-        CURL *curl = curl_easy_init();
-        result = add_per_transfer(&per);
-        if(result || !curl) {
-          curl_easy_cleanup(curl);
+        struct OutStruct etag_first;
+        long use_proto;
+        CURL *curl;
+
+        /* --etag-save */
+        memset(&etag_first, 0, sizeof(etag_first));
+        etag_save = &etag_first;
+        etag_save->stream = stdout;
+
+        /* --etag-compare */
+        if(config->etag_compare_file) {
+          char *etag_from_file = NULL;
+          char *header = NULL;
+          ParameterError pe;
+
+          /* open file for reading: */
+          FILE *file = fopen(config->etag_compare_file, FOPEN_READTEXT);
+          if(!file && !config->etag_save_file) {
+            errorf(global,
+                   "Failed to open %s\n", config->etag_compare_file);
+            result = CURLE_READ_ERROR;
+            break;
+          }
+
+          if((PARAM_OK == file2string(&etag_from_file, file)) &&
+             etag_from_file) {
+            header = aprintf("If-None-Match: %s", etag_from_file);
+            Curl_safefree(etag_from_file);
+          }
+          else
+            header = aprintf("If-None-Match: \"\"");
+
+          if(!header) {
+            if(file)
+              fclose(file);
+            errorf(global,
+                   "Failed to allocate memory for custom etag header\n");
+            result = CURLE_OUT_OF_MEMORY;
+            break;
+          }
+
+          /* add Etag from file to list of custom headers */
+          pe = add2list(&config->headers, header);
+          Curl_safefree(header);
+
+          if(file)
+            fclose(file);
+          if(pe != PARAM_OK) {
+            result = CURLE_OUT_OF_MEMORY;
+            break;
+          }
+        }
+
+        if(config->etag_save_file) {
+          /* open file for output: */
+          if(strcmp(config->etag_save_file, "-")) {
+            FILE *newfile = fopen(config->etag_save_file, "wb");
+            if(!newfile) {
+              warnf(global, "Failed creating file for saving etags: \"%s\". "
+                    "Skip this transfer\n", config->etag_save_file);
+              Curl_safefree(state->outfiles);
+              glob_cleanup(state->urls);
+              return CURLE_OK;
+            }
+            else {
+              etag_save->filename = config->etag_save_file;
+              etag_save->s_isreg = TRUE;
+              etag_save->fopened = TRUE;
+              etag_save->stream = newfile;
+            }
+          }
+          else {
+            /* always use binary mode for protocol header output */
+            set_binmode(etag_save->stream);
+          }
+        }
+
+        curl = curl_easy_init();
+        if(curl)
+          result = add_per_transfer(&per);
+        else
           result = CURLE_OUT_OF_MEMORY;
+        if(result) {
+          curl_easy_cleanup(curl);
+          if(etag_save->fopened)
+            fclose(etag_save->stream);
           break;
         }
+        per->etag_save = etag_first; /* copy the whole struct */
         if(state->uploadfile) {
           per->uploadfile = strdup(state->uploadfile);
           if(!per->uploadfile) {
@@ -844,76 +967,6 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         /* default output stream is stdout */
         outs->stream = stdout;
 
-        /* --etag-compare */
-        if(config->etag_compare_file) {
-          char *etag_from_file = NULL;
-          char *header = NULL;
-
-          /* open file for reading: */
-          FILE *file = fopen(config->etag_compare_file, FOPEN_READTEXT);
-          if(!file && !config->etag_save_file) {
-            errorf(global,
-                   "Failed to open %s\n", config->etag_compare_file);
-            result = CURLE_READ_ERROR;
-            break;
-          }
-
-          if((PARAM_OK == file2string(&etag_from_file, file)) &&
-             etag_from_file) {
-            header = aprintf("If-None-Match: %s", etag_from_file);
-            Curl_safefree(etag_from_file);
-          }
-          else
-            header = aprintf("If-None-Match: \"\"");
-
-          if(!header) {
-            if(file)
-              fclose(file);
-            errorf(global,
-                   "Failed to allocate memory for custom etag header\n");
-            result = CURLE_OUT_OF_MEMORY;
-            break;
-          }
-
-          /* add Etag from file to list of custom headers */
-          add2list(&config->headers, header);
-
-          Curl_safefree(header);
-
-          if(file) {
-            fclose(file);
-          }
-        }
-
-        /* --etag-save */
-        etag_save = &per->etag_save;
-        etag_save->stream = stdout;
-
-        if(config->etag_save_file) {
-          /* open file for output: */
-          if(strcmp(config->etag_save_file, "-")) {
-            FILE *newfile = fopen(config->etag_save_file, "wb");
-            if(!newfile) {
-              warnf(
-                global,
-                "Failed to open %s\n", config->etag_save_file);
-
-              result = CURLE_WRITE_ERROR;
-              break;
-            }
-            else {
-              etag_save->filename = config->etag_save_file;
-              etag_save->s_isreg = TRUE;
-              etag_save->fopened = TRUE;
-              etag_save->stream = newfile;
-            }
-          }
-          else {
-            /* always use binary mode for protocol header output */
-            set_binmode(etag_save->stream);
-          }
-        }
-
         if(state->urls) {
           result = glob_next_url(&per->this_url, state->urls);
           if(result)
@@ -950,8 +1003,11 @@ static CURLcode single_transfer(struct GlobalConfig *global,
           if(!per->outfile) {
             /* extract the file name from the URL */
             result = get_url_file_name(&per->outfile, per->this_url);
-            if(result)
+            if(result) {
+              errorf(global, "Failed to extract a sensible file name"
+                     " from the URL to use for storage!\n");
               break;
+            }
             if(!*per->outfile && !config->content_disposition) {
               errorf(global, "Remote file name has no length!\n");
               result = CURLE_WRITE_ERROR;
@@ -1164,6 +1220,15 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(result)
           break;
 
+        /* here */
+        use_proto = url_proto(per->this_url);
+#if 0
+        if(!(use_proto & built_in_protos)) {
+          warnf(global, "URL is '%s' but no support for the scheme\n",
+                per->this_url);
+        }
+#endif
+
         if(!config->tcp_nodelay)
           my_setopt(curl, CURLOPT_TCP_NODELAY, 0L);
 
@@ -1295,6 +1360,10 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(result)
           break;
 
+        /* new in libcurl 7.81.0 */
+        if(config->mime_options)
+          my_setopt(curl, CURLOPT_MIME_OPTIONS, config->mime_options);
+
         /* new in libcurl 7.10.6 (default is Basic) */
         if(config->authtype)
           my_setopt_bitmask(curl, CURLOPT_HTTPAUTH, (long)config->authtype);
@@ -1376,7 +1445,7 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         my_setopt_str(curl, CURLOPT_KEYPASSWD, config->key_passwd);
         my_setopt_str(curl, CURLOPT_PROXY_KEYPASSWD, config->proxy_key_passwd);
 
-        if(built_in_protos & (CURLPROTO_SCP|CURLPROTO_SFTP)) {
+        if(use_proto & (CURLPROTO_SCP|CURLPROTO_SFTP)) {
 
           /* SSH and SSL private key uses same command-line option */
           /* new in libcurl 7.16.1 */
@@ -1388,6 +1457,11 @@ static CURLcode single_transfer(struct GlobalConfig *global,
              to fail if we are not talking to who we think we should */
           my_setopt_str(curl, CURLOPT_SSH_HOST_PUBLIC_KEY_MD5,
                         config->hostpubmd5);
+
+          /* new in libcurl 7.80.0: SSH host key sha256 checking allows us
+             to fail if we are not talking to who we think we should */
+          my_setopt_str(curl, CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256,
+              config->hostpubsha256);
 
           /* new in libcurl 7.56.0 */
           if(config->ssh_compression)
@@ -1642,25 +1716,21 @@ static CURLcode single_transfer(struct GlobalConfig *global,
         if(config->path_as_is)
           my_setopt(curl, CURLOPT_PATH_AS_IS, 1L);
 
-        if((built_in_protos & (CURLPROTO_SCP|CURLPROTO_SFTP)) &&
+        if((use_proto & (CURLPROTO_SCP|CURLPROTO_SFTP)) &&
            !config->insecure_ok) {
-          char *home = homedir(NULL);
-          if(home) {
-            char *file = aprintf("%s/.ssh/known_hosts", home);
-            if(file) {
-              /* new in curl 7.19.6 */
-              result = res_setopt_str(curl, CURLOPT_SSH_KNOWNHOSTS, file);
-              curl_free(file);
-              if(result == CURLE_UNKNOWN_OPTION)
-                /* libssh2 version older than 1.1.1 */
-                result = CURLE_OK;
-            }
-            Curl_safefree(home);
+          char *known = findfile(".ssh/known_hosts", FALSE);
+          if(known) {
+            /* new in curl 7.19.6 */
+            result = res_setopt_str(curl, CURLOPT_SSH_KNOWNHOSTS, known);
+            curl_free(known);
+            if(result == CURLE_UNKNOWN_OPTION)
+              /* libssh2 version older than 1.1.1 */
+              result = CURLE_OK;
             if(result)
               break;
           }
           else
-            warnf(global, "No home dir, couldn't find known_hosts file!");
+            warnf(global, "Couldn't find a known_hosts file!");
         }
 
         if(config->no_body || config->remote_time) {
@@ -2123,6 +2193,7 @@ static CURLcode add_parallel_transfers(struct GlobalConfig *global,
     (void)curl_easy_setopt(per->curl, CURLOPT_PRIVATE, per);
     (void)curl_easy_setopt(per->curl, CURLOPT_XFERINFOFUNCTION, xferinfo_cb);
     (void)curl_easy_setopt(per->curl, CURLOPT_XFERINFODATA, per);
+    (void)curl_easy_setopt(per->curl, CURLOPT_NOPROGRESS, 0L);
 
     mcode = curl_multi_add_handle(multi, per->curl);
     if(mcode)
@@ -2149,6 +2220,10 @@ static CURLcode parallel_transfers(struct GlobalConfig *global,
   struct timeval start = tvnow();
   bool more_transfers;
   bool added_transfers;
+  /* wrapitup is set TRUE after a critical error occurs to end all transfers */
+  bool wrapitup = FALSE;
+  /* wrapitup_processed is set TRUE after the per transfer abort flag is set */
+  bool wrapitup_processed = FALSE;
   time_t tick = time(NULL);
 
   multi = curl_multi_init();
@@ -2163,6 +2238,21 @@ static CURLcode parallel_transfers(struct GlobalConfig *global,
   }
 
   while(!mcode && (still_running || more_transfers)) {
+    /* If stopping prematurely (eg due to a --fail-early condition) then signal
+       that any transfers in the multi should abort (via progress callback). */
+    if(wrapitup) {
+      if(!still_running)
+        break;
+      if(!wrapitup_processed) {
+        struct per_transfer *per;
+        for(per = transfers; per; per = per->next) {
+          if(per->added)
+            per->abort = TRUE;
+        }
+        wrapitup_processed = TRUE;
+      }
+    }
+
     mcode = curl_multi_poll(multi, NULL, 0, 1000, NULL);
     if(!mcode)
       mcode = curl_multi_perform(multi, &still_running);
@@ -2184,6 +2274,10 @@ static CURLcode parallel_transfers(struct GlobalConfig *global,
           curl_easy_getinfo(easy, CURLINFO_PRIVATE, (void *)&ended);
           curl_multi_remove_handle(multi, easy);
 
+          if(ended->abort && tres == CURLE_ABORTED_BY_CALLBACK) {
+            msnprintf(ended->errorbuffer, sizeof(ended->errorbuffer),
+              "Transfer aborted due to critical error in another transfer");
+          }
           tres = post_per_transfer(global, ended, tres, &retry, &delay);
           progress_finalize(ended); /* before it goes away */
           all_added--; /* one fewer added */
@@ -2194,12 +2288,22 @@ static CURLcode parallel_transfers(struct GlobalConfig *global,
             ended->startat = delay ? time(NULL) + delay/1000 : 0;
           }
           else {
-            if(tres)
+            /* result receives this transfer's error unless the transfer was
+               marked for abort due to a critical error in another transfer */
+            if(tres && (!ended->abort || !result))
               result = tres;
+            if(is_fatal_error(result) || (result && global->fail_early))
+              wrapitup = TRUE;
             (void)del_per_transfer(ended);
           }
         }
       } while(msg);
+      if(wrapitup) {
+        if(still_running)
+          continue;
+        else
+          break;
+      }
       if(!checkmore) {
         time_t tock = time(NULL);
         if(tick != tock) {
@@ -2218,6 +2322,8 @@ static CURLcode parallel_transfers(struct GlobalConfig *global,
           /* we added new ones, make sure the loop doesn't exit yet */
           still_running = 1;
       }
+      if(is_fatal_error(result) || (result && global->fail_early))
+        wrapitup = TRUE;
     }
   }
 
@@ -2245,8 +2351,12 @@ static CURLcode serial_transfers(struct GlobalConfig *global,
   bool added = FALSE;
 
   result = create_transfer(global, share, &added);
-  if(result || !added)
+  if(result)
     return result;
+  if(!added) {
+    errorf(global, "no transfer performed\n");
+    return CURLE_READ_ERROR;
+  }
   for(per = transfers; per;) {
     bool retry;
     long delay;

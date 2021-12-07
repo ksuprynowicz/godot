@@ -85,7 +85,7 @@
 
 static bool verifyconnect(curl_socket_t sockfd, int *error);
 
-#if defined(__DragonFly__) || defined(HAVE_WINSOCK_H)
+#if defined(__DragonFly__) || defined(HAVE_WINSOCK2_H)
 /* DragonFlyBSD and Windows use millisecond units */
 #define KEEPALIVE_FACTOR(x) (x *= 1000)
 #else
@@ -589,12 +589,10 @@ static CURLcode trynextip(struct Curl_easy *data,
     struct Curl_addrinfo *ai = conn->tempaddr[tempindex];
 
     while(ai) {
-      if(ai) {
-        result = singleipconnect(data, conn, ai, tempindex);
-        if(result == CURLE_COULDNT_CONNECT) {
-          ai = ainext(conn, tempindex, TRUE);
-          continue;
-        }
+      result = singleipconnect(data, conn, ai, tempindex);
+      if(result == CURLE_COULDNT_CONNECT) {
+        ai = ainext(conn, tempindex, TRUE);
+        continue;
       }
       break;
     }
@@ -631,7 +629,7 @@ bool Curl_addr2string(struct sockaddr *sa, curl_socklen_t salen,
 #ifdef ENABLE_IPV6
   struct sockaddr_in6 *si6 = NULL;
 #endif
-#if defined(HAVE_SYS_UN_H) && defined(AF_UNIX)
+#if (defined(HAVE_SYS_UN_H) || defined(WIN32_SOCKADDR_UN)) && defined(AF_UNIX)
   struct sockaddr_un *su = NULL;
 #else
   (void)salen;
@@ -658,7 +656,7 @@ bool Curl_addr2string(struct sockaddr *sa, curl_socklen_t salen,
       }
       break;
 #endif
-#if defined(HAVE_SYS_UN_H) && defined(AF_UNIX)
+#if (defined(HAVE_SYS_UN_H) || defined(WIN32_SOCKADDR_UN)) && defined(AF_UNIX)
     case AF_UNIX:
       if(salen > (curl_socklen_t)sizeof(CURL_SA_FAMILY_T)) {
         su = (struct sockaddr_un*)sa;
@@ -753,10 +751,9 @@ void Curl_updateconninfo(struct Curl_easy *data, struct connectdata *conn,
   int local_port = -1;
 
   if(conn->transport == TRNSPRT_TCP) {
-    if(!conn->bits.reuse && !conn->bits.tcp_fastopen) {
+    if(!conn->bits.reuse && !conn->bits.tcp_fastopen)
       Curl_conninfo_remote(data, conn, sockfd);
-      Curl_conninfo_local(data, sockfd, local_ip, &local_port);
-    }
+    Curl_conninfo_local(data, sockfd, local_ip, &local_port);
   } /* end of TCP-only section */
 
   /* persist connection info in session handle */
@@ -1130,7 +1127,7 @@ void Curl_sndbufset(curl_socket_t sockfd)
   static int detectOsState = DETECT_OS_NONE;
 
   if(detectOsState == DETECT_OS_NONE) {
-    if(curlx_verify_windows_version(6, 0, PLATFORM_WINNT,
+    if(curlx_verify_windows_version(6, 0, 0, PLATFORM_WINNT,
                                     VERSION_GREATER_THAN_EQUAL))
       detectOsState = DETECT_OS_VISTA_OR_LATER;
     else

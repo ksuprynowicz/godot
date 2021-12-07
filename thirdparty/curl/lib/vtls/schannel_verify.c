@@ -80,7 +80,7 @@ static int is_cr_or_lf(char c)
 /* Search the substring needle,needlelen into string haystack,haystacklen
  * Strings don't need to be terminated by a '\0'.
  * Similar of OSX/Linux memmem (not available on Visual Studio).
- * Return position of beginning of first occurence or NULL if not found
+ * Return position of beginning of first occurrence or NULL if not found
  */
 static const char *c_memmem(const void *haystack, size_t haystacklen,
                             const void *needle, size_t needlelen)
@@ -355,7 +355,7 @@ static DWORD cert_get_name_string(struct Curl_easy *data,
   DWORD i;
 
   /* CERT_NAME_SEARCH_ALL_NAMES_FLAG is available from Windows 8 onwards. */
-  if(curlx_verify_windows_version(6, 2, PLATFORM_WINNT,
+  if(curlx_verify_windows_version(6, 2, 0, PLATFORM_WINNT,
                                   VERSION_GREATER_THAN_EQUAL)) {
 #ifdef CERT_NAME_SEARCH_ALL_NAMES_FLAG
     /* CertGetNameString will provide the 8-bit character string without
@@ -597,7 +597,8 @@ CURLcode Curl_verify_certificate(struct Curl_easy *data,
      * trusted certificates. This is only supported on Windows 7+.
      */
 
-    if(curlx_verify_windows_version(6, 1, PLATFORM_WINNT, VERSION_LESS_THAN)) {
+    if(curlx_verify_windows_version(6, 1, 0, PLATFORM_WINNT,
+                                    VERSION_LESS_THAN)) {
       failf(data, "schannel: this version of Windows is too old to support "
             "certificate verification via CA bundle file.");
       result = CURLE_SSL_CACERT_BADFILE;

@@ -117,7 +117,7 @@ curl_realloc_callback Curl_crealloc = (curl_realloc_callback)realloc;
 curl_strdup_callback Curl_cstrdup = (curl_strdup_callback)system_strdup;
 curl_calloc_callback Curl_ccalloc = (curl_calloc_callback)calloc;
 #if defined(WIN32) && defined(UNICODE)
-curl_wcsdup_callback Curl_cwcsdup = (curl_wcsdup_callback)_wcsdup;
+curl_wcsdup_callback Curl_cwcsdup = Curl_wcsdup;
 #endif
 
 #if defined(_MSC_VER) && defined(_DLL) && !defined(__POCC__)
@@ -1087,14 +1087,16 @@ CURLcode curl_easy_pause(struct Curl_easy *data, int action)
       /* if not pausing again, force a recv/send check of this connection as
          the data might've been read off the socket already */
       data->conn->cselect_bits = CURL_CSELECT_IN | CURL_CSELECT_OUT;
-    if(data->multi)
-      Curl_update_timer(data->multi);
+    if(data->multi) {
+      if(Curl_update_timer(data->multi))
+        return CURLE_ABORTED_BY_CALLBACK;
+    }
   }
 
   if(!data->state.done)
     /* This transfer may have been moved in or out of the bundle, update the
        corresponding socket callback, if used */
-    Curl_updatesocket(data);
+    result = Curl_updatesocket(data);
 
   return result;
 }

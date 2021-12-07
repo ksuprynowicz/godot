@@ -55,8 +55,8 @@ File extracted from a recent Fedora install:
 as it's generated on the user's system.)
 
 ## curl
-- Upstream: https://github.com/curl/curl/tree/curl-7_78_0
-- Version: 7.78.0
+- Upstream: https://github.com/curl/curl/tree/05f899c842a4c7f0b2367ecdda0c3ca0694c8eba
+- Version: 7.81.0
 - License: Curl License (Inspired by MIT/X)
 
 Files extracted from upstream source:
