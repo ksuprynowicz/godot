@@ -48,7 +48,7 @@ class HTTPClientCurl : public HTTPClient {
 	bool ssl = false;
 	bool verify_host = false;
 	String ca_path;
-	curl_blob ca_data;
+	PackedByteArray ca_data;
 	bool blocking_mode = false;
 	int read_chunk_size = 65536;
 	bool in_flight = false;

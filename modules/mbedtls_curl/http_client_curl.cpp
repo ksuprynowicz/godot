@@ -305,12 +305,16 @@ Error HTTPClientCurl::_request(bool p_init_dns) {
 
 	if (ssl) {
 		curl_easy_setopt(eh, CURLOPT_USE_SSL, CURLUSESSL_ALL);
-		print_verbose("ca path: " + ca_path);
-		print_verbose("ca data: " + String::num_int64(ca_data.len));
+		
 		if (ca_path != "") {
 			curl_easy_setopt(eh, CURLOPT_CAINFO, ca_path.ascii().get_data());
 		} else {
-			curl_easy_setopt(eh, CURLOPT_CAINFO_BLOB, &ca_data);
+			curl_blob ca_blob;
+			ca_blob.data = (uint8_t *)ca_data.ptr();
+			ca_blob.len = ca_data.size();
+			ca_blob.flags = CURL_BLOB_COPY;
+
+			curl_easy_setopt(eh, CURLOPT_CAINFO_BLOB, &ca_blob);
 		}
 	}
 
@@ -376,9 +380,6 @@ Error HTTPClientCurl::connect_to_host(const String &p_host, int p_port, bool p_s
 	
 	verify_host = p_verify_host;
 
-	ca_data.len = 0;
-	ca_data.flags = 0;
-
 	_init_ca_path();
 
 	return OK;
@@ -392,11 +393,6 @@ void HTTPClientCurl::close() {
 	if (curl) {
 		curl_multi_cleanup(curl);
 		curl = nullptr;
-	}
-
-	if (ca_data.data != nullptr) {
-		memfree(ca_data.data);
-		ca_data.data = nullptr;
 	}
 }
 
@@ -468,11 +464,10 @@ void HTTPClientCurl::_init_ca_path() {
 	#ifdef BUILTIN_CERTS_ENABLED
 	// Use builtin certs only if user did not override it in project settings.
 	if (ca_path == "") {
-		ca_data.flags = CURL_BLOB_COPY;
-		ca_data.len = _certs_uncompressed_size + 1;
-		ca_data.data = memalloc(ca_data.len);
-		Compression::decompress((uint8_t *)ca_data.data, _certs_uncompressed_size, _certs_compressed, _certs_compressed_size, Compression::MODE_DEFLATE);
-		((uint8_t *)ca_data.data)[_certs_uncompressed_size] = 0; // Make sure it ends with string terminator
+		ca_data.clear();
+		ca_data.resize(_certs_uncompressed_size + 1);
+		Compression::decompress(ca_data.ptrw(), _certs_uncompressed_size, _certs_compressed, _certs_compressed_size, Compression::MODE_DEFLATE);
+		ca_data.ptrw()[_certs_uncompressed_size] = 0; // Make sure it ends with string terminator
 	}
 	#endif
 }
