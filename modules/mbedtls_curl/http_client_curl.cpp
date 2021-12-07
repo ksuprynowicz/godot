@@ -30,11 +30,11 @@
 
 #include "http_client_curl.h"
 
-#include "core/string/print_string.h"
-#include "core/templates/ring_buffer.h"
 #include "core/config/project_settings.h"
 #include "core/io/certs_compressed.gen.h"
 #include "core/io/compression.h"
+#include "core/string/print_string.h"
+#include "core/templates/ring_buffer.h"
 
 char const *HTTPClientCurl::methods[10] = {
 	"GET",
@@ -254,7 +254,6 @@ void HTTPClientCurl::_init_upload(CURL *p_chandle, Method p_method, uint8_t *p_b
 	read_buffer = b;
 }
 
-
 Error HTTPClientCurl::_init_dns(CURL *p_chandle, IPAddress p_addr) {
 	// TODO: Support resolving multiple addresses.
 	curl_slist *h = _ip_addr_to_slist(p_addr);
@@ -267,7 +266,7 @@ Error HTTPClientCurl::_init_dns(CURL *p_chandle, IPAddress p_addr) {
 }
 
 Error HTTPClientCurl::_init_request_headers(CURL *p_chandler, Vector<String> p_headers) {
-	curl_slist* h = nullptr;
+	curl_slist *h = nullptr;
 	for (int i = 0; i < p_headers.size(); i++) {
 		h = curl_slist_append(h, p_headers[i].ascii().get_data());
 	}
@@ -460,7 +459,7 @@ PackedByteArray HTTPClientCurl::read_response_body_chunk() {
 
 void HTTPClientCurl::_init_ca_path() {
 	ca_path = _GLOBAL_DEF("network/ssl/certificate_bundle_override", "");
-	#ifdef BUILTIN_CERTS_ENABLED
+#ifdef BUILTIN_CERTS_ENABLED
 	// Use builtin certs only if user did not override it in project settings.
 	if (ca_path == "") {
 		ca_data.clear();
@@ -468,5 +467,5 @@ void HTTPClientCurl::_init_ca_path() {
 		Compression::decompress(ca_data.ptrw(), _certs_uncompressed_size, _certs_compressed, _certs_compressed_size, Compression::MODE_DEFLATE);
 		ca_data.ptrw()[_certs_uncompressed_size] = 0; // Make sure it ends with string terminator
 	}
-	#endif
+#endif
 }
