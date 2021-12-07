@@ -305,7 +305,7 @@ Error HTTPClientCurl::_request(bool p_init_dns) {
 
 	if (ssl) {
 		curl_easy_setopt(eh, CURLOPT_USE_SSL, CURLUSESSL_ALL);
-		
+
 		if (ca_path != "") {
 			curl_easy_setopt(eh, CURLOPT_CAINFO, ca_path.ascii().get_data());
 		} else {
@@ -318,7 +318,6 @@ Error HTTPClientCurl::_request(bool p_init_dns) {
 		}
 	}
 
-	print_verbose("verify: " + String::num_int64(verify_host));
 	if (!verify_host) {
 		// When CURLOPT_SSL_VERIFYHOST is 2 (the default), that certificate must indicate
 		// that the server is the server to which you meant to connect, or
