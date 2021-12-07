@@ -286,7 +286,7 @@ Error HTTPClientCurl::_request(bool p_init_dns) {
 	if (h.is_valid_ip_address() && h.find(":") != -1) {
 		h = "[" + h + "]";
 	}
-	
+
 	CURL *eh = curl_easy_init();
 	curl_easy_setopt(eh, CURLOPT_URL, (scheme + h + ":" + String::num_int64(port) + url).ascii().get_data());
 	curl_easy_setopt(eh, CURLOPT_CUSTOMREQUEST, methods[(int)method]);
@@ -376,7 +376,7 @@ Error HTTPClientCurl::connect_to_host(const String &p_host, int p_port, bool p_s
 	scheme = ssl ? "https://" : "http://";
 	host = p_host.trim_prefix("http://").trim_prefix("https://");
 	port = p_port;
-	
+
 	verify_host = p_verify_host;
 
 	_init_ca_path();
