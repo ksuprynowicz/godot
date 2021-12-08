@@ -142,10 +142,6 @@ Files extracted from upstream source:
   * Upstream: https://github.com/source-foundry/Hack
   * Version: 3.003 (2018)
   * License: MIT + Bitstream Vera License
-- `DroidSans*.ttf`:
-  * Upstream: https://android.googlesource.com/platform/frameworks/base/+/master/data/fonts/
-  * Version: ? (pre-2014 commit when DroidSansJapanese.ttf was obsoleted)
-  * License: Apache 2.0
 - `OpenSans_SemiBold.ttf`:
   * Upstream: https://fonts.google.com/specimen/Open+Sans
   * Version: 1.10 (downloaded from Google Fonts in February 2021)

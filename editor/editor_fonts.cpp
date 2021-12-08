@@ -37,35 +37,39 @@
 #include "scene/resources/default_theme/default_theme.h"
 #include "scene/resources/font.h"
 
-#define MAKE_FALLBACKS(m_name)        \
-	m_name->add_data(FontArabic);     \
-	m_name->add_data(FontBengali);    \
-	m_name->add_data(FontDevanagari); \
-	m_name->add_data(FontGeorgian);   \
-	m_name->add_data(FontHebrew);     \
-	m_name->add_data(FontMalayalam);  \
-	m_name->add_data(FontOriya);      \
-	m_name->add_data(FontSinhala);    \
-	m_name->add_data(FontTamil);      \
-	m_name->add_data(FontTelugu);     \
-	m_name->add_data(FontThai);       \
-	m_name->add_data(FontJapanese);   \
-	m_name->add_data(FontFallback);
+#define MAKE_FALLBACKS(m_name)               \
+	m_name->add_data(FontArabic);            \
+	m_name->add_data(FontBengali);           \
+	m_name->add_data(FontDevanagari);        \
+	m_name->add_data(FontGeorgian);          \
+	m_name->add_data(FontHebrew);            \
+	m_name->add_data(FontMalayalam);         \
+	m_name->add_data(FontOriya);             \
+	m_name->add_data(FontSinhala);           \
+	m_name->add_data(FontTamil);             \
+	m_name->add_data(FontTelugu);            \
+	m_name->add_data(FontThai);              \
+	m_name->add_data(FontJapanese);          \
+	m_name->add_data(FontKorean);            \
+	m_name->add_data(FontChineseSimplified); \
+	m_name->add_data(FontChineseTraditional);
 
-#define MAKE_FALLBACKS_BOLD(m_name)       \
-	m_name->add_data(FontArabicBold);     \
-	m_name->add_data(FontBengaliBold);    \
-	m_name->add_data(FontDevanagariBold); \
-	m_name->add_data(FontGeorgianBold);   \
-	m_name->add_data(FontHebrewBold);     \
-	m_name->add_data(FontMalayalamBold);  \
-	m_name->add_data(FontOriyaBold);      \
-	m_name->add_data(FontSinhalaBold);    \
-	m_name->add_data(FontTamilBold);      \
-	m_name->add_data(FontTeluguBold);     \
-	m_name->add_data(FontThaiBold);       \
-	m_name->add_data(FontJapanese);       \
-	m_name->add_data(FontFallback);
+#define MAKE_FALLBACKS_BOLD(m_name)          \
+	m_name->add_data(FontArabicBold);        \
+	m_name->add_data(FontBengaliBold);       \
+	m_name->add_data(FontDevanagariBold);    \
+	m_name->add_data(FontGeorgianBold);      \
+	m_name->add_data(FontHebrewBold);        \
+	m_name->add_data(FontMalayalamBold);     \
+	m_name->add_data(FontOriyaBold);         \
+	m_name->add_data(FontSinhalaBold);       \
+	m_name->add_data(FontTamilBold);         \
+	m_name->add_data(FontTeluguBold);        \
+	m_name->add_data(FontThaiBold);          \
+	m_name->add_data(FontJapaneseBold);      \
+	m_name->add_data(FontKoreanBold);        \
+	m_name->add_data(FontChineseSimplified); \
+	m_name->add_data(FontChineseTraditional);
 
 #define MAKE_DEFAULT_FONT(m_name, m_variations)                       \
 	Ref<Font> m_name;                                                 \
@@ -262,10 +266,50 @@ void editor_register_fonts(Ref<Theme> p_theme) {
 	Ref<FontData> FontThai = load_cached_internal_font(_font_NotoSansThaiUI_Regular, _font_NotoSansThaiUI_Regular_size, font_hinting, font_antialiased, true);
 	Ref<FontData> FontThaiBold = load_cached_internal_font(_font_NotoSansThaiUI_Bold, _font_NotoSansThaiUI_Bold_size, font_hinting, font_antialiased, true);
 
-	/* Droid Sans */
+	// Han Fonts
+	Ref<FontData> FontJapanese = load_cached_internal_font(_font_NotoSansJP_Regular, _font_NotoSansJP_Regular_size, font_hinting, font_antialiased, true);
+	Ref<FontData> FontJapaneseBold = load_cached_internal_font(_font_NotoSansJP_Bold, _font_NotoSansJP_Bold_size, font_hinting, font_antialiased, true);
+	FontJapanese->set_language_support_override("ja", true);
+	FontJapaneseBold->set_language_support_override("ja", true);
+	FontJapanese->set_language_support_override("ko", false);
+	FontJapaneseBold->set_language_support_override("ko", false);
+	FontJapanese->set_language_support_override("zh_CN", false);
+	FontJapaneseBold->set_language_support_override("zh_CN", false);
+	FontJapanese->set_language_support_override("zh_TW", false);
+	FontJapaneseBold->set_language_support_override("zh_TW", false);
 
-	Ref<FontData> FontFallback = load_cached_internal_font(_font_DroidSansFallback, _font_DroidSansFallback_size, font_hinting, font_antialiased, true);
-	Ref<FontData> FontJapanese = load_cached_internal_font(_font_DroidSansJapanese, _font_DroidSansJapanese_size, font_hinting, font_antialiased, true);
+	Ref<FontData> FontKorean = load_cached_internal_font(_font_NotoSansKR_Regular, _font_NotoSansKR_Regular_size, font_hinting, font_antialiased, true);
+	Ref<FontData> FontKoreanBold = load_cached_internal_font(_font_NotoSansKR_Bold, _font_NotoSansKR_Bold_size, font_hinting, font_antialiased, true);
+	FontKorean->set_language_support_override("ja", false);
+	FontKoreanBold->set_language_support_override("ja", false);
+	FontKorean->set_language_support_override("ko", true);
+	FontKoreanBold->set_language_support_override("ko", true);
+	FontKorean->set_language_support_override("zh_CN", false);
+	FontKoreanBold->set_language_support_override("zh_CN", false);
+	FontKorean->set_language_support_override("zh_TW", false);
+	FontKoreanBold->set_language_support_override("zh_TW", false);
+
+	Ref<FontData> FontChineseSimplified = load_cached_internal_font(_font_NotoSansSC_Regular, _font_NotoSansSC_Regular_size, font_hinting, font_antialiased, true);
+	Ref<FontData> FontChineseSimplifiedBold = load_cached_internal_font(_font_NotoSansSC_Bold, _font_NotoSansSC_Bold_size, font_hinting, font_antialiased, true);
+	FontChineseSimplified->set_language_support_override("ja", false);
+	FontChineseSimplifiedBold->set_language_support_override("ja", false);
+	FontChineseSimplified->set_language_support_override("ko", false);
+	FontChineseSimplifiedBold->set_language_support_override("ko", false);
+	FontChineseSimplified->set_language_support_override("zh_CN", true);
+	FontChineseSimplifiedBold->set_language_support_override("zh_CN", true);
+	FontChineseSimplified->set_language_support_override("zh_TW", false);
+	FontChineseSimplifiedBold->set_language_support_override("zh_TW", false);
+
+	Ref<FontData> FontChineseTraditional = load_cached_internal_font(_font_NotoSansTC_Regular, _font_NotoSansTC_Regular_size, font_hinting, font_antialiased, true);
+	Ref<FontData> FontChineseTraditionalBold = load_cached_internal_font(_font_NotoSansTC_Bold, _font_NotoSansTC_Bold_size, font_hinting, font_antialiased, true);
+	FontChineseTraditional->set_language_support_override("ja", false);
+	FontChineseTraditionalBold->set_language_support_override("ja", false);
+	FontChineseTraditional->set_language_support_override("ko", false);
+	FontChineseTraditionalBold->set_language_support_override("ko", false);
+	FontChineseTraditional->set_language_support_override("zh_CN", false);
+	FontChineseTraditionalBold->set_language_support_override("zh_CN", false);
+	FontChineseTraditional->set_language_support_override("zh_TW", true);
+	FontChineseTraditionalBold->set_language_support_override("zh_TW", true);
 
 	/* Hack */
 
