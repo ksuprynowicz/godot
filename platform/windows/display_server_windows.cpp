@@ -953,6 +953,30 @@ void DisplayServerWindows::_update_window_style(WindowID p_window, bool p_repain
 	}
 }
 
+String DisplayServerWindows::_ime_get_composition_string(HIMC himc, DWORD index) {
+	LONG len = ImmGetCompositionStringW(himc, index, 0, 0);
+	if (len < sizeof(WCHAR)) {
+		return "";
+	}
+
+	LONG cursor_pos = ImmGetCompositionStringW(himc, GCS_CURSORPOS, 0, 0);
+
+	WCHAR *wstr = (WCHAR *)memalloc(len + sizeof(WCHAR));
+	ERR_FAIL_COND_V_MSG(!wstr, "", "Failed to allocate memory for IME composition string!");
+
+	len = ImmGetCompositionStringW(himc, index, wstr, len) / sizeof(WCHAR);
+	wstr[len] = L'\0';
+
+	String composition_string = String::utf16((const char16_t *)wstr);
+
+	memfree(wstr);
+
+	im_selection.x = cursor_pos;
+	im_selection.y = 1;
+
+	return composition_string;
+}
+
 void DisplayServerWindows::window_set_mode(WindowMode p_mode, WindowID p_window) {
 	_THREAD_SAFE_METHOD_
 
@@ -1196,6 +1220,14 @@ void DisplayServerWindows::window_set_ime_position(const Point2i &p_pos, WindowI
 	cps.ptCurrentPos.y = wd.im_position.y;
 	ImmSetCompositionWindow(himc, &cps);
 	ImmReleaseContext(wd.hWnd, himc);
+}
+
+Point2i DisplayServerWindows::ime_get_selection() const {
+	return im_selection;
+}
+
+String DisplayServerWindows::ime_get_text() const {
+	return im_text;
 }
 
 void DisplayServerWindows::console_set_visible(bool p_enabled) {
@@ -2775,7 +2807,49 @@ LRESULT DisplayServerWindows::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
 
 		} break;
 		case WM_INPUTLANGCHANGEREQUEST: {
-			// FIXME: Do something?
+		} break;
+		case WM_IME_SETCONTEXT: {
+		} break;
+		case WM_IME_STARTCOMPOSITION: {
+		} break;
+		case WM_IME_COMPOSITION: {
+			HIMC himc = ImmGetContext(hWnd);
+			if (lParam & GCS_RESULTSTR) {
+				im_text = _ime_get_composition_string(himc, GCS_RESULTSTR);
+				if (OS::get_singleton()->get_main_loop()) {
+					OS::get_singleton()->get_main_loop()->notification(MainLoop::NOTIFICATION_OS_IME_UPDATE);
+				}
+			}
+			if (lParam & GCS_COMPSTR) {
+				im_text = _ime_get_composition_string(himc, GCS_COMPSTR);
+				if (OS::get_singleton()->get_main_loop()) {
+					OS::get_singleton()->get_main_loop()->notification(MainLoop::NOTIFICATION_OS_IME_UPDATE);
+				}
+			}
+			ImmReleaseContext(hWnd, himc);
+			break;
+		} break;
+		case WM_IME_ENDCOMPOSITION: {
+			im_text = "";
+			if (OS::get_singleton()->get_main_loop()) {
+				OS::get_singleton()->get_main_loop()->notification(MainLoop::NOTIFICATION_OS_IME_UPDATE);
+			}
+		} break;
+		case WM_IME_NOTIFY: {
+			switch (wParam) {
+				case IMN_SETCONVERSIONMODE:
+				case IMN_SETOPENSTATUS:
+					break;
+				case IMN_OPENCANDIDATE:
+				case IMN_CHANGECANDIDATE:
+					break;
+				case IMN_CLOSECANDIDATE:
+					break;
+				case IMN_PRIVATE:
+					break;
+				default:
+					break;
+			}
 		} break;
 		case WM_TOUCH: {
 			BOOL bHandled = FALSE;

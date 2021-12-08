@@ -388,6 +388,9 @@ class DisplayServerWindows : public DisplayServer {
 		Set<WindowID> transient_children;
 	};
 
+	Point2i im_selection;
+	String im_text;
+
 	JoypadWindows *joypad;
 
 	WindowID _create_window(WindowMode p_mode, VSyncMode p_vsync_mode, uint32_t p_flags, const Rect2i &p_rect);
@@ -437,6 +440,8 @@ class DisplayServerWindows : public DisplayServer {
 
 	static void _dispatch_input_events(const Ref<InputEvent> &p_event);
 	void _dispatch_input_event(const Ref<InputEvent> &p_event);
+
+	String _ime_get_composition_string(HIMC himc, DWORD index);
 
 public:
 	LRESULT WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -525,6 +530,9 @@ public:
 
 	virtual void window_set_ime_active(const bool p_active, WindowID p_window = MAIN_WINDOW_ID) override;
 	virtual void window_set_ime_position(const Point2i &p_pos, WindowID p_window = MAIN_WINDOW_ID) override;
+
+	Point2i ime_get_selection() const override;
+	String ime_get_text() const override;
 
 	virtual void window_set_vsync_mode(DisplayServer::VSyncMode p_vsync_mode, WindowID p_window = MAIN_WINDOW_ID) override;
 	virtual DisplayServer::VSyncMode window_get_vsync_mode(WindowID p_vsync_mode) const override;
