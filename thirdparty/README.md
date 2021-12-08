@@ -508,6 +508,20 @@ Patch files are provided in `oidn/patches/`.
 
 - scripts/resource_to_cpp.py (used in modules/denoise/resource_to_cpp.py)
 
+## OpenXR
+
+- Upstream: https://github.com/KhronosGroup/OpenXR-SDK
+- Version: 1.0.20 (80adfd9ace05be069bfd3cbfa87a64dbee0d0a02, 2021)
+- License: Apache 2.0
+
+Files extracted from upstream source:
+
+- doc/*
+- include/*
+- LICENSES/*
+- specification/*
+- src/*
+- *
 
 ## pcre2
 
