@@ -225,7 +225,7 @@ Point2i DisplayServer::ime_get_selection() const {
 }
 
 String DisplayServer::ime_get_text() const {
-	ERR_FAIL_V_MSG(String(), "IME or NOTIFICATION_WM_IME_UPDATEnot supported by this display server.");
+	ERR_FAIL_V_MSG(String(), "IME or NOTIFICATION_WM_IME_UPDATE not supported by this display server.");
 }
 
 void DisplayServer::console_set_visible(bool p_enabled) {
