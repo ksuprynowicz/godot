@@ -803,7 +803,6 @@ String GDScript::_get_debug_path() const {
 }
 
 Error GDScript::reload(bool p_keep_state) {
-	ERR_FAIL_COND_V_MSG(!is_valid(), ERR_COMPILATION_FAILED, vformat("Can't reload GDScript path %s.", get_path()));
 	bool has_instances;
 	{
 		MutexLock lock(GDScriptLanguage::singleton->lock);
@@ -868,7 +867,6 @@ Error GDScript::reload(bool p_keep_state) {
 		}
 		ERR_FAIL_V(ERR_PARSE_ERROR);
 	}
-
 	bool can_run = ScriptServer::is_scripting_enabled() || parser.is_tool();
 
 	GDScriptCompiler compiler;

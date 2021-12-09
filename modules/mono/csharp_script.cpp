@@ -3365,7 +3365,6 @@ MethodInfo CSharpScript::get_method_info(const StringName &p_method) const {
 }
 
 Error CSharpScript::reload(bool p_keep_state) {
-	ERR_FAIL_COND_V_MSG(!is_valid(), ERR_COMPILATION_FAILED, vformat("Can't reload CSharpScript path %s.", get_path());
 	bool has_instances;
 	{
 		MutexLock lock(CSharpLanguage::get_singleton()->script_instances_mutex);

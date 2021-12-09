@@ -831,7 +831,6 @@ void VisualScript::set_source_code(const String &p_code) {
 }
 
 Error VisualScript::reload(bool p_keep_state) {
-	ERR_FAIL_COND_V_MSG(!is_valid(), ERR_COMPILATION_FAILED, vformat("Can't reload Visual Script path %s.", get_path()));
 	return OK;
 }
 
