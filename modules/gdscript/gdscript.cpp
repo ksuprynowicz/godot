@@ -36,6 +36,8 @@
 #include "core/config/project_settings.h"
 #include "core/core_constants.h"
 #include "core/core_string_names.h"
+#include "core/error/error_list.h"
+#include "core/error/error_macros.h"
 #include "core/io/file_access.h"
 #include "core/io/file_access_encrypted.h"
 #include "core/os/os.h"
@@ -212,6 +214,7 @@ Variant GDScript::_new(const Variant **p_args, int p_argcount, Callable::CallErr
 }
 
 bool GDScript::can_instantiate() const {
+	ERR_FAIL_COND_V_MSG(!is_valid(), false, vformat("Can't instantiate GDScript path %s.", get_path()));
 #ifdef TOOLS_ENABLED
 	return valid && (tool || ScriptServer::is_scripting_enabled());
 #else
@@ -353,6 +356,7 @@ bool GDScript::get_property_default_value(const StringName &p_property, Variant 
 }
 
 ScriptInstance *GDScript::instance_create(Object *p_this) {
+	ERR_FAIL_COND_V_MSG(!is_valid(), nullptr, vformat("Can't create GDScript instance path %s.", get_path()));
 	GDScript *top = this;
 	while (top->_base) {
 		top = top->_base;
@@ -372,6 +376,7 @@ ScriptInstance *GDScript::instance_create(Object *p_this) {
 }
 
 PlaceHolderScriptInstance *GDScript::placeholder_instance_create(Object *p_this) {
+	ERR_FAIL_COND_V_MSG(!is_valid(), nullptr, vformat("Can't instantiate placeholder GDScript path %s", get_path()));
 #ifdef TOOLS_ENABLED
 	PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(GDScriptLanguage::get_singleton(), Ref<Script>(this), p_this));
 	placeholders.insert(si);
@@ -798,6 +803,7 @@ String GDScript::_get_debug_path() const {
 }
 
 Error GDScript::reload(bool p_keep_state) {
+	ERR_FAIL_COND_V_MSG(!is_valid(), ERR_COMPILATION_FAILED, vformat("Can't reload GDScript path %s.", get_path()));
 	bool has_instances;
 	{
 		MutexLock lock(GDScriptLanguage::singleton->lock);

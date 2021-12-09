@@ -37,6 +37,7 @@
 #include "core/config/project_settings.h"
 #include "core/debugger/engine_debugger.h"
 #include "core/debugger/script_debugger.h"
+#include "core/error/error_list.h"
 #include "core/io/file_access.h"
 #include "core/os/mutex.h"
 #include "core/os/os.h"
@@ -3094,6 +3095,7 @@ void CSharpScript::update_script_class_info(Ref<CSharpScript> p_script) {
 }
 
 bool CSharpScript::can_instantiate() const {
+	ERR_FAIL_COND_V_MSG(!is_valid(), false, vformat("Can't instantiate CSharpScript path %s.", get_path());
 #ifdef TOOLS_ENABLED
 	bool extra_cond = tool || ScriptServer::is_scripting_enabled();
 #else
@@ -3250,6 +3252,7 @@ Variant CSharpScript::_new(const Variant **p_args, int p_argcount, Callable::Cal
 }
 
 ScriptInstance *CSharpScript::instance_create(Object *p_this) {
+	ERR_FAIL_COND_V_MSG(!is_valid(), nullptr, vformat("Can't instantiate placeholder CSharpScript path %s.", get_path());
 #ifdef DEBUG_ENABLED
 	CRASH_COND(!valid);
 #endif
@@ -3273,6 +3276,7 @@ ScriptInstance *CSharpScript::instance_create(Object *p_this) {
 }
 
 PlaceHolderScriptInstance *CSharpScript::placeholder_instance_create(Object *p_this) {
+	ERR_FAIL_COND_V_MSG(!is_valid(), nullptr, vformat("Can't instantiate placeholder CSharpScript path %s.", get_path());
 #ifdef TOOLS_ENABLED
 	PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(CSharpLanguage::get_singleton(), Ref<Script>(this), p_this));
 	placeholders.insert(si);
@@ -3361,6 +3365,7 @@ MethodInfo CSharpScript::get_method_info(const StringName &p_method) const {
 }
 
 Error CSharpScript::reload(bool p_keep_state) {
+	ERR_FAIL_COND_V_MSG(!is_valid(), ERR_COMPILATION_FAILED, vformat("Can't reload CSharpScript path %s.", get_path());
 	bool has_instances;
 	{
 		MutexLock lock(CSharpLanguage::get_singleton()->script_instances_mutex);

@@ -32,6 +32,7 @@
 
 #include "core/config/project_settings.h"
 #include "core/core_string_names.h"
+#include "core/error/error_list.h"
 #include "core/os/os.h"
 #include "scene/main/node.h"
 #include "visual_script_nodes.h"
@@ -727,6 +728,7 @@ int VisualScript::get_available_id() const {
 /////////////////////////////////
 
 bool VisualScript::can_instantiate() const {
+	ERR_FAIL_COND_V_MSG(!is_valid(), false, vformat("Can't instantiate Visual Script path %s.", get_path()));
 	return true; // ScriptServer::is_scripting_enabled();
 }
 
@@ -772,6 +774,7 @@ void VisualScript::_update_placeholders() {
 #endif
 
 ScriptInstance *VisualScript::instance_create(Object *p_this) {
+	ERR_FAIL_COND_V_MSG(!is_valid(), nullptr, vformat("Can't create Visual Script instance path %s.", get_path()));
 #ifdef TOOLS_ENABLED
 
 	if (!ScriptServer::is_scripting_enabled() && !is_tool_script) {
@@ -828,6 +831,7 @@ void VisualScript::set_source_code(const String &p_code) {
 }
 
 Error VisualScript::reload(bool p_keep_state) {
+	ERR_FAIL_COND_V_MSG(!is_valid(), ERR_COMPILATION_FAILED, vformat("Can't reload Visual Script path %s.", get_path()));
 	return OK;
 }
 
@@ -836,7 +840,10 @@ bool VisualScript::is_tool() const {
 }
 
 bool VisualScript::is_valid() const {
-	return true; // Always valid.
+	if (is_built_in()) {
+		return false;
+	}
+	return true;
 }
 
 ScriptLanguage *VisualScript::get_language() const {

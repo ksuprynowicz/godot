@@ -33,6 +33,8 @@
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/core_string_names.h"
+#include "core/error/error_list.h"
+#include "core/error/error_macros.h"
 #include "core/io/resource_loader.h"
 #include "editor/editor_inspector.h"
 #include "scene/2d/node_2d.h"
@@ -221,6 +223,17 @@ Node *SceneState::instantiate(GenEditState p_edit_state) const {
 					bool valid;
 					ERR_FAIL_INDEX_V(nprops[j].name, sname_count, nullptr);
 					ERR_FAIL_INDEX_V(nprops[j].value, prop_count, nullptr);
+
+					Ref<Script> script = props[nprops[j].value];
+					if (script.is_valid() && script->is_built_in()) {
+						String msg = script->get_path();
+						if (msg.is_empty()) {
+							msg = "The script cannot be built-in.";
+						} else {
+							msg = vformat("The script cannot be built-in at path %s.", msg);
+						}
+						ERR_FAIL_V_EDMSG(nullptr, msg);
+					}
 
 					if (snames[nprops[j].name] == CoreStringNames::get_singleton()->_script) {
 						//work around to avoid old script variables from disappearing, should be the proper fix to:
@@ -412,6 +425,9 @@ Error SceneState::_parse_node(Node *p_owner, Node *p_node, int p_parent_idx, Map
 	if (p_node != p_owner && p_node->get_owner() != p_owner && !p_owner->is_editable_instance(p_node->get_owner())) {
 		return OK;
 	}
+
+	Ref<Script> script = p_node->get_script();
+	ERR_FAIL_COND_V_EDMSG(script.is_valid() && script->is_built_in(), ERR_CANT_CREATE, vformat("Script at path %s cannot be built-in.", script->get_path()));
 
 	bool is_editable_instance = false;
 

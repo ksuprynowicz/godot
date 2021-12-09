@@ -171,7 +171,12 @@ protected:
 	static void _bind_methods();
 
 public:
-	virtual bool is_valid() const override { return valid; }
+	virtual bool is_valid() const override { 
+		if (is_built_in()) {
+			return false;
+		}
+		return valid; 
+	}
 
 	bool inherits_script(const Ref<Script> &p_script) const override;
 

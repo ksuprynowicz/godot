@@ -219,7 +219,12 @@ public:
 	void get_members(Set<StringName> *p_members) override;
 
 	bool is_tool() const override { return tool; }
-	bool is_valid() const override { return valid; }
+	bool is_valid() const override {
+		if (is_built_in()) {
+			return false;
+		}
+		return valid;
+	}
 
 	bool inherits_script(const Ref<Script> &p_script) const override;
 
