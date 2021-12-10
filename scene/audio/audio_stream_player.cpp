@@ -36,6 +36,11 @@
 
 void AudioStreamPlayer::_notification(int p_what) {
 	if (p_what == NOTIFICATION_ENTER_TREE) {
+#ifdef RESONANCEAUDIO_ENABLED
+		if (GLOBAL_GET("audio/enable_resonance_audio")) {
+			audio_source_id = ResonanceAudioWrapper::get_singleton()->register_stero_audio_source();
+		}
+#endif
 		if (autoplay && !Engine::get_singleton()->is_editor_hint()) {
 			play();
 		}
@@ -67,6 +72,11 @@ void AudioStreamPlayer::_notification(int p_what) {
 			AudioServer::get_singleton()->stop_playback_stream(playback);
 		}
 		stream_playbacks.clear();
+#ifdef RESONANCEAUDIO_ENABLED
+		if (GLOBAL_GET("audio/enable_resonance_audio")) {
+			ResonanceAudioWrapper::get_singleton()->unregister_audio_source(audio_source_id);
+		}
+#endif
 	}
 
 	if (p_what == NOTIFICATION_PAUSED) {
@@ -92,10 +102,17 @@ Ref<AudioStream> AudioStreamPlayer::get_stream() const {
 
 void AudioStreamPlayer::set_volume_db(float p_volume) {
 	volume_db = p_volume;
-
 	Vector<AudioFrame> volume_vector = _get_volume_vector();
 	for (Ref<AudioStreamPlayback> &playback : stream_playbacks) {
+#ifdef RESONANCEAUDIO_ENABLED
+		real_t volume_linear = Math::db2linear(volume_db);
+		if (GLOBAL_GET("audio/enable_resonance_audio")) {
+			ResonanceAudioWrapper::get_singleton()->set_linear_source_volume(audio_source_id, volume_linear);
+		}
+		AudioServer::get_singleton()->set_playback_all_bus_volumes_linear(playback, volume_vector, audio_source_id);
+#else
 		AudioServer::get_singleton()->set_playback_all_bus_volumes_linear(playback, volume_vector);
+#endif
 	}
 }
 
