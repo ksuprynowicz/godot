@@ -40,7 +40,7 @@ def exists(env):
     ccache = env.WhereIs("$ccache_bin")
 
     if not ccache:
-        print(f"Warning: ccache not found at {env['ccache_bin']}")
+        print(f"ccache not found at {env['ccache_bin']}")
         return False
 
     if "CCACHE_VERSION" in env and env["CCACHE_VERSION"] >= _ccache_version_min:
@@ -55,7 +55,7 @@ def exists(env):
     )
 
     if pipe.wait() != 0:
-        print(f"Error: failed to execute '{env['ccache_bin']}'")
+        print(f"Failed to execute '{env['ccache_bin']}'")
         return False
 
     validated = False
