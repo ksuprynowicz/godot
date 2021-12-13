@@ -136,6 +136,8 @@ class EditorFileSystem : public Node {
 	Thread thread;
 	static void _thread_func(void *_userdata);
 
+	OrderedHashMap<int64_t, String> local_unique_ids;
+
 	EditorFileSystemDirectory *new_filesystem;
 
 	bool abort_scan;
@@ -208,6 +210,9 @@ class EditorFileSystem : public Node {
 	bool _update_scan_actions();
 
 	void _update_extensions();
+
+	void _clear_local_unique_ids_cache();
+	void _update_unique_ids_from_local_cache(bool p_clear);
 
 	void _reimport_file(const String &p_file, const Map<StringName, Variant> *p_custom_options = nullptr, const String &p_custom_importer = String());
 	Error _reimport_group(const String &p_group_file, const Vector<String> &p_files);
