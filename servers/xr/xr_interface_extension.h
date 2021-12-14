@@ -113,9 +113,11 @@ public:
 	GDVIRTUAL2(_commit_views, RID, const Rect2 &);
 
 	virtual void process() override;
+	virtual void pre_render() override;
 	virtual void notification(int p_what) override;
 
 	GDVIRTUAL0(_process);
+	GDVIRTUAL0(_pre_render);
 	GDVIRTUAL1(_notification, int);
 
 	/* access to some internals we need */

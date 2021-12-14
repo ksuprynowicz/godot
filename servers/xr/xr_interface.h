@@ -127,8 +127,9 @@ public:
 
 	virtual Vector<BlitToScreen> commit_views(RID p_render_target, const Rect2 &p_screen_rect) = 0; /* commit rendered views to the XR interface */
 
-	virtual void process() = 0;
-	virtual void notification(int p_what);
+	virtual void process(){};
+	virtual void pre_render(){};
+	virtual void notification(int p_what){};
 
 	XRInterface();
 	~XRInterface();
