@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  renderer_compositor.cpp                                              */
+/*  openxr_action.h                                                      */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,31 +28,47 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "renderer_compositor.h"
+#ifndef OPENXR_ACTION_H
+#define OPENXR_ACTION_H
 
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "core/string/print_string.h"
-#include "drivers/openxr/openxr_device.h"
+#include "core/io/resource.h"
 
-RendererCompositor *(*RendererCompositor::_create_func)() = nullptr;
+class OpenXRAction : public Resource {
+	GDCLASS(OpenXRAction, Resource);
 
-RendererCompositor *RendererCompositor::create() {
-	return _create_func();
-}
+public:
+	enum ActionType {
+		OPENXR_ACTION_BOOL,
+		OPENXR_ACTION_FLOAT,
+		OPENXR_ACTION_VECTOR2,
+		OPENXR_ACTION_POSE,
+		OPENXR_ACTION_HAPTIC,
+	};
 
-bool RendererCompositor::is_xr_enabled() const {
-	return xr_enabled;
-}
+private:
+	String localised_name;
+	ActionType action_type = OPENXR_ACTION_FLOAT;
 
-RendererCompositor::RendererCompositor() {
-	if (OpenXRDevice::openxr_is_enabled()) {
-		// enabling OpenXR overrides this project setting.
-		// OpenXR can't function without this.
-		xr_enabled = true;
-	} else {
-		xr_enabled = GLOBAL_GET("rendering/xr/enabled");
-	}
-}
+	PackedStringArray toplevel_paths;
 
-RendererCanvasRender *RendererCanvasRender::singleton = nullptr;
+protected:
+	static void _bind_methods();
+
+public:
+	static Ref<OpenXRAction> new_action(const char *p_name, const char *p_localised_name, const ActionType p_action_type, const char *p_toplevel_paths);
+
+	void set_localised_name(const String p_localised_name);
+	String get_localised_name() const;
+
+	void set_action_type(const ActionType p_action_type);
+	ActionType get_action_type() const;
+
+	void set_toplevel_paths(const PackedStringArray p_toplevel_paths);
+	PackedStringArray get_toplevel_paths() const;
+
+	void parse_toplevel_paths(const String p_toplevel_paths);
+};
+
+VARIANT_ENUM_CAST(OpenXRAction::ActionType);
+
+#endif // !OPENXR_ACTION_H
