@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  renderer_compositor.cpp                                              */
+/*  openxr_action_sets.h                                                 */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,31 +28,44 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "renderer_compositor.h"
+#ifndef OPENXR_ACTION_SETS_H
+#define OPENXR_ACTION_SETS_H
 
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "core/string/print_string.h"
-#include "drivers/openxr/openxr_device.h"
+#include "core/io/resource.h"
 
-RendererCompositor *(*RendererCompositor::_create_func)() = nullptr;
+#include "openxr_action_set.h"
+#include "openxr_interaction_profile.h"
 
-RendererCompositor *RendererCompositor::create() {
-	return _create_func();
-}
+class OpenXRActionSets : public Resource {
+	GDCLASS(OpenXRActionSets, Resource);
 
-bool RendererCompositor::is_xr_enabled() const {
-	return xr_enabled;
-}
+private:
+	Vector<Ref<OpenXRActionSet>> action_sets;
+	Vector<Ref<OpenXRInteractionProfile>> interaction_profiles;
 
-RendererCompositor::RendererCompositor() {
-	if (OpenXRDevice::openxr_is_enabled()) {
-		// enabling OpenXR overrides this project setting.
-		// OpenXR can't function without this.
-		xr_enabled = true;
-	} else {
-		xr_enabled = GLOBAL_GET("rendering/xr/enabled");
-	}
-}
+protected:
+	static void _bind_methods();
 
-RendererCanvasRender *RendererCanvasRender::singleton = nullptr;
+public:
+	void set_action_sets(Array p_action_sets);
+	Array get_action_sets() const;
+
+	void add_action_set(Ref<OpenXRActionSet> p_action_set);
+	void remove_action_set(Ref<OpenXRActionSet> p_action_set);
+	void clear_action_sets();
+
+	void set_interaction_profiles(Array p_interaction_profiles);
+	Array get_interaction_profiles() const;
+
+	void add_interaction_profile(Ref<OpenXRInteractionProfile> p_interaction_profile);
+	void remove_interaction_profile(Ref<OpenXRInteractionProfile> p_interaction_profile);
+	void clear_interaction_profiles();
+
+	void create_default_action_sets();
+	void create_editor_action_sets();
+	bool verify_action_sets(bool p_fix_errors = true);
+
+	~OpenXRActionSets();
+};
+
+#endif // !OPENXR_ACTION_SETS_H

@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  renderer_compositor.cpp                                              */
+/*  register_types.h                                                     */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,31 +28,10 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "renderer_compositor.h"
+#ifndef OPENXR_REGISTER_TYPES_H
+#define OPENXR_REGISTER_TYPES_H
 
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "core/string/print_string.h"
-#include "drivers/openxr/openxr_device.h"
+void register_openxr_types();
+void unregister_openxr_types();
 
-RendererCompositor *(*RendererCompositor::_create_func)() = nullptr;
-
-RendererCompositor *RendererCompositor::create() {
-	return _create_func();
-}
-
-bool RendererCompositor::is_xr_enabled() const {
-	return xr_enabled;
-}
-
-RendererCompositor::RendererCompositor() {
-	if (OpenXRDevice::openxr_is_enabled()) {
-		// enabling OpenXR overrides this project setting.
-		// OpenXR can't function without this.
-		xr_enabled = true;
-	} else {
-		xr_enabled = GLOBAL_GET("rendering/xr/enabled");
-	}
-}
-
-RendererCanvasRender *RendererCanvasRender::singleton = nullptr;
+#endif // OPENXR_REGISTER_TYPES_H
