@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorSceneFormatImporterGLTFFromFBX" inherits="EditorSceneFormatImporter" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Importer for the [code].fbx[/code] scene file format.
+	</brief_description>
+	<description>
+		Imports FBX scenes in the [code].fbx[/code] file format through the glTF 2.0 3D import pipeline. This importer requires FBX2GLTF to be installed by the user, so that it can be used to export the scene as glTF 2.0.
+		The location of the FBX2GLTF binary is set via editor settings "filesystem/gltf_from_fbx/fbx2gltf_path".
+		This importer is only used if project settings "filesystem/gltf_from_fbx/enabled" is enabled, otherwise [code].fbx[/code] present in the project folder are not imported.
+	</description>
+	<tutorials>
+	</tutorials>
+</class>
