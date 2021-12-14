@@ -30,6 +30,7 @@
 
 #include "gltf_document.h"
 
+#include "core/object/class_db.h"
 #include "gltf_accessor.h"
 #include "gltf_animation.h"
 #include "gltf_camera.h"
@@ -6756,8 +6757,8 @@ Error GLTFDocument::_serialize_file(Ref<GLTFState> state, const String p_path) {
 }
 
 void GLTFDocument::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("append_from_file", "path", "state", "flags", "bake_fps"),
-			&GLTFDocument::append_from_file, DEFVAL(0), DEFVAL(30));
+	ClassDB::bind_method(D_METHOD("append_from_file", "path", "state", "flags", "bake_fps", "base_path"),
+			&GLTFDocument::append_from_file, DEFVAL(0), DEFVAL(30), DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("append_from_buffer", "bytes", "base_path", "state", "flags", "bake_fps"),
 			&GLTFDocument::append_from_buffer, DEFVAL(0), DEFVAL(30));
 	ClassDB::bind_method(D_METHOD("append_from_scene", "node", "state", "flags", "bake_fps"),
@@ -7022,7 +7023,7 @@ Error GLTFDocument::_parse_gltf_state(Ref<GLTFState> state, const String &p_sear
 	return OK;
 }
 
-Error GLTFDocument::append_from_file(String p_path, Ref<GLTFState> r_state, uint32_t p_flags, int32_t p_bake_fps) {
+Error GLTFDocument::append_from_file(String p_path, Ref<GLTFState> r_state, uint32_t p_flags, int32_t p_bake_fps, String p_basepath) {
 	// TODO Add missing texture and missing .bin file paths to r_missing_deps 2021-09-10 fire
 	if (r_state == Ref<GLTFState>()) {
 		r_state.instantiate();
@@ -7034,8 +7035,13 @@ Error GLTFDocument::append_from_file(String p_path, Ref<GLTFState> r_state, uint
 	FileAccess *f = FileAccess::open(p_path, FileAccess::READ, &err);
 	ERR_FAIL_COND_V(err != OK, ERR_FILE_CANT_OPEN);
 	ERR_FAIL_NULL_V(f, ERR_FILE_CANT_OPEN);
-
-	err = _parse(r_state, p_path.get_base_dir(), f, p_bake_fps);
+	String basepath;
+	if (!p_basepath.is_empty()) {
+		basepath = p_basepath;
+	} else {
+		basepath = p_path.get_base_dir();
+	}
+	err = _parse(r_state, basepath, f, p_bake_fps);
 	ERR_FAIL_COND_V(err != OK, ERR_PARSE_ERROR);
 	return err;
 }
