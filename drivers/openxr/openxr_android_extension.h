@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  renderer_compositor.cpp                                              */
+/*  openxr_android_extension.h                                           */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,31 +28,20 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "renderer_compositor.h"
+#ifndef OPENXR_ANDROID_EXTENSION_H
+#define OPENXR_ANDROID_EXTENSION_H
 
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "core/string/print_string.h"
-#include "drivers/openxr/openxr_device.h"
+#include "openxr_extension_wrapper.h"
 
-RendererCompositor *(*RendererCompositor::_create_func)() = nullptr;
+class OpenXRAndroidExtension : public OpenXRExtensionWrapper {
+public:
+	static OpenXRAndroidExtension *get_singleton();
 
-RendererCompositor *RendererCompositor::create() {
-	return _create_func();
-}
+	OpenXRAndroidExtension(OpenXRDevice *p_openxr_device);
+	virtual ~OpenXRAndroidExtension() override;
 
-bool RendererCompositor::is_xr_enabled() const {
-	return xr_enabled;
-}
+private:
+	static OpenXRAndroidExtension *singleton;
+};
 
-RendererCompositor::RendererCompositor() {
-	if (OpenXRDevice::openxr_is_enabled()) {
-		// enabling OpenXR overrides this project setting.
-		// OpenXR can't function without this.
-		xr_enabled = true;
-	} else {
-		xr_enabled = GLOBAL_GET("rendering/xr/enabled");
-	}
-}
-
-RendererCanvasRender *RendererCanvasRender::singleton = nullptr;
+#endif // !OPENXR_ANDROID_EXTENSION_H

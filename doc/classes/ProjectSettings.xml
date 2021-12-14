@@ -1909,5 +1909,14 @@
 		<member name="rendering/xr/enabled" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], XR support is enabled in Godot, this ensures required shaders are compiled.
 		</member>
+		<member name="xr/openxr/default_action_map" type="String" setter="" getter="" default="&quot;res://default_action_map.tres&quot;">
+			Action map configuration to load by default.
+		</member>
+		<member name="xr/openxr/enabled" type="bool" setter="" getter="" default="false">
+			If [code]true[/code] Godot will setup and initialise OpenXR on startup.
+		</member>
+		<member name="xr/openxr/in_editor" type="bool" setter="" getter="" default="false">
+			If [code]true[/code] Godot will setup and initialise OpenXR when Godot is run in editor mode enabling editor VR features (experimental).
+		</member>
 	</members>
 </class>
