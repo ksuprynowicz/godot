@@ -1,12 +1,12 @@
 /*************************************************************************/
-/*  renderer_compositor.cpp                                              */
+/*  openxr_device_dummy.cpp                                              */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -28,31 +28,58 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "renderer_compositor.h"
+// This dummy class will never be instantiated, we purely have this to
+// allow us to compile Godot on platforms that do not support OpenXR
+// We do re-use our class definition
 
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "core/string/print_string.h"
-#include "drivers/openxr/openxr_device.h"
+#include "openxr_device.h"
 
-RendererCompositor *(*RendererCompositor::_create_func)() = nullptr;
-
-RendererCompositor *RendererCompositor::create() {
-	return _create_func();
+void OpenXRDevice::setup_global_defs() {
 }
 
-bool RendererCompositor::is_xr_enabled() const {
-	return xr_enabled;
+bool OpenXRDevice::openxr_is_enabled() {
 }
 
-RendererCompositor::RendererCompositor() {
-	if (OpenXRDevice::openxr_is_enabled()) {
-		// enabling OpenXR overrides this project setting.
-		// OpenXR can't function without this.
-		xr_enabled = true;
-	} else {
-		xr_enabled = GLOBAL_GET("rendering/xr/enabled");
-	}
+OpenXRDevice *OpenXRDevice::get_singleton() {
+	return nullptr;
 }
 
-RendererCanvasRender *RendererCanvasRender::singleton = nullptr;
+String OpenXRDevice::get_error_string(XrResult result) {
+	return String();
+}
+
+String OpenXRDevice::get_view_configuration_name(XrViewConfigurationType p_view_configuration) const {
+	return String();
+}
+
+String OpenXRDevice::get_reference_space_name(XrReferenceSpaceType p_reference_space) const {
+	return String();
+}
+
+String OpenXRDevice::make_xr_version_string(XrVersion p_version) {
+	return String();
+}
+
+bool OpenXRDevice::is_initialized() {
+	return false;
+}
+
+bool OpenXRDevice::initialise(const String &p_rendering_driver) {
+	return false;
+}
+
+void OpenXRDevice::finish() {
+}
+
+void OpenXRDevice::register_extension_wrapper(OpenXRExtensionWrapper *p_extension_wrapper) {
+}
+
+Size2 OpenXRDevice::get_recommended_target_size() {
+	return Size2();
+}
+
+OpenXRDevice::OpenXRDevice() {
+}
+
+OpenXRDevice::~OpenXRDevice() {
+}

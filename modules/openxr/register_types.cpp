@@ -1,12 +1,12 @@
 /*************************************************************************/
-/*  renderer_compositor.cpp                                              */
+/*  register_types.cpp                                                   */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -28,31 +28,34 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "renderer_compositor.h"
+#include "register_types.h"
 
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "core/string/print_string.h"
-#include "drivers/openxr/openxr_device.h"
+#include "openxr_interface.h"
 
-RendererCompositor *(*RendererCompositor::_create_func)() = nullptr;
+Ref<OpenXRInterface> openxr_interface;
 
-RendererCompositor *RendererCompositor::create() {
-	return _create_func();
-}
+void register_openxr_types() {
+	GDREGISTER_CLASS(OpenXRInterface);
 
-bool RendererCompositor::is_xr_enabled() const {
-	return xr_enabled;
-}
+	XRServer *xr_server = XRServer::get_singleton();
+	if (xr_server) {
+		openxr_interface.instantiate();
+		xr_server->add_interface(openxr_interface);
 
-RendererCompositor::RendererCompositor() {
-	if (OpenXRDevice::openxr_is_enabled()) {
-		// enabling OpenXR overrides this project setting.
-		// OpenXR can't function without this.
-		xr_enabled = true;
-	} else {
-		xr_enabled = GLOBAL_GET("rendering/xr/enabled");
+		if (openxr_interface->initialise_on_startup()) {
+			openxr_interface->initialize();
+		}
 	}
 }
 
-RendererCanvasRender *RendererCanvasRender::singleton = nullptr;
+void unregister_openxr_types() {
+	if (openxr_interface.is_valid()) {
+		// unregister our interface from the XR server
+		if (XRServer::get_singleton()) {
+			XRServer::get_singleton()->remove_interface(openxr_interface);
+		}
+
+		// and release
+		openxr_interface.unref();
+	}
+}

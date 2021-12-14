@@ -1,12 +1,12 @@
 /*************************************************************************/
-/*  renderer_compositor.cpp                                              */
+/*  openxr_vulkan_extension_dummy.cpp                                    */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -28,31 +28,30 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "renderer_compositor.h"
+// This dummy class will never be instantiated, we purely have this to
+// allow us to compile Godot on platforms that do not support OpenXR
+// We do re-use our class definition
 
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "core/string/print_string.h"
-#include "drivers/openxr/openxr_device.h"
+#include "openxr_vulkan_extension.h"
 
-RendererCompositor *(*RendererCompositor::_create_func)() = nullptr;
-
-RendererCompositor *RendererCompositor::create() {
-	return _create_func();
+OpenXRVulkanExtension *OpenXRVulkanExtension::get_singleton() {
+	return nullptr;
 }
 
-bool RendererCompositor::is_xr_enabled() const {
-	return xr_enabled;
+OpenXRVulkanExtension::OpenXRVulkanExtension(OpenXRDevice *p_openxr_device) :
+		OpenXRExtensionWrapper(p_openxr_device) {
 }
 
-RendererCompositor::RendererCompositor() {
-	if (OpenXRDevice::openxr_is_enabled()) {
-		// enabling OpenXR overrides this project setting.
-		// OpenXR can't function without this.
-		xr_enabled = true;
-	} else {
-		xr_enabled = GLOBAL_GET("rendering/xr/enabled");
-	}
+OpenXRVulkanExtension::~OpenXRVulkanExtension() {
 }
 
-RendererCanvasRender *RendererCanvasRender::singleton = nullptr;
+void OpenXRVulkanExtension::on_instance_created(const XrInstance instance) {
+}
+
+bool OpenXRVulkanExtension::create_vulkan_instance(const VkInstanceCreateInfo *p_vulkan_create_info, VkInstance *r_instance) {
+	return false;
+}
+
+bool OpenXRVulkanExtension::get_physical_device(VkPhysicalDevice *r_device) {
+	return false;
+}

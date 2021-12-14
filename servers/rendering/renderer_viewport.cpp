@@ -582,19 +582,25 @@ void RendererViewport::draw_viewports() {
 
 		bool visible = vp->viewport_to_screen_rect != Rect2();
 
-		if (vp->use_xr && xr_interface.is_valid()) {
-			visible = true; // XR viewport is always visible regardless of update mode, output is sent to HMD.
+		if (vp->use_xr) {
+			if (xr_interface.is_valid()) {
+				visible = true; // XR viewport is always visible regardless of update mode, output is sent to HMD.
 
-			// Override our size, make sure it matches our required size and is created as a stereo target
-			Size2 xr_size = xr_interface->get_render_target_size();
+				// Override our size, make sure it matches our required size and is created as a stereo target
+				Size2 xr_size = xr_interface->get_render_target_size();
 
-			// Would have been nice if we could call viewport_set_size here,
-			// but alas that takes our RID and we now have our pointer,
-			// also we only check if view_count changes in render_target_set_size so we need to call that for this to reliably change
-			vp->occlusion_buffer_dirty = vp->occlusion_buffer_dirty || (vp->size != xr_size);
-			vp->size = xr_size;
-			uint32_t view_count = xr_interface->get_view_count();
-			RSG::storage->render_target_set_size(vp->render_target, vp->size.x, vp->size.y, view_count);
+				// Would have been nice if we could call viewport_set_size here,
+				// but alas that takes our RID and we now have our pointer,
+				// also we only check if view_count changes in render_target_set_size so we need to call that for this to reliably change
+				vp->occlusion_buffer_dirty = vp->occlusion_buffer_dirty || (vp->size != xr_size);
+				vp->size = xr_size;
+				uint32_t view_count = xr_interface->get_view_count();
+				RSG::storage->render_target_set_size(vp->render_target, vp->size.x, vp->size.y, view_count);
+			} else {
+				// don't render anything
+				visible = false;
+				vp->size = Size2();
+			}
 		}
 
 		if (vp->update_mode == RS::VIEWPORT_UPDATE_ALWAYS || vp->update_mode == RS::VIEWPORT_UPDATE_ONCE) {
