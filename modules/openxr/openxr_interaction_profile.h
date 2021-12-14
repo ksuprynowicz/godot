@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  renderer_compositor.cpp                                              */
+/*  openxr_interaction_profile.h                                         */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,31 +28,63 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "renderer_compositor.h"
+#ifndef OPENXR_INTERACTION_PROFILE_H
+#define OPENXR_INTERACTION_PROFILE_H
 
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "core/string/print_string.h"
-#include "drivers/openxr/openxr_device.h"
+#include "core/io/resource.h"
 
-RendererCompositor *(*RendererCompositor::_create_func)() = nullptr;
+#include "openxr_action.h"
 
-RendererCompositor *RendererCompositor::create() {
-	return _create_func();
-}
+class OpenXRIPBinding : public Resource {
+	GDCLASS(OpenXRIPBinding, Resource);
 
-bool RendererCompositor::is_xr_enabled() const {
-	return xr_enabled;
-}
+private:
+	Ref<OpenXRAction> action;
+	PackedStringArray paths;
 
-RendererCompositor::RendererCompositor() {
-	if (OpenXRDevice::openxr_is_enabled()) {
-		// enabling OpenXR overrides this project setting.
-		// OpenXR can't function without this.
-		xr_enabled = true;
-	} else {
-		xr_enabled = GLOBAL_GET("rendering/xr/enabled");
-	}
-}
+protected:
+	static void _bind_methods();
 
-RendererCanvasRender *RendererCanvasRender::singleton = nullptr;
+public:
+	static Ref<OpenXRIPBinding> new_binding(const Ref<OpenXRAction> p_action, const char *p_paths);
+
+	void set_action(const Ref<OpenXRAction> p_action);
+	Ref<OpenXRAction> get_action() const;
+
+	void set_paths(const PackedStringArray p_paths);
+	PackedStringArray get_paths() const;
+
+	void parse_paths(const String p_paths);
+
+	~OpenXRIPBinding();
+};
+
+class OpenXRInteractionProfile : public Resource {
+	GDCLASS(OpenXRInteractionProfile, Resource);
+
+private:
+	String interaction_profile_path;
+	Vector<Ref<OpenXRIPBinding>> bindings;
+
+protected:
+	static void _bind_methods();
+
+public:
+	static Ref<OpenXRInteractionProfile> new_profile(const char *p_input_profile_path);
+
+	void set_interaction_profile_path(const String p_input_profile_path);
+	String get_interaction_profile_path() const;
+
+	void set_bindings(Array p_bindings);
+	Array get_bindings() const;
+
+	void add_binding(Ref<OpenXRIPBinding> p_binding);
+	void remove_binding(Ref<OpenXRIPBinding> p_binding);
+	void clear_bindings();
+
+	void add_new_binding(const Ref<OpenXRAction> p_action, const char *p_paths);
+
+	~OpenXRInteractionProfile();
+};
+
+#endif // !OPENXR_INTERACTION_PROFILE_H

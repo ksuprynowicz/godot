@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  renderer_compositor.cpp                                              */
+/*  openxr_composition_layer_provider.h                                  */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,31 +28,18 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "renderer_compositor.h"
+#ifndef OPENXR_COMPOSITION_LAYER_PROVIDER_H
+#define OPENXR_COMPOSITION_LAYER_PROVIDER_H
 
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "core/string/print_string.h"
-#include "drivers/openxr/openxr_device.h"
+#include <openxr/openxr.h>
 
-RendererCompositor *(*RendererCompositor::_create_func)() = nullptr;
+// Interface for OpenXR extensions that provide a composition layer.
+class OpenXRCompositionLayerProvider {
+public:
+	// TODO changed to normal method definition for now
+	// CI complains until we implement this, haven't ported it yet from plugin
+	// virtual XrCompositionLayerBaseHeader *get_composition_layer() = 0;
+	XrCompositionLayerBaseHeader *get_composition_layer() { return nullptr; };
+};
 
-RendererCompositor *RendererCompositor::create() {
-	return _create_func();
-}
-
-bool RendererCompositor::is_xr_enabled() const {
-	return xr_enabled;
-}
-
-RendererCompositor::RendererCompositor() {
-	if (OpenXRDevice::openxr_is_enabled()) {
-		// enabling OpenXR overrides this project setting.
-		// OpenXR can't function without this.
-		xr_enabled = true;
-	} else {
-		xr_enabled = GLOBAL_GET("rendering/xr/enabled");
-	}
-}
-
-RendererCanvasRender *RendererCanvasRender::singleton = nullptr;
+#endif // OPENXR_COMPOSITION_LAYER_PROVIDER_H

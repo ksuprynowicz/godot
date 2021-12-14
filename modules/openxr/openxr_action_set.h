@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  renderer_compositor.cpp                                              */
+/*  openxr_action_set.h                                                  */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,31 +28,44 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "renderer_compositor.h"
+#ifndef OPENXR_ACTION_SET_H
+#define OPENXR_ACTION_SET_H
 
-#include "core/config/project_settings.h"
-#include "core/os/os.h"
-#include "core/string/print_string.h"
-#include "drivers/openxr/openxr_device.h"
+#include "core/io/resource.h"
 
-RendererCompositor *(*RendererCompositor::_create_func)() = nullptr;
+#include "openxr_action.h"
 
-RendererCompositor *RendererCompositor::create() {
-	return _create_func();
-}
+class OpenXRActionSet : public Resource {
+	GDCLASS(OpenXRActionSet, Resource);
 
-bool RendererCompositor::is_xr_enabled() const {
-	return xr_enabled;
-}
+private:
+	String localised_name;
+	int priority = 0;
 
-RendererCompositor::RendererCompositor() {
-	if (OpenXRDevice::openxr_is_enabled()) {
-		// enabling OpenXR overrides this project setting.
-		// OpenXR can't function without this.
-		xr_enabled = true;
-	} else {
-		xr_enabled = GLOBAL_GET("rendering/xr/enabled");
-	}
-}
+	Vector<Ref<OpenXRAction>> actions;
 
-RendererCanvasRender *RendererCanvasRender::singleton = nullptr;
+protected:
+	static void _bind_methods();
+
+public:
+	static Ref<OpenXRActionSet> new_action_set(const char *p_name, const char *p_localised_name, const int p_priority = 0);
+
+	void set_localised_name(const String p_localised_name);
+	String get_localised_name() const;
+
+	void set_priority(const int p_priority);
+	int get_priority() const;
+
+	void set_actions(Array p_actions);
+	Array get_actions() const;
+
+	void add_action(Ref<OpenXRAction> p_action);
+	void remove_action(Ref<OpenXRAction> p_action);
+	void clear_actions();
+
+	Ref<OpenXRAction> add_new_action(const char *p_name, const char *p_localised_name, const OpenXRAction::ActionType p_action_type, const char *p_toplevel_paths);
+
+	~OpenXRActionSet();
+};
+
+#endif // !OPENXR_ACTION_SET_H
