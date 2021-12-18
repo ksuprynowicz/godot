@@ -494,19 +494,6 @@ Files extracted from the upstream source:
 - Files in `core/` folder.
 - `LICENSE.txt` and `CHANGELOG.md`
 
-
-## nanosvg
-
-- Upstream: https://github.com/memononen/nanosvg
-- Version: git (ccdb1995134d340a93fb20e3a3d323ccb3838dd0, 2021)
-- License: zlib
-
-Files extracted from the upstream source:
-
-- All .h files in `src/`
-- LICENSE.txt
-
-
 ## oidn
 
 - Upstream: https://github.com/OpenImageDenoise/oidn
@@ -668,6 +655,17 @@ Files extracted from upstream source:
 
 The `tinyexr.cc` file was modified to include `zlib.h` which we provide,
 instead of `miniz.h` as an external dependency.
+
+
+## thorvg
+
+- Upstream: https://github.com/Samsung/thorvg
+- Version: 0.6.0 (master-df64a7b0dc51c97c318d0b4eca5edca76834f89e, 2021)
+- License: MIT
+
+Files extracted from upstream source:
+
+See `thorvg/update-thorvg.sh` for extraction instructions.
 
 
 ## vhacd
