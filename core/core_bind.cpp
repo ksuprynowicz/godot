@@ -538,6 +538,10 @@ String OS::get_unique_id() const {
 	return ::OS::get_singleton()->get_unique_id();
 }
 
+Error OS::activate_fullscreen_wallpaper() const {
+	return ::OS::get_singleton()->activate_fullscreen_wallpaper();
+}
+
 OS *OS::singleton = nullptr;
 
 void OS::_bind_methods() {
@@ -563,6 +567,8 @@ void OS::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("kill", "pid"), &OS::kill);
 	ClassDB::bind_method(D_METHOD("shell_open", "uri"), &OS::shell_open);
 	ClassDB::bind_method(D_METHOD("get_process_id"), &OS::get_process_id);
+
+	ClassDB::bind_method(D_METHOD("activate_fullscreen_wallpaper"), &OS::activate_fullscreen_wallpaper);
 
 	ClassDB::bind_method(D_METHOD("get_environment", "variable"), &OS::get_environment);
 	ClassDB::bind_method(D_METHOD("set_environment", "variable", "value"), &OS::set_environment);

@@ -184,6 +184,8 @@ public:
 
 	String get_model_name() const;
 
+	Error activate_fullscreen_wallpaper() const;
+
 	void dump_memory_to_file(const String &p_file);
 	void dump_resources_to_file(const String &p_file);
 

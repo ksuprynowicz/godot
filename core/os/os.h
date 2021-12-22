@@ -312,6 +312,8 @@ public:
 	bool is_restart_on_exit_set() const;
 	List<String> get_restart_on_exit_arguments() const;
 
+	virtual Error activate_fullscreen_wallpaper() { return OK; }
+
 	virtual bool request_permission(const String &p_name) { return true; }
 	virtual bool request_permissions() { return true; }
 	virtual Vector<String> get_granted_permissions() const { return Vector<String>(); }

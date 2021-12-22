@@ -168,6 +168,7 @@ public:
 
 	void set_main_window(HWND p_main_window) { main_window = p_main_window; }
 
+	virtual Error activate_fullscreen_wallpaper() override;
 	HINSTANCE get_hinstance() { return hInstance; }
 	OS_Windows(HINSTANCE _hInstance);
 	~OS_Windows();

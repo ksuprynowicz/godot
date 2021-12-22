@@ -498,6 +498,11 @@
 				[b]Note:[/b] Double-check the casing of [code]variable[/code]. Environment variable names are case-sensitive on all platforms except Windows.
 			</description>
 		</method>
+		<method name="activate_fullscreen_wallpaper" qualifiers="const">
+			<return type="int" enum="Error" />
+			<description>
+			</description>
+		</method>
 		<method name="set_thread_name">
 			<return type="int" enum="Error" />
 			<argument index="0" name="name" type="String" />

@@ -703,6 +703,13 @@ File extracted from upstream release tarball:
   See `patches/msvcfix.diff`
 - `COPYING`
 
+## weebp
+
+- Upstream: https://github.com/Francesco149/weebp
+- Version: git (3f9e2d5ab7f5f1f9215c700a6dfba8173fc18344, 2021)
+- License: Public Domain or Unlicense
+
+Modified to use Godot Engine printing.
 
 ## xatlas
 

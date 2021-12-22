@@ -46,11 +46,19 @@
 #include "windows_terminal_logger.h"
 
 #include <avrt.h>
+#include <basetsd.h>
 #include <direct.h>
 #include <knownfolders.h>
 #include <process.h>
 #include <regstr.h>
+#include <shellapi.h>
 #include <shlobj.h>
+#include <stdint.h>
+#include <windef.h>
+#include <winuser.h>
+
+#define WP_IMPLEMENTATION
+#include "thirdparty/misc/weebp.h"
 
 static const WORD MAX_CONSOLE_LINES = 1500;
 
@@ -864,4 +872,14 @@ OS_Windows::~OS_Windows() {
 #ifdef STDOUT_FILE
 	fclose(stdo);
 #endif
+}
+
+Error OS_Windows::activate_fullscreen_wallpaper() {
+	int32_t error = 0;
+	error = wp_fullscreen(main_window);
+	ERR_FAIL_COND_V(error != 0, FAILED);
+	error = wp_add(main_window);
+	ERR_FAIL_COND_V(error != 0, FAILED);
+	main_window = wp_id();
+	return OK;
 }
