@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  register_types.cpp                                                   */
+/*  config.h                                                             */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,29 +28,20 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "register_types.h"
+#ifndef SVG_CONFIG_H
+#define SVG_CONFIG_H
 
-#include "core/os/os.h"
-#include "image_loader_svg.h"
+#define THORVG_SW_RASTER_SUPPORT 1
 
-#include "thirdparty/thorvg/inc/config.h"
-#include <thorvg.h>
+#define THORVG_SVG_LOADER_SUPPORT 1
 
-static ImageLoaderSVG *image_loader_svg = nullptr;
+#define THORVG_PNG_LOADER_SUPPORT 1
 
-void register_svg_types() {
-	tvg::CanvasEngine tvgEngine = tvg::CanvasEngine::Sw;
-	if (tvg::Initializer::init(tvgEngine, 0) != tvg::Result::Success) {
-		return;
-	}
-	image_loader_svg = memnew(ImageLoaderSVG);
-	ImageLoader::add_image_format_loader(image_loader_svg);
-}
+#define THORVG_TVG_LOADER_SUPPORT 1
 
-void unregister_svg_types() {
-	if (!image_loader_svg) {
-		return;
-	}
-	memdelete(image_loader_svg);
-	tvg::Initializer::term(tvg::CanvasEngine::Sw);
-}
+#define THORVG_TVG_SAVER_SUPPORT 1
+
+#define THORVG_JPG_LOADER_SUPPORT 1
+
+#define THORVG_VERSION_STRING "0.6.0"
+#endif
