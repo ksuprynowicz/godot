@@ -33,9 +33,15 @@
 #include "scene/2d/area_2d.h"
 #include "scene/2d/audio_listener_2d.h"
 #include "scene/main/window.h"
+#include "servers/audio_server.h"
 
 void AudioStreamPlayer2D::_notification(int p_what) {
 	if (p_what == NOTIFICATION_ENTER_TREE) {
+#ifdef RESONANCEAUDIO_ENABLED
+		if (GLOBAL_GET("audio/enable_resonance_audio")) {
+			audio_source_id = ResonanceAudioWrapper::get_singleton()->register_stero_audio_source();
+		}
+#endif
 		AudioServer::get_singleton()->add_listener_changed_callback(_listener_changed_cb, this);
 		if (autoplay && !Engine::get_singleton()->is_editor_hint()) {
 			play();
@@ -43,6 +49,11 @@ void AudioStreamPlayer2D::_notification(int p_what) {
 	}
 
 	if (p_what == NOTIFICATION_EXIT_TREE) {
+#ifdef RESONANCEAUDIO_ENABLED
+		if (GLOBAL_GET("audio/enable_resonance_audio")) {
+			ResonanceAudioWrapper::get_singleton()->unregister_audio_source(audio_source_id);
+		}
+#endif
 		stop();
 		AudioServer::get_singleton()->remove_listener_changed_callback(_listener_changed_cb, this);
 	}
@@ -192,7 +203,15 @@ void AudioStreamPlayer2D::_update_panning() {
 	}
 
 	for (const Ref<AudioStreamPlayback> &playback : stream_playbacks) {
+#ifdef RESONANCEAUDIO_ENABLED
+		real_t volume_linear = Math::db2linear(volume_db);
+		if (GLOBAL_GET("audio/enable_resonance_audio")) {
+			ResonanceAudioWrapper::get_singleton()->set_linear_source_volume(audio_source_id, volume_linear);
+		}
+		AudioServer::get_singleton()->set_playback_bus_exclusive(playback, _get_actual_bus(), volume_vector, audio_source_id);
+#else
 		AudioServer::get_singleton()->set_playback_bus_exclusive(playback, _get_actual_bus(), volume_vector);
+#endif
 	}
 
 	for (Ref<AudioStreamPlayback> &playback : stream_playbacks) {
