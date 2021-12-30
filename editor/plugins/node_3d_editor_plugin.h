@@ -186,8 +186,13 @@ private:
 	ViewType view_type;
 	void _menu_option(int p_option);
 	void _set_auto_orthogonal();
+
 	Node3D *preview_node;
 	AABB *preview_bounds;
+	Ref<Material> *preview_material;
+	Ref<Material> *preview_reset_material;
+	ObjectID *preview_material_target;
+
 	Vector<String> selected_files;
 	AcceptDialog *accept;
 
@@ -240,7 +245,7 @@ private:
 	void _compute_edit(const Point2 &p_point);
 	void _clear_selected();
 	void _select_clicked(bool p_allow_locked);
-	ObjectID _select_ray(const Point2 &p_pos);
+	ObjectID _select_ray(const Point2 &p_pos) const;
 	void _find_items_at_pos(const Point2 &p_pos, Vector<_RayResult> &r_results, bool p_include_locked);
 	Vector3 _get_ray_pos(const Vector2 &p_pos) const;
 	Vector3 _get_ray(const Vector2 &p_pos) const;
@@ -266,6 +271,7 @@ private:
 	float get_fov() const;
 
 	ObjectID clicked;
+	ObjectID material_target;
 	Vector<_RayResult> selection_results;
 	bool clicked_wants_append;
 
@@ -388,8 +394,9 @@ private:
 
 	Node *_sanitize_preview_node(Node *p_node) const;
 
-	void _create_preview(const Vector<String> &files) const;
-	void _remove_preview();
+	void _create_preview_node(const Vector<String> &files) const;
+	void _remove_preview_node();
+	void _remove_preview_material();
 	bool _cyclical_dependency_exists(const String &p_target_scene_path, Node *p_desired_node);
 	bool _create_instance(Node *parent, String &path, const Point2 &p_point);
 	void _perform_drop_data();
@@ -420,6 +427,9 @@ public:
 	void assign_pending_data_pointers(
 			Node3D *p_preview_node,
 			AABB *p_preview_bounds,
+			Ref<Material> *p_preview_material,
+			Ref<Material> *p_preview_reset_material,
+			ObjectID *p_preview_material_target,
 			AcceptDialog *p_accept);
 
 	SubViewport *get_viewport_node() { return viewport; }
@@ -572,6 +582,9 @@ private:
 	// Scene drag and drop support
 	Node3D *preview_node;
 	AABB preview_bounds;
+	Ref<Material> preview_material;
+	Ref<Material> preview_reset_material;
+	ObjectID preview_material_target;
 
 	struct Gizmo {
 		bool visible = false;
