@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -1692,7 +1692,7 @@ int GraphEdit::_set_operations(SET_OPERATIONS p_operation, Set<StringName> &r_u,
 					r_u.insert(E->get());
 				}
 			}
-			return r_v.size();
+			return r_u.size();
 		} break;
 		default:
 			break;
@@ -1787,8 +1787,8 @@ void GraphEdit::_horizontal_alignment(Dictionary &r_root, Dictionary &r_align, c
 				}
 			}
 
-			int start = up.size() / 2;
-			int end = up.size() % 2 ? start : start + 1;
+			int start = (up.size() - 1) / 2;
+			int end = (up.size() - 1) % 2 ? start + 1 : start;
 			for (int p = start; p <= end; p++) {
 				StringName Align = r_align[current_node];
 				if (Align == current_node && r < up[p].first) {
@@ -2107,7 +2107,7 @@ void GraphEdit::arrange_nodes() {
 		} while (u != E->get());
 	}
 
-	//Compute horizontal co-ordinates individually for layers to get uniform gap
+	// Compute horizontal coordinates individually for layers to get uniform gap.
 	float start_from = origin.x;
 	float largest_node_size = 0.0f;
 

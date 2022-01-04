@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -477,6 +477,7 @@ void EditorNode::_update_from_settings() {
 	RS::get_singleton()->environment_set_ssao_quality(RS::EnvironmentSSAOQuality(int(GLOBAL_GET("rendering/environment/ssao/quality"))), GLOBAL_GET("rendering/environment/ssao/half_size"), GLOBAL_GET("rendering/environment/ssao/adaptive_target"), GLOBAL_GET("rendering/environment/ssao/blur_passes"), GLOBAL_GET("rendering/environment/ssao/fadeout_from"), GLOBAL_GET("rendering/environment/ssao/fadeout_to"));
 	RS::get_singleton()->screen_space_roughness_limiter_set_active(GLOBAL_GET("rendering/anti_aliasing/screen_space_roughness_limiter/enabled"), GLOBAL_GET("rendering/anti_aliasing/screen_space_roughness_limiter/amount"), GLOBAL_GET("rendering/anti_aliasing/screen_space_roughness_limiter/limit"));
 	bool glow_bicubic = int(GLOBAL_GET("rendering/environment/glow/upscale_mode")) > 0;
+	RS::get_singleton()->environment_set_ssil_quality(RS::EnvironmentSSILQuality(int(GLOBAL_GET("rendering/environment/ssil/quality"))), GLOBAL_GET("rendering/environment/ssil/half_size"), GLOBAL_GET("rendering/environment/ssil/adaptive_target"), GLOBAL_GET("rendering/environment/ssil/blur_passes"), GLOBAL_GET("rendering/environment/ssil/fadeout_from"), GLOBAL_GET("rendering/environment/ssil/fadeout_to"));
 	RS::get_singleton()->environment_glow_set_use_bicubic_upscale(glow_bicubic);
 	bool glow_high_quality = GLOBAL_GET("rendering/environment/glow/use_high_quality");
 	RS::get_singleton()->environment_glow_set_use_high_quality(glow_high_quality);
@@ -2128,11 +2129,19 @@ static bool overrides_external_editor(Object *p_object) {
 	return script->get_language()->overrides_external_editor();
 }
 
-void EditorNode::_edit_current() {
+void EditorNode::_edit_current(bool p_skip_foreign) {
 	ObjectID current = editor_history.get_current();
 	Object *current_obj = current.is_valid() ? ObjectDB::get_instance(current) : nullptr;
-	bool inspector_only = editor_history.is_current_inspector_only();
 
+	RES res = Object::cast_to<Resource>(current_obj);
+	if (p_skip_foreign && res.is_valid()) {
+		if (res->get_path().find("::") > -1 && res->get_path().get_slice("::", 0) != editor_data.get_scene_path(get_current_tab())) {
+			// Trying to edit resource that belongs to another scene; abort.
+			current_obj = nullptr;
+		}
+	}
+
+	bool inspector_only = editor_history.is_current_inspector_only();
 	this->current = current_obj;
 
 	if (!current_obj) {
@@ -2263,8 +2272,8 @@ void EditorNode::_edit_current() {
 
 		if (main_plugin) {
 			// special case if use of external editor is true
-			Resource *res = Object::cast_to<Resource>(current_obj);
-			if (main_plugin->get_name() == "Script" && current_obj->get_class_name() != StringName("VisualScript") && res && !res->is_built_in() && (bool(EditorSettings::get_singleton()->get("text_editor/external/use_external_editor")) || overrides_external_editor(current_obj))) {
+			Resource *current_res = Object::cast_to<Resource>(current_obj);
+			if (main_plugin->get_name() == "Script" && current_obj->get_class_name() != StringName("VisualScript") && current_res && !current_res->is_built_in() && (bool(EditorSettings::get_singleton()->get("text_editor/external/use_external_editor")) || overrides_external_editor(current_obj))) {
 				if (!changing_scene) {
 					main_plugin->edit(current_obj);
 				}
@@ -3493,7 +3502,7 @@ void EditorNode::set_current_scene(int p_idx) {
 	}
 
 	Dictionary state = editor_data.restore_edited_scene_state(editor_selection, &editor_history);
-	_edit_current();
+	_edit_current(true);
 
 	_update_title();
 

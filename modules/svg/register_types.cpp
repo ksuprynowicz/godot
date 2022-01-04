@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -30,15 +30,27 @@
 
 #include "register_types.h"
 
+#include "core/os/os.h"
 #include "image_loader_svg.h"
+
+#include "thirdparty/thorvg/inc/config.h"
+#include <thorvg.h>
 
 static ImageLoaderSVG *image_loader_svg = nullptr;
 
 void register_svg_types() {
+	tvg::CanvasEngine tvgEngine = tvg::CanvasEngine::Sw;
+	if (tvg::Initializer::init(tvgEngine, 0) != tvg::Result::Success) {
+		return;
+	}
 	image_loader_svg = memnew(ImageLoaderSVG);
 	ImageLoader::add_image_format_loader(image_loader_svg);
 }
 
 void unregister_svg_types() {
+	if (!image_loader_svg) {
+		return;
+	}
 	memdelete(image_loader_svg);
+	tvg::Initializer::term(tvg::CanvasEngine::Sw);
 }
