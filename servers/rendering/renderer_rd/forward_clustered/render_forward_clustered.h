@@ -5,8 +5,8 @@
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -251,7 +251,7 @@ class RenderForwardClustered : public RendererSceneRenderRD {
 			float z_far;
 			float z_near;
 
-			uint32_t ssao_enabled;
+			uint32_t ss_effects_flags;
 			float ssao_light_affect;
 			float ssao_ao_affect;
 			uint32_t roughness_limiter_enabled;
