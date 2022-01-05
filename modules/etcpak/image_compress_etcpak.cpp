@@ -39,7 +39,7 @@
 EtcpakType _determine_etc_type(Image::UsedChannels p_channels) {
 	switch (p_channels) {
 		case Image::USED_CHANNELS_L:
-			return EtcpakType::ETCPAK_TYPE_ETC1;
+			return EtcpakType::ETCPAK_TYPE_ETC2;
 		case Image::USED_CHANNELS_LA:
 			return EtcpakType::ETCPAK_TYPE_ETC2_ALPHA;
 		case Image::USED_CHANNELS_R:
@@ -74,10 +74,6 @@ EtcpakType _determine_dxt_type(Image::UsedChannels p_channels) {
 	}
 }
 
-void _compress_etc1(Image *r_img, float p_lossy_quality) {
-	_compress_etcpak(EtcpakType::ETCPAK_TYPE_ETC1, r_img, p_lossy_quality);
-}
-
 void _compress_etc2(Image *r_img, float p_lossy_quality, Image::UsedChannels p_channels) {
 	EtcpakType type = _determine_etc_type(p_channels);
 	_compress_etcpak(type, r_img, p_lossy_quality);
@@ -109,9 +105,7 @@ void _compress_etcpak(EtcpakType p_compresstype, Image *r_img, float p_lossy_qua
 
 	// Determine output format based on Etcpak type.
 	Image::Format target_format = Image::FORMAT_RGBA8;
-	if (p_compresstype == EtcpakType::ETCPAK_TYPE_ETC1) {
-		target_format = Image::FORMAT_ETC;
-	} else if (p_compresstype == EtcpakType::ETCPAK_TYPE_ETC2) {
+	if (p_compresstype == EtcpakType::ETCPAK_TYPE_ETC2) {
 		target_format = Image::FORMAT_ETC2_RGB8;
 	} else if (p_compresstype == EtcpakType::ETCPAK_TYPE_ETC2_RA_AS_RG) {
 		target_format = Image::FORMAT_ETC2_RA_AS_RG;
@@ -162,9 +156,7 @@ void _compress_etcpak(EtcpakType p_compresstype, Image *r_img, float p_lossy_qua
 		int src_mip_ofs = r_img->get_mipmap_offset(i);
 		const uint32_t *src_mip_read = (const uint32_t *)&src_read[src_mip_ofs];
 
-		if (p_compresstype == EtcpakType::ETCPAK_TYPE_ETC1) {
-			CompressEtc1RgbDither(src_mip_read, dest_mip_write, blocks, mip_w);
-		} else if (p_compresstype == EtcpakType::ETCPAK_TYPE_ETC2 || p_compresstype == EtcpakType::ETCPAK_TYPE_ETC2_RA_AS_RG) {
+		if (p_compresstype == EtcpakType::ETCPAK_TYPE_ETC2 || p_compresstype == EtcpakType::ETCPAK_TYPE_ETC2_RA_AS_RG) {
 			CompressEtc2Rgb(src_mip_read, dest_mip_write, blocks, mip_w, true);
 		} else if (p_compresstype == EtcpakType::ETCPAK_TYPE_ETC2_ALPHA) {
 			CompressEtc2Rgba(src_mip_read, dest_mip_write, blocks, mip_w, true);
