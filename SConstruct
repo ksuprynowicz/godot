@@ -12,6 +12,8 @@ import sys
 import time
 from collections import OrderedDict
 
+import SCons
+
 # Local
 import methods
 import glsl_builders
@@ -125,6 +127,8 @@ opts.Add(EnumVariable("float", "Floating-point precision", "default", ("default"
 opts.Add(EnumVariable("optimize", "Optimization type", "speed", ("speed", "size", "none")))
 opts.Add(BoolVariable("production", "Set defaults to build Godot for use in production", False))
 opts.Add(BoolVariable("use_lto", "Use link-time optimization", False))
+opts.Add(BoolVariable("use_ninja", "Generate a ninja file to build", False))
+opts.Add("ccache_bin", "Path to ccache, set empty to disable", "ccache")
 
 # Components
 opts.Add(BoolVariable("deprecated", "Enable compatibility code for deprecated and removed features", True))
@@ -194,6 +198,35 @@ opts.Add("LINKFLAGS", "Custom flags for the linker")
 # in following code (especially platform and custom_modules).
 opts.Update(env_base)
 
+if env_base["use_ninja"]:
+
+    from SCons import __version__ as scons_raw_version
+
+    if env_base._get_major_minor_revision(scons_raw_version) >= (4, 2, 0) and sys.version_info >= (3, 6):
+
+        from SCons.Script.Main import _load_site_scons_dir
+
+        _load_site_scons_dir(".", "misc/scons")
+
+        env_base.SetOption("experimental", ["ninja"])
+        env_base["NINJA_DISABLE_AUTO_RUN"] = True
+        env_base.Tool("scons_ninja")
+
+        def ninja_generate_deps(env, target, source, for_signature):
+            dependencies = env.Flatten(
+                [
+                    sorted([str(s) for s in SCons.Node.SConscriptNodes]),
+                    glob.glob(os.path.join("**", "*.py"), recursive=True),
+                ]
+            )
+
+            return dependencies
+
+        env_base["NINJA_REGENERATE_DEPS"] = ninja_generate_deps
+    else:
+        raise SCons.Errors.BuildError(errstr="ninja generation requires SCons >=4.2 and Python >=3.6")
+
+
 # Platform selection: validate input, and add options.
 
 selected_platform = ""
@@ -244,6 +277,14 @@ if selected_platform in platform_opts:
 # Update the environment to take platform-specific options into account.
 opts.Update(env_base)
 env_base["platform"] = selected_platform  # Must always be re-set after calling opts.Update().
+
+from SCons.Script.Main import _load_site_scons_dir
+
+_load_site_scons_dir(".", "misc/scons")
+
+ccache = Tool("ccache")
+if ccache.exists(env_base):
+    ccache.generate(env_base)
 
 # Detect modules.
 modules_detected = OrderedDict()
