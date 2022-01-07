@@ -3190,6 +3190,7 @@ void Node3DEditorViewport::_menu_option(int p_option) {
 		} break;
 		case VIEW_CENTER_TO_ORIGIN: {
 			cursor.pos = Vector3(0, 0, 0);
+			cursor.distance = Cursor::DEFAULT_DISTANCE;
 
 		} break;
 		case VIEW_CENTER_TO_SELECTION: {
@@ -3897,10 +3898,10 @@ void Node3DEditorViewport::reset() {
 }
 
 void Node3DEditorViewport::focus_selection() {
-	Vector3 center;
-	int count = 0;
-
+	AABB combined_aabb;
 	List<Node *> &selection = editor_selection->get_selected_node_list();
+
+	bool has_selection = false;
 
 	for (Node *E : selection) {
 		Node3D *sp = Object::cast_to<Node3D>(E);
@@ -3913,22 +3914,27 @@ void Node3DEditorViewport::focus_selection() {
 			continue;
 		}
 
-		if (se->gizmo.is_valid()) {
-			for (const KeyValue<int, Transform3D> &GE : se->subgizmos) {
-				center += se->gizmo->get_subgizmo_transform(GE.key).origin;
-				count++;
-			}
+		AABB transformed_aabb = sp->get_global_gizmo_transform().xform(se->aabb);
+
+		if (has_selection) {
+			combined_aabb.merge_with(transformed_aabb);
+		} else {
+			combined_aabb = transformed_aabb;
 		}
 
-		center += sp->get_global_gizmo_transform().origin;
-		count++;
+		has_selection = true;
 	}
 
-	if (count != 0) {
-		center /= count;
-	}
+	if (has_selection) {
+		cursor.pos = combined_aabb.get_center();
 
-	cursor.pos = center;
+		real_t longest_axis = combined_aabb.get_longest_axis_size();
+		if (longest_axis > 0.0) {
+			cursor.distance = longest_axis;
+		} else {
+			cursor.distance = Cursor::DEFAULT_DISTANCE;
+		}
+	}
 }
 
 void Node3DEditorViewport::assign_pending_data_pointers(Node3D *p_preview_node, AABB *p_preview_bounds, AcceptDialog *p_accept) {

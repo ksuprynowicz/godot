@@ -316,6 +316,11 @@ private:
 	} _edit;
 
 	struct Cursor {
+		static constexpr real_t DEFAULT_X_ROT = 0.5;
+		static constexpr real_t DEFAULT_Y_ROT = -0.5;
+		static constexpr real_t DEFAULT_DISTANCE = 4.0;
+		static constexpr real_t DEFAULT_FOV_SCALE = 1.0;
+
 		Vector3 pos;
 		real_t x_rot, y_rot, distance, fov_scale;
 		Vector3 eye_pos; // Used in freelook mode
@@ -324,10 +329,10 @@ private:
 
 		Cursor() {
 			// These rotations place the camera in +X +Y +Z, aka south east, facing north west.
-			x_rot = 0.5;
-			y_rot = -0.5;
-			distance = 4;
-			fov_scale = 1.0;
+			x_rot = DEFAULT_X_ROT;
+			y_rot = DEFAULT_Y_ROT;
+			distance = DEFAULT_DISTANCE;
+			fov_scale = DEFAULT_FOV_SCALE;
 			region_select = false;
 		}
 	};
