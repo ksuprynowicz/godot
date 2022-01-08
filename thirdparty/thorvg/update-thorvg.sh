@@ -1,5 +1,15 @@
+rm -rf AUTHORS  inc  LICENSE  src *.zip
+curl -L -O https://github.com/Samsung/thorvg/archive/refs/tags/v0.7.0.zip
+bsdtar --strip-components=1 -xvf  *.zip
+rm *.zip
+rm -rf .github docs pc res test tools .git* *.md *.txt wasm_build.sh
+find . -type f -name 'meson.build' -delete
+rm -rf src/bin src/bindings src/examples src/wasm
+rm -rf src/lib/gl_engine tvgcompat
+mkdir -p inc
+cat << 'EOF' > inc/config.h
 /*************************************************************************/
-/*  image_loader_svg.h                                                   */
+/*  config.h                                                             */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,27 +38,21 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef IMAGE_LOADER_SVG_H
-#define IMAGE_LOADER_SVG_H
+#ifndef SVG_CONFIG_H
+#define SVG_CONFIG_H
 
-#include "core/io/image_loader.h"
+#define THORVG_SW_RASTER_SUPPORT 1
 
-#include "thirdparty/thorvg/inc/thorvg.h"
+#define THORVG_SVG_LOADER_SUPPORT 1
 
-class ImageLoaderSVG : public ImageFormatLoader {
-public:
-private:
-	Dictionary replace_colors;
+#define THORVG_PNG_LOADER_SUPPORT 1
 
-public:
-	void set_replace_colors(Dictionary p_replace_colors) {
-		replace_colors = p_replace_colors;
-	}
-	void convert_colors(Dictionary *p_replace_color = nullptr);
-	void create_image_from_string(Ref<::Image> p_image, String p_string, float p_scale, bool p_upsample, bool p_convert_color);
+#define THORVG_TVG_LOADER_SUPPORT 1
 
-	virtual Error load_image(Ref<::Image> p_image, FileAccess *p_fileaccess, bool p_force_linear, float p_scale) override;
-	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
-};
+#define THORVG_TVG_SAVER_SUPPORT 1
 
-#endif // IMAGE_LOADER_SVG_H
+#define THORVG_JPG_LOADER_SUPPORT 1
+
+#define THORVG_VERSION_STRING "0.7.0"
+#endif
+EOF
