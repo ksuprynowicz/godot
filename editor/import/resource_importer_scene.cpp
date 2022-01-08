@@ -1893,9 +1893,6 @@ Node *ResourceImporterScene::pre_import(const String &p_source_file) {
 	Ref<EditorSceneFormatImporter> importer;
 	String ext = p_source_file.get_extension().to_lower();
 
-	EditorProgress progress("pre-import", TTR("Pre-Import Scene"), 0);
-	progress.step(TTR("Importing Scene..."), 0);
-
 	for (Set<Ref<EditorSceneFormatImporter>>::Element *E = importers.front(); E; E = E->next()) {
 		List<String> extensions;
 		E->get()->get_extensions(&extensions);
@@ -1932,9 +1929,6 @@ Error ResourceImporterScene::import(const String &p_source_file, const String &p
 
 	Ref<EditorSceneFormatImporter> importer;
 	String ext = src_path.get_extension().to_lower();
-
-	EditorProgress progress("import", TTR("Import Scene"), 104);
-	progress.step(TTR("Importing Scene..."), 0);
 
 	for (Set<Ref<EditorSceneFormatImporter>>::Element *E = importers.front(); E; E = E->next()) {
 		List<String> extensions;
@@ -2076,8 +2070,6 @@ Error ResourceImporterScene::import(const String &p_source_file, const String &p
 	}
 	err = OK;
 
-	progress.step(TTR("Running Custom Script..."), 2);
-
 	String post_import_script_path = p_options["import_script/path"];
 	Ref<EditorScenePostImport> post_import_script;
 
@@ -2110,8 +2102,6 @@ Error ResourceImporterScene::import(const String &p_source_file, const String &p
 	for (int i = 0; i < post_importer_plugins.size(); i++) {
 		post_importer_plugins.write[i]->post_process(scene, p_options);
 	}
-
-	progress.step(TTR("Saving..."), 104);
 
 	Ref<PackedScene> packer = memnew(PackedScene);
 	packer->pack(scene);
