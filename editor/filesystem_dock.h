@@ -105,6 +105,7 @@ private:
 		FILE_NEW_TEXTFILE,
 		FOLDER_EXPAND_ALL,
 		FOLDER_COLLAPSE_ALL,
+		CONVERT_BASE_ID = 1000
 	};
 
 	FileSortOption file_sort = FILE_SORT_NAME;

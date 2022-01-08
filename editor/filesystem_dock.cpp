@@ -1964,6 +1964,22 @@ void FileSystemDock::_file_option(int p_option, const Vector<String> &p_selected
 			}
 			ScriptEditor::get_singleton()->open_text_file_create_dialog(fpath);
 		} break;
+		default: {
+			if (p_option >= CONVERT_BASE_ID) {
+				int to_type = p_option - CONVERT_BASE_ID;
+				Ref<Resource> edited_resource = ResourceLoader::load(path);
+				if (edited_resource.is_valid()) {
+					Vector<Ref<EditorResourceConversionPlugin>> conversions = EditorNode::get_singleton()->find_resource_conversion_plugin(edited_resource);
+					ERR_FAIL_INDEX(to_type, conversions.size());
+
+					edited_resource = conversions[to_type]->convert(edited_resource);
+					//emit_signal(SNAME("resource_changed"), edited_resource);
+					//_update_resource();
+					ResourceSaver::save(path, edited_resource);
+				}
+				break;
+			}
+		} break;
 	}
 }
 
@@ -2500,6 +2516,25 @@ void FileSystemDock::_file_and_folders_fill_popup(PopupMenu *p_popup, Vector<Str
 		String fpath = p_paths[0];
 		String item_text = fpath.ends_with("/") ? TTR("Open in File Manager") : TTR("Show in File Manager");
 		p_popup->add_icon_item(get_theme_icon(SNAME("Filesystem"), SNAME("EditorIcons")), item_text, FILE_SHOW_IN_EXPLORER);
+
+		Ref<Resource> edited_resource = ResourceLoader::load(fpath);
+		if (edited_resource.is_valid()) {
+			Vector<Ref<EditorResourceConversionPlugin>> conversions = EditorNode::get_singleton()->find_resource_conversion_plugin(edited_resource);
+			if (conversions.size()) {
+				p_popup->add_separator();
+			}
+			for (int i = 0; i < conversions.size(); i++) {
+				String what = conversions[i]->converts_to();
+				Ref<Texture2D> icon;
+				if (has_theme_icon(what, SNAME("EditorIcons"))) {
+					icon = get_theme_icon(what, SNAME("EditorIcons"));
+				} else {
+					icon = get_theme_icon(what, SNAME("Resource"));
+				}
+
+				p_popup->add_icon_item(icon, vformat(TTR("Convert to %s"), what), CONVERT_BASE_ID + i);
+			}
+		}
 	}
 }
 
