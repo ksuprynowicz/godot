@@ -2466,7 +2466,8 @@ int Tree::propagate_mouse_event(const Point2i &p_pos, int x_ofs, int y_ofs, int 
 							single_select_defer_column = col;
 						} else {
 							if (p_button != MouseButton::RIGHT || !c.selected) {
-								select_single_item(p_item, root, col);
+								single_select_defer = p_item;
+								single_select_defer_column = col;
 							}
 
 							if (p_button == MouseButton::RIGHT) {
