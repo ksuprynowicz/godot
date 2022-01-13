@@ -33,21 +33,15 @@
 
 #include "core/io/image_loader.h"
 
-#include "thirdparty/thorvg/inc/thorvg.h"
-
 class ImageLoaderSVG : public ImageFormatLoader {
-public:
-private:
 	Dictionary replace_colors;
 
 public:
-	void set_replace_colors(Dictionary p_replace_colors) {
-		replace_colors = p_replace_colors;
-	}
-	void convert_colors(Dictionary *p_replace_color = nullptr);
-	void create_image_from_string(Ref<::Image> p_image, String p_string, float p_scale, bool p_upsample, bool p_convert_color);
+	// Called by the editor to handle theme icon colors.
+	void set_replace_colors(Dictionary p_replace_colors) { replace_colors = p_replace_colors; }
+	void create_image_from_string(Ref<Image> p_image, String p_string, float p_scale, bool p_upsample, bool p_convert_color);
 
-	virtual Error load_image(Ref<::Image> p_image, FileAccess *p_fileaccess, bool p_force_linear, float p_scale) override;
+	virtual Error load_image(Ref<Image> p_image, FileAccess *p_fileaccess, bool p_force_linear, float p_scale) override;
 	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
 };
 

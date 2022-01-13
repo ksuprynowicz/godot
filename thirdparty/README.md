@@ -618,14 +618,14 @@ instead of `miniz.h` as an external dependency.
 ## thorvg
 
 - Upstream: https://github.com/Samsung/thorvg
-- Version: 0.7.0 (master-e527f565b770f0a41df821e6618ccaeea94f465e, 2021)
+- Version: 0.7.0 (e527f565b770f0a41df821e6618ccaeea94f465e, 2021)
 - License: MIT
 
 Files extracted from upstream source:
 
-See `thorvg/update-thorvg.sh` for extraction instructions.
+See `thorvg/update-thorvg.sh` for extraction instructions. Set the version
+number and run the script.
 
-Please keep the version number synced.
 
 ## vhacd
 
