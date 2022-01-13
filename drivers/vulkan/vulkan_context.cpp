@@ -679,20 +679,27 @@ Error VulkanContext::_create_physical_device() {
 	}
 
 	uint32_t gpu_count;
+	VkResult err;
 
-	VkResult err = vkCreateInstance(&inst_info, nullptr, &inst);
-	ERR_FAIL_COND_V_MSG(err == VK_ERROR_INCOMPATIBLE_DRIVER, ERR_CANT_CREATE,
-			"Cannot find a compatible Vulkan installable client driver (ICD).\n\n"
-			"vkCreateInstance Failure");
-	ERR_FAIL_COND_V_MSG(err == VK_ERROR_EXTENSION_NOT_PRESENT, ERR_CANT_CREATE,
-			"Cannot find a specified extension library.\n"
-			"Make sure your layers path is set appropriately.\n"
-			"vkCreateInstance Failure");
-	ERR_FAIL_COND_V_MSG(err, ERR_CANT_CREATE,
-			"vkCreateInstance failed.\n\n"
-			"Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
-			"Please look at the Getting Started guide for additional information.\n"
-			"vkCreateInstance Failure");
+	if (openxr_vulkan_extension) {
+		if (!openxr_vulkan_extension->create_vulkan_instance(&inst_info, &inst)) {
+			return ERR_CANT_CREATE;
+		}
+	} else {
+		err = vkCreateInstance(&inst_info, nullptr, &inst);
+		ERR_FAIL_COND_V_MSG(err == VK_ERROR_INCOMPATIBLE_DRIVER, ERR_CANT_CREATE,
+				"Cannot find a compatible Vulkan installable client driver (ICD).\n\n"
+				"vkCreateInstance Failure");
+		ERR_FAIL_COND_V_MSG(err == VK_ERROR_EXTENSION_NOT_PRESENT, ERR_CANT_CREATE,
+				"Cannot find a specified extension library.\n"
+				"Make sure your layers path is set appropriately.\n"
+				"vkCreateInstance Failure");
+		ERR_FAIL_COND_V_MSG(err, ERR_CANT_CREATE,
+				"vkCreateInstance failed.\n\n"
+				"Do you have a compatible Vulkan installable client driver (ICD) installed?\n"
+				"Please look at the Getting Started guide for additional information.\n"
+				"vkCreateInstance Failure");
+	}
 
 	inst_initialized = true;
 
@@ -716,25 +723,38 @@ Error VulkanContext::_create_physical_device() {
 		ERR_FAIL_V(ERR_CANT_CREATE);
 	}
 
-	// TODO: At least on Linux Laptops integrated GPUs fail with Vulkan in many instances.
-	//   The device should really be a preference, but for now choosing a discrete GPU over the
-	//   integrated one is better than the default.
-
-	// Default to first device
 	uint32_t device_index = 0;
-
-	for (uint32_t i = 0; i < gpu_count; ++i) {
-		VkPhysicalDeviceProperties props;
-		vkGetPhysicalDeviceProperties(physical_devices[i], &props);
-
-		if (props.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-			// Prefer discrete GPU.
-			device_index = i;
-			break;
+	if (openxr_vulkan_extension) {
+		if (!openxr_vulkan_extension->get_physical_device(&gpu)) {
+			return ERR_CANT_CREATE;
 		}
+
+		// not really needed but nice to print the correct entry
+		for (uint32_t i = 0; i < gpu_count; ++i) {
+			if (physical_devices[i] == gpu) {
+				device_index = i;
+				break;
+			}
+		}
+	} else {
+		// TODO: At least on Linux Laptops integrated GPUs fail with Vulkan in many instances.
+		//   The device should really be a preference, but for now choosing a discrete GPU over the
+		//   integrated one is better than the default.
+
+		for (uint32_t i = 0; i < gpu_count; ++i) {
+			VkPhysicalDeviceProperties props;
+			vkGetPhysicalDeviceProperties(physical_devices[i], &props);
+
+			if (props.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+				// Prefer discrete GPU.
+				device_index = i;
+				break;
+			}
+		}
+
+		gpu = physical_devices[device_index];
 	}
 
-	gpu = physical_devices[device_index];
 	free(physical_devices);
 
 	/* Look for device extensions */
@@ -1024,8 +1044,14 @@ Error VulkanContext::_create_device() {
 		sdevice.pNext = &multiview_features;
 	}
 
-	err = vkCreateDevice(gpu, &sdevice, nullptr, &device);
-	ERR_FAIL_COND_V(err, ERR_CANT_CREATE);
+	if (openxr_vulkan_extension) {
+		if (!openxr_vulkan_extension->create_vulkan_device(&sdevice, &device)) {
+			return ERR_CANT_CREATE;
+		}
+	} else {
+		err = vkCreateDevice(gpu, &sdevice, nullptr, &device);
+		ERR_FAIL_COND_V(err, ERR_CANT_CREATE);
+	}
 
 	return OK;
 }
@@ -2232,6 +2258,9 @@ void VulkanContext::set_vsync_mode(DisplayServer::WindowID p_window, DisplayServ
 VulkanContext::VulkanContext() {
 	command_buffer_queue.resize(1); // First one is always the setup command.
 	command_buffer_queue.write[0] = nullptr;
+
+	// This will return a nullptr if openxr is not enabled.
+	openxr_vulkan_extension = OpenXRVulkanExtension::get_singleton();
 }
 
 VulkanContext::~VulkanContext() {

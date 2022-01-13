@@ -338,14 +338,11 @@ changes are marked with `// -- GODOT --` comments.
 
 File extracted from upstream release tarball:
 
-- All `*.h` from `include/mbedtls/` to `thirdparty/mbedtls/include/mbedtls/`.
-- All `*.c` from `library/` to `thirdparty/mbedtls/library/`.
+- All `*.h` from `include/mbedtls/` to `thirdparty/mbedtls/include/mbedtls/` except `config_psa.h` and `psa_util.h`.
+- All `*.c` and `*.h` from `library/` to `thirdparty/mbedtls/library/` except those starting with `psa_*`.
 - `LICENSE` and `apache-2.0.txt` files.
 - Applied the patch in `patches/1453.diff` (upstream PR:
   https://github.com/ARMmbed/mbedtls/pull/1453).
-- Applied the patch in `patches/padlock.diff`. This disables VIA padlock
-  support which defines a symbol `unsupported` which clashes with a
-  pre-defined symbol.
 - Added 2 files `godot_core_mbedtls_platform.c` and `godot_core_mbedtls_config.h`
   providing configuration for light bundling with core.
 
@@ -519,6 +516,20 @@ Patch files are provided in `oidn/patches/`.
 
 - scripts/resource_to_cpp.py (used in modules/denoise/resource_to_cpp.py)
 
+## OpenXR
+
+- Upstream: https://github.com/KhronosGroup/OpenXR-SDK
+- Version: 1.0.20 (80adfd9ace05be069bfd3cbfa87a64dbee0d0a02, 2021)
+- License: Apache 2.0
+
+Files extracted from upstream source:
+
+- doc/*
+- include/*
+- LICENSES/*
+- specification/*
+- src/*
+- *
 
 ## pcre2
 
