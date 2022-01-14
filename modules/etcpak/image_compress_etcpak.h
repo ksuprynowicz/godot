@@ -34,7 +34,6 @@
 #include "core/io/image.h"
 
 enum class EtcpakType {
-	ETCPAK_TYPE_ETC1,
 	ETCPAK_TYPE_ETC2,
 	ETCPAK_TYPE_ETC2_ALPHA,
 	ETCPAK_TYPE_ETC2_RA_AS_RG,
@@ -43,7 +42,6 @@ enum class EtcpakType {
 	ETCPAK_TYPE_DXT5_RA_AS_RG,
 };
 
-void _compress_etc1(Image *r_img, float p_lossy_quality);
 void _compress_etc2(Image *r_img, float p_lossy_quality, Image::UsedChannels p_channels);
 void _compress_bc(Image *r_img, float p_lossy_quality, Image::UsedChannels p_channels);
 
