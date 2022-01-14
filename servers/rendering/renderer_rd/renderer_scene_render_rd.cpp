@@ -65,7 +65,7 @@ void RendererSceneRenderRD::sdfgi_update(RID p_render_buffers, RID p_environment
 	static const uint32_t history_frames_to_converge[RS::ENV_SDFGI_CONVERGE_MAX] = { 5, 10, 15, 20, 25, 30 };
 	uint32_t requested_history_size = history_frames_to_converge[gi.sdfgi_frames_to_converge];
 
-	if (rb->sdfgi && (rb->sdfgi->cascade_mode != env->sdfgi_cascades || rb->sdfgi->min_cell_size != env->sdfgi_min_cell_size || requested_history_size != rb->sdfgi->history_size || rb->sdfgi->uses_occlusion != env->sdfgi_use_occlusion || rb->sdfgi->y_scale_mode != env->sdfgi_y_scale)) {
+	if (rb->sdfgi && (rb->sdfgi->num_cascades != env->sdfgi_cascades || rb->sdfgi->min_cell_size != env->sdfgi_min_cell_size || requested_history_size != rb->sdfgi->history_size || rb->sdfgi->uses_occlusion != env->sdfgi_use_occlusion || rb->sdfgi->y_scale_mode != env->sdfgi_y_scale)) {
 		//configuration changed, erase
 		rb->sdfgi->erase();
 		memdelete(rb->sdfgi);
@@ -303,7 +303,7 @@ void RendererSceneRenderRD::environment_glow_set_use_high_quality(bool p_enable)
 	glow_high_quality = p_enable;
 }
 
-void RendererSceneRenderRD::environment_set_sdfgi(RID p_env, bool p_enable, RS::EnvironmentSDFGICascades p_cascades, float p_min_cell_size, RS::EnvironmentSDFGIYScale p_y_scale, bool p_use_occlusion, float p_bounce_feedback, bool p_read_sky, float p_energy, float p_normal_bias, float p_probe_bias) {
+void RendererSceneRenderRD::environment_set_sdfgi(RID p_env, bool p_enable, int p_cascades, float p_min_cell_size, RS::EnvironmentSDFGIYScale p_y_scale, bool p_use_occlusion, float p_bounce_feedback, bool p_read_sky, float p_energy, float p_normal_bias, float p_probe_bias) {
 	RendererSceneEnvironmentRD *env = environment_owner.get_or_null(p_env);
 	ERR_FAIL_COND(!env);
 
@@ -3837,9 +3837,9 @@ void RendererSceneRenderRD::FogShaderData::set_code(const String &p_code) {
 		return; //just invalid, but no error
 	}
 
-	ShaderCompilerRD::GeneratedCode gen_code;
-	ShaderCompilerRD::IdentifierActions actions;
-	actions.entry_point_stages["fog"] = ShaderCompilerRD::STAGE_COMPUTE;
+	ShaderCompiler::GeneratedCode gen_code;
+	ShaderCompiler::IdentifierActions actions;
+	actions.entry_point_stages["fog"] = ShaderCompiler::STAGE_COMPUTE;
 
 	uses_time = false;
 
@@ -3856,7 +3856,7 @@ void RendererSceneRenderRD::FogShaderData::set_code(const String &p_code) {
 		version = scene_singleton->volumetric_fog.shader.version_create();
 	}
 
-	scene_singleton->volumetric_fog.shader.version_set_compute_code(version, gen_code.code, gen_code.uniforms, gen_code.stage_globals[ShaderCompilerRD::STAGE_COMPUTE], gen_code.defines);
+	scene_singleton->volumetric_fog.shader.version_set_compute_code(version, gen_code.code, gen_code.uniforms, gen_code.stage_globals[ShaderCompiler::STAGE_COMPUTE], gen_code.defines);
 	ERR_FAIL_COND(!scene_singleton->volumetric_fog.shader.version_is_valid(version));
 
 	ubo_size = gen_code.uniform_total_size;
@@ -5652,7 +5652,7 @@ void RendererSceneRenderRD::init() {
 		}
 
 		{
-			ShaderCompilerRD::DefaultIdentifierActions actions;
+			ShaderCompiler::DefaultIdentifierActions actions;
 
 			actions.renames["TIME"] = "scene_params.time";
 			actions.renames["PI"] = _MKSTR(Math_PI);
