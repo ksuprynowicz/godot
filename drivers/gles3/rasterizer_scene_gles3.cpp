@@ -29,7 +29,7 @@
 /*************************************************************************/
 
 #include "rasterizer_scene_gles3.h"
-#ifdef GLES3_BACKEND_ENABLED
+#ifdef GLES3_ENABLED
 
 // TODO: 3D support not implemented yet.
 
@@ -234,7 +234,7 @@ void RasterizerSceneGLES3::environment_set_ssil(RID p_env, bool p_enable, float 
 void RasterizerSceneGLES3::environment_set_ssil_quality(RS::EnvironmentSSILQuality p_quality, bool p_half_size, float p_adaptive_target, int p_blur_passes, float p_fadeout_from, float p_fadeout_to) {
 }
 
-void RasterizerSceneGLES3::environment_set_sdfgi(RID p_env, bool p_enable, RS::EnvironmentSDFGICascades p_cascades, float p_min_cell_size, RS::EnvironmentSDFGIYScale p_y_scale, bool p_use_occlusion, float p_bounce_feedback, bool p_read_sky, float p_energy, float p_normal_bias, float p_probe_bias) {
+void RasterizerSceneGLES3::environment_set_sdfgi(RID p_env, bool p_enable, int p_cascades, float p_min_cell_size, RS::EnvironmentSDFGIYScale p_y_scale, bool p_use_occlusion, float p_bounce_feedback, bool p_read_sky, float p_energy, float p_normal_bias, float p_probe_bias) {
 }
 
 void RasterizerSceneGLES3::environment_set_sdfgi_ray_count(RS::EnvironmentSDFGIRayCount p_ray_count) {
@@ -471,4 +471,4 @@ void RasterizerSceneGLES3::light_projectors_set_filter(RS::LightProjectorFilter 
 RasterizerSceneGLES3::RasterizerSceneGLES3() {
 }
 
-#endif // GLES3_BACKEND_ENABLED
+#endif // GLES3_ENABLED

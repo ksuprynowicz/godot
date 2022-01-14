@@ -31,8 +31,7 @@
 #ifndef RASTERIZER_SCENE_OPENGL_H
 #define RASTERIZER_SCENE_OPENGL_H
 
-#include "drivers/gles3/rasterizer_platforms.h"
-#ifdef GLES3_BACKEND_ENABLED
+#ifdef GLES3_ENABLED
 
 #include "core/math/camera_matrix.h"
 #include "core/templates/rid_owner.h"
@@ -41,12 +40,11 @@
 #include "servers/rendering/renderer_compositor.h"
 #include "servers/rendering/renderer_scene_render.h"
 #include "servers/rendering_server.h"
-#include "shaders/scene.glsl.gen.h"
 
 class RasterizerSceneGLES3 : public RendererSceneRender {
 public:
 	struct State {
-		SceneShaderGLES3 scene_shader;
+		//SceneShaderGLES3 scene_shader;
 	} state;
 
 	GeometryInstance *geometry_instance_create(RID p_base) override;
@@ -128,7 +126,7 @@ public:
 	void environment_set_ssil(RID p_env, bool p_enable, float p_radius, float p_intensity, float p_sharpness, float p_normal_rejection) override;
 	void environment_set_ssil_quality(RS::EnvironmentSSILQuality p_quality, bool p_half_size, float p_adaptive_target, int p_blur_passes, float p_fadeout_from, float p_fadeout_to) override;
 
-	void environment_set_sdfgi(RID p_env, bool p_enable, RS::EnvironmentSDFGICascades p_cascades, float p_min_cell_size, RS::EnvironmentSDFGIYScale p_y_scale, bool p_use_occlusion, float p_bounce_feedback, bool p_read_sky, float p_energy, float p_normal_bias, float p_probe_bias) override;
+	void environment_set_sdfgi(RID p_env, bool p_enable, int p_cascades, float p_min_cell_size, RS::EnvironmentSDFGIYScale p_y_scale, bool p_use_occlusion, float p_bounce_feedback, bool p_read_sky, float p_energy, float p_normal_bias, float p_probe_bias) override;
 
 	void environment_set_sdfgi_ray_count(RS::EnvironmentSDFGIRayCount p_ray_count) override;
 	void environment_set_sdfgi_frames_to_converge(RS::EnvironmentSDFGIFramesToConverge p_frames) override;
@@ -227,6 +225,6 @@ public:
 	RasterizerSceneGLES3();
 };
 
-#endif // GLES3_BACKEND_ENABLED
+#endif // GLES3_ENABLED
 
 #endif // RASTERIZER_SCENE_OPENGL_H
