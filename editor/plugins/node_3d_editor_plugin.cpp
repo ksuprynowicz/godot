@@ -51,6 +51,7 @@
 #include "scene/3d/world_environment.h"
 #include "scene/gui/center_container.h"
 #include "scene/gui/subviewport_container.h"
+#include "scene/resources/environment.h"
 #include "scene/resources/packed_scene.h"
 #include "scene/resources/surface_tool.h"
 
@@ -7154,6 +7155,15 @@ void Node3DEditor::_preview_settings_changed() {
 		environment->set_ssao_enabled(environ_ao_button->is_pressed());
 		environment->set_glow_enabled(environ_glow_button->is_pressed());
 		environment->set_sdfgi_enabled(environ_gi_button->is_pressed());
+		if (environ_gi_button->is_pressed()) {
+			environment->set_sdfgi_cascades(1);
+			environment->set_sdfgi_y_scale(Environment::SDFGIYScale::SDFGI_Y_SCALE_50_PERCENT);
+		} else {
+			environment->set_sdfgi_cascades(6);
+			environment->set_sdfgi_y_scale(Environment::SDFGIYScale::SDFGI_Y_SCALE_DISABLED);
+		}
+		environment->set_sdfgi_use_occlusion(environ_gi_button->is_pressed());
+		environment->set_sdfgi_read_sky_light(environ_gi_button->is_pressed());
 		environment->set_tonemapper(environ_tonemap_button->is_pressed() ? Environment::TONE_MAPPER_FILMIC : Environment::TONE_MAPPER_LINEAR);
 	}
 }
