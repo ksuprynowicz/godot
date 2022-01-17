@@ -84,7 +84,8 @@ private:
 	Transform3D world_origin; /* our world origin point, maps a location in our virtual world to the origin point in our real world tracking volume */
 	Transform3D reference_frame; /* our reference frame */
 
-	uint64_t last_process_usec; /* for frame timing, usec when we did our processing */
+	// note, we may depricate/remove this logic as we're not really using it anymore.
+	uint64_t last_prerender_usec; /* for frame timing, usec just before rendering commenced */
 	uint64_t last_commit_usec; /* for frame timing, usec when we finished committing both eyes */
 	uint64_t last_frame_usec; /* time it took between process and committing, we should probably average this over the last x frames */
 
@@ -179,7 +180,14 @@ public:
 	uint64_t get_last_commit_usec();
 	uint64_t get_last_frame_usec();
 
+	// Process is called before we handle our physics process and game process. This is where our interfaces will update controller data and such.
 	void _process();
+
+	// Pre-render is called right before we're rendering our content. This is where interfaces such as OpenVR and OpenXR will update positioning data.
+	// Many of these interfaces will also do a predictive sync which ensures we run at a steady framerate.
+	void _pre_render();
+
+	// Mark commit allows us to get some frame timing which some interfaces use for predictions.
 	void _mark_commit();
 
 	XRServer();

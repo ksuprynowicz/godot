@@ -352,7 +352,7 @@ PackedStringArray XRServer::get_suggested_pose_names(const StringName &p_tracker
 }
 
 uint64_t XRServer::get_last_process_usec() {
-	return last_process_usec;
+	return last_prerender_usec;
 };
 
 uint64_t XRServer::get_last_commit_usec() {
@@ -364,12 +364,10 @@ uint64_t XRServer::get_last_frame_usec() {
 };
 
 void XRServer::_process() {
-	/* called from renderer_viewport.draw_viewports right before we start drawing our viewports */
+	// called from our main game loop before we handle physics and game logic
+	// note that we can have multiple interfaces active if we have interfaces that purely handle tracking
 
-	/* mark for our frame timing */
-	last_process_usec = OS::get_singleton()->get_ticks_usec();
-
-	/* process all active interfaces */
+	// process all active interfaces
 	for (int i = 0; i < interfaces.size(); i++) {
 		if (!interfaces[i].is_valid()) {
 			// ignore, not a valid reference
@@ -379,12 +377,29 @@ void XRServer::_process() {
 	};
 };
 
+void XRServer::_pre_render() {
+	// called from renderer_viewport.draw_viewports right before we start drawing our viewports
+	// note that we can have multiple interfaces active if we have interfaces that purely handle tracking
+
+	// mark for our frame timing
+	last_prerender_usec = OS::get_singleton()->get_ticks_usec();
+
+	// process all active interfaces
+	for (int i = 0; i < interfaces.size(); i++) {
+		if (!interfaces[i].is_valid()) {
+			// ignore, not a valid reference
+		} else if (interfaces[i]->is_initialized()) {
+			interfaces.write[i]->pre_render();
+		};
+	};
+}
+
 void XRServer::_mark_commit() {
 	/* time this */
 	last_commit_usec = OS::get_singleton()->get_ticks_usec();
 
-	/* now store our difference as we may overwrite last_process_usec before this is accessed */
-	last_frame_usec = last_commit_usec - last_process_usec;
+	/* now store our difference as we may overwrite last_prerender_usec before this is accessed */
+	last_frame_usec = last_commit_usec - last_prerender_usec;
 };
 
 XRServer::XRServer() {

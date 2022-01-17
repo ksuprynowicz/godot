@@ -51,6 +51,7 @@
 #include "core/string/translation.h"
 #include "core/version.h"
 #include "core/version_hash.gen.h"
+#include "drivers/openxr/openxr_device.h"
 #include "drivers/register_driver_types.h"
 #include "main/app_icon.gen.h"
 #include "main/main_timer_sync.h"
@@ -113,6 +114,7 @@ static FileAccessNetworkClient *file_access_network_client = nullptr;
 static MessageQueue *message_queue = nullptr;
 
 // Initialized in setup2()
+static OpenXRDevice *openxr_device = nullptr;
 static AudioServer *audio_server = nullptr;
 static DisplayServer *display_server = nullptr;
 static RenderingServer *rendering_server = nullptr;
@@ -243,6 +245,13 @@ void finalize_display() {
 	memdelete(rendering_server);
 
 	memdelete(display_server);
+}
+
+void finish_openxr() {
+	if (openxr_device) {
+		openxr_device->finish();
+		memdelete(openxr_device);
+	}
 }
 
 void initialize_navigation_server() {
@@ -1565,6 +1574,16 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 
 	input = memnew(Input);
 
+	/* Initialize OpenXR */
+	// TODO this should only be compiled in if supported on the platform and our module is included
+	OpenXRDevice::setup_global_defs();
+	openxr_device = OpenXRDevice::get_singleton();
+	if (openxr_device) {
+		if (!openxr_device->initialise(rendering_driver)) {
+			return ERR_CANT_CREATE;
+		}
+	}
+
 	/* Initialize Display Server */
 
 	{
@@ -2805,6 +2824,7 @@ void Main::cleanup(bool p_force) {
 	//clear global shader variables before scene and other graphics stuff are deinitialized.
 	rendering_server->global_variables_clear();
 
+	finish_openxr();
 	if (xr_server) {
 		// Now that we're unregistering properly in plugins we need to keep access to xr_server for a little longer
 		// We do however unset our primary interface

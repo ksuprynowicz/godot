@@ -55,6 +55,7 @@ void XRInterfaceExtension::_bind_methods() {
 	GDVIRTUAL_BIND(_commit_views, "render_target", "screen_rect");
 
 	GDVIRTUAL_BIND(_process);
+	GDVIRTUAL_BIND(_pre_render);
 	GDVIRTUAL_BIND(_notification, "what");
 
 	/** input and output **/
@@ -308,6 +309,10 @@ Vector<BlitToScreen> XRInterfaceExtension::commit_views(RID p_render_target, con
 
 void XRInterfaceExtension::process() {
 	GDVIRTUAL_CALL(_process);
+}
+
+void XRInterfaceExtension::pre_render() {
+	GDVIRTUAL_CALL(_pre_render);
 }
 
 void XRInterfaceExtension::notification(int p_what) {
