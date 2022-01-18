@@ -4868,7 +4868,7 @@ void GDScriptParser::WasgoPrinter::print_class(ClassNode *p_class) {
 	if (p_class->extends_used) {
 		bool first = true;
 		if (!p_class->extends_path.is_empty()) {
-			push_text("extends Object");
+			push_text(" extends Object");
 			first = false;
 		}
 		for (int i = 0; i < p_class->extends.size(); i++) {
@@ -4877,11 +4877,11 @@ void GDScriptParser::WasgoPrinter::print_class(ClassNode *p_class) {
 			} else {
 				first = false;
 			}
-			push_text("extends ");
+			push_text(" extends ");
 			push_text(p_class->extends[i]);
 		}
 	} else {
-		push_text("extends Object");
+		push_text(" extends Object");
 	}
 	push_line("");
 
@@ -5054,14 +5054,16 @@ void GDScriptParser::WasgoPrinter::print_function(FunctionNode *p_function, cons
 	} else {
 		push_text("<anonymous>");
 	}
-	push_text("( ");
+	push_text("( ( ");
 	for (int i = 0; i < p_function->parameters.size(); i++) {
-		if (i > 0) {
-			push_text(" , ");
+		if (i == 0) {
+			push_text("param ");
+		} else {
+			push_text(" ");
 		}
 		print_parameter(p_function->parameters[i]);
 	}
-	push_line(" )  {");
+	push_line(" ) )");
 	increase_indent();
 	print_suite(p_function->body);
 	decrease_indent();
@@ -5246,12 +5248,12 @@ void GDScriptParser::WasgoPrinter::print_preload(PreloadNode *p_preload) {
 }
 
 void GDScriptParser::WasgoPrinter::print_return(ReturnNode *p_return) {
-	push_text("return");
+	push_text("(return");
 	if (p_return->return_value != nullptr) {
 		push_text(" ");
 		print_expression(p_return->return_value);
 	}
-	push_line();
+	push_line(")");
 }
 
 void GDScriptParser::WasgoPrinter::print_self(SelfNode *p_self) {
