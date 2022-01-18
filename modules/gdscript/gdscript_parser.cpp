@@ -4832,6 +4832,7 @@ void GDScriptParser::WasgoPrinter::print_binary_op(BinaryOpNode *p_binary_op) {
 }
 
 void GDScriptParser::WasgoPrinter::print_call(CallNode *p_call) {
+	push_text("(call ");
 	if (p_call->is_super) {
 		push_text("super");
 		if (p_call->callee != nullptr) {
@@ -4841,14 +4842,13 @@ void GDScriptParser::WasgoPrinter::print_call(CallNode *p_call) {
 	} else {
 		print_expression(p_call->callee);
 	}
-	push_text("( ");
 	for (int i = 0; i < p_call->arguments.size(); i++) {
 		if (i > 0) {
-			push_text(" , ");
+			push_text(" ");
 		}
 		print_expression(p_call->arguments[i]);
 	}
-	push_text(" )");
+	push_text(")");
 }
 
 void GDScriptParser::WasgoPrinter::print_cast(CastNode *p_cast) {
