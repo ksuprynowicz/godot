@@ -4842,6 +4842,7 @@ void GDScriptParser::WasgoPrinter::print_call(CallNode *p_call) {
 	} else {
 		print_expression(p_call->callee);
 	}
+	push_text(" ");
 	for (int i = 0; i < p_call->arguments.size(); i++) {
 		if (i > 0) {
 			push_text(" ");
@@ -4891,7 +4892,9 @@ void GDScriptParser::WasgoPrinter::print_class(ClassNode *p_class) {
 
 		switch (m.type) {
 			case ClassNode::Member::CLASS:
+				push_text(";; Start inner class is not supported.");
 				print_class(m.m_class);
+				push_text(";; End inner class.");
 				break;
 			case ClassNode::Member::VARIABLE:
 				print_variable(m.variable);
@@ -5054,7 +5057,7 @@ void GDScriptParser::WasgoPrinter::print_function(FunctionNode *p_function, cons
 	} else {
 		push_text("<anonymous>");
 	}
-	push_text("( ( ");
+	push_text("( (");
 	for (int i = 0; i < p_function->parameters.size(); i++) {
 		if (i == 0) {
 			push_text("param ");
@@ -5105,9 +5108,11 @@ void GDScriptParser::WasgoPrinter::print_if(IfNode *p_if, bool p_is_elif) {
 
 	// FIXME: Properly detect "elif" blocks.
 	if (p_if->false_block != nullptr) {
-		push_line("} else {");
+		push_line("(else ");
+		increase_indent();
 		increase_indent();
 		print_suite(p_if->false_block);
+		decrease_indent();
 		decrease_indent();
 	}
 	push_line(")");
