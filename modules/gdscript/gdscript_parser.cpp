@@ -4686,14 +4686,14 @@ void GDScriptParser::WasgoPrinter::print_annotation(const AnnotationNode *p_anno
 }
 
 void GDScriptParser::WasgoPrinter::print_array(ArrayNode *p_array) {
-	push_text("[ ");
+	push_text("(arr Variant) (alloc (arr Variant) ");
 	for (int i = 0; i < p_array->elements.size(); i++) {
 		if (i > 0) {
-			push_text(" , ");
+			push_text(" ");
 		}
 		print_expression(p_array->elements[i]);
 	}
-	push_text(" ]");
+	push_text(")");
 }
 
 void GDScriptParser::WasgoPrinter::print_assert(AssertNode *p_assert) {
@@ -4893,7 +4893,9 @@ void GDScriptParser::WasgoPrinter::print_class(ClassNode *p_class) {
 		switch (m.type) {
 			case ClassNode::Member::CLASS:
 				push_line("(");
+				increase_indent();
 				print_class(m.m_class);
+				decrease_indent();
 				push_line(")");
 				break;
 			case ClassNode::Member::VARIABLE:
@@ -4933,9 +4935,11 @@ void GDScriptParser::WasgoPrinter::print_constant(ConstantNode *p_constant) {
 }
 
 void GDScriptParser::WasgoPrinter::print_dictionary(DictionaryNode *p_dictionary) {
-	push_line("(");
+	
+	push_line(R"(extern alloc_dictionary (result Dictionary))");
 	increase_indent();
 	for (int i = 0; i < p_dictionary->elements.size(); i++) {
+		push_text("(set m "xyz" )";
 		print_expression(p_dictionary->elements[i].key);
 		if (p_dictionary->style == DictionaryNode::PYTHON_DICT) {
 			push_text(" : ");
@@ -4943,7 +4947,7 @@ void GDScriptParser::WasgoPrinter::print_dictionary(DictionaryNode *p_dictionary
 			push_text(" = ");
 		}
 		print_expression(p_dictionary->elements[i].value);
-		push_line(" ,");
+		push_line(")");
 	}
 	decrease_indent();
 	push_text(")");
