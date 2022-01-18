@@ -4834,9 +4834,9 @@ void GDScriptParser::WasgoPrinter::print_binary_op(BinaryOpNode *p_binary_op) {
 void GDScriptParser::WasgoPrinter::print_call(CallNode *p_call) {
 	push_text("(call ");
 	if (p_call->is_super) {
-		push_text("super");
+		push_text("/*super");
 		if (p_call->callee != nullptr) {
-			push_text(".");
+			push_text(".*/");
 			print_expression(p_call->callee);
 		}
 	} else {
@@ -4892,9 +4892,9 @@ void GDScriptParser::WasgoPrinter::print_class(ClassNode *p_class) {
 
 		switch (m.type) {
 			case ClassNode::Member::CLASS:
-				push_text(";; Start inner class is not supported.");
+				push_line("(");
 				print_class(m.m_class);
-				push_text(";; End inner class.");
+				push_line(")");
 				break;
 			case ClassNode::Member::VARIABLE:
 				print_variable(m.variable);
