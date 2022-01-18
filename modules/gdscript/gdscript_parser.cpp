@@ -4086,7 +4086,7 @@ void GDScriptParser::TreePrinter::print_constant(ConstantNode *p_constant) {
 }
 
 void GDScriptParser::TreePrinter::print_dictionary(DictionaryNode *p_dictionary) {
-	push_line("{");
+	push_line("(");
 	increase_indent();
 	for (int i = 0; i < p_dictionary->elements.size(); i++) {
 		print_expression(p_dictionary->elements[i].key);
@@ -4099,7 +4099,7 @@ void GDScriptParser::TreePrinter::print_dictionary(DictionaryNode *p_dictionary)
 		push_line(" ,");
 	}
 	decrease_indent();
-	push_text("}");
+	push_text(")");
 }
 
 void GDScriptParser::TreePrinter::print_expression(ExpressionNode *p_expression) {
@@ -4755,76 +4755,77 @@ void GDScriptParser::WasgoPrinter::print_assignment(AssignmentNode *p_assignment
 }
 
 void GDScriptParser::WasgoPrinter::print_await(AwaitNode *p_await) {
-	push_text("// Await ");
+	push_text(";; Await ");
 	print_expression(p_await->to_await);
 }
 
 void GDScriptParser::WasgoPrinter::print_binary_op(BinaryOpNode *p_binary_op) {
 	// Surround in parenthesis for disambiguation.
 	push_text("(");
-	print_expression(p_binary_op->left_operand);
 	switch (p_binary_op->operation) {
 		case BinaryOpNode::OP_ADDITION:
-			push_text(" + ");
+			push_text("+ ");
 			break;
 		case BinaryOpNode::OP_SUBTRACTION:
-			push_text(" - ");
+			push_text("- ");
 			break;
 		case BinaryOpNode::OP_MULTIPLICATION:
-			push_text(" * ");
+			push_text("* ");
 			break;
 		case BinaryOpNode::OP_DIVISION:
-			push_text(" / ");
+			push_text("/ ");
 			break;
 		case BinaryOpNode::OP_MODULO:
-			push_text(" % ");
+			push_text("% ");
 			break;
 		case BinaryOpNode::OP_BIT_LEFT_SHIFT:
-			push_text(" << ");
+			push_text("<< ");
 			break;
 		case BinaryOpNode::OP_BIT_RIGHT_SHIFT:
-			push_text(" >> ");
+			push_text(">> ");
 			break;
 		case BinaryOpNode::OP_BIT_AND:
-			push_text(" & ");
+			push_text("& ");
 			break;
 		case BinaryOpNode::OP_BIT_OR:
-			push_text(" | ");
+			push_text("| ");
 			break;
 		case BinaryOpNode::OP_BIT_XOR:
-			push_text(" ^ ");
+			push_text("^ ");
 			break;
 		case BinaryOpNode::OP_LOGIC_AND:
-			push_text(" AND ");
+			push_text("AND ");
 			break;
 		case BinaryOpNode::OP_LOGIC_OR:
-			push_text(" OR ");
+			push_text("OR ");
 			break;
 		case BinaryOpNode::OP_TYPE_TEST:
-			push_text(" IS ");
+			push_text("IS ");
 			break;
 		case BinaryOpNode::OP_CONTENT_TEST:
-			push_text(" IN ");
+			push_text("IN ");
 			break;
 		case BinaryOpNode::OP_COMP_EQUAL:
-			push_text(" == ");
+			push_text("= ");
 			break;
 		case BinaryOpNode::OP_COMP_NOT_EQUAL:
-			push_text(" != ");
+			push_text("<> ");
 			break;
 		case BinaryOpNode::OP_COMP_LESS:
-			push_text(" < ");
+			push_text("< ");
 			break;
 		case BinaryOpNode::OP_COMP_LESS_EQUAL:
-			push_text(" <= ");
+			push_text("<= ");
 			break;
 		case BinaryOpNode::OP_COMP_GREATER:
-			push_text(" > ");
+			push_text("> ");
 			break;
 		case BinaryOpNode::OP_COMP_GREATER_EQUAL:
-			push_text(" >= ");
+			push_text(">= ");
 			break;
 	}
+	print_expression(p_binary_op->left_operand);
+	push_text(" ");
 	print_expression(p_binary_op->right_operand);
 	// Surround in parenthesis for disambiguation.
 	push_text(")");
@@ -4857,7 +4858,7 @@ void GDScriptParser::WasgoPrinter::print_cast(CastNode *p_cast) {
 }
 
 void GDScriptParser::WasgoPrinter::print_class(ClassNode *p_class) {
-	push_text("export class ");
+	push_text(";; class ");
 	if (p_class->identifier == nullptr) {
 		push_text("Unnamed");
 	} else {
@@ -4867,7 +4868,7 @@ void GDScriptParser::WasgoPrinter::print_class(ClassNode *p_class) {
 	if (p_class->extends_used) {
 		bool first = true;
 		if (!p_class->extends_path.is_empty()) {
-			push_text("<Object>");
+			push_text("extends Object");
 			first = false;
 		}
 		for (int i = 0; i < p_class->extends.size(); i++) {
@@ -4876,17 +4877,14 @@ void GDScriptParser::WasgoPrinter::print_class(ClassNode *p_class) {
 			} else {
 				first = false;
 			}
-			push_text("<Object> /* ");
+			push_text("extends ");
 			push_text(p_class->extends[i]);
-			push_text(" */");
 		}
 	} else {
-		push_text("<Object>");
+		push_text("extends Object");
 	}
+	push_line("");
 
-	increase_indent();
-
-	push_line(" {");
 
 	for (int i = 0; i < p_class->members.size(); i++) {
 		const ClassNode::Member &m = p_class->members[i];
@@ -4917,26 +4915,22 @@ void GDScriptParser::WasgoPrinter::print_class(ClassNode *p_class) {
 				break;
 		}
 	}
-
-	decrease_indent();
-
-	push_line("}");
 }
 
 void GDScriptParser::WasgoPrinter::print_constant(ConstantNode *p_constant) {
-	push_text("const ");
+	push_text("(let ");
 	print_identifier(p_constant->identifier);
-	push_text(" = ");
+	push_text(" Variant ");
 	if (p_constant->initializer == nullptr) {
-		push_text("<missing value>");
+		push_text("null");
 	} else {
 		print_expression(p_constant->initializer);
 	}
-	push_line();
+	push_line(")");
 }
 
 void GDScriptParser::WasgoPrinter::print_dictionary(DictionaryNode *p_dictionary) {
-	push_line("{");
+	push_line("(");
 	increase_indent();
 	for (int i = 0; i < p_dictionary->elements.size(); i++) {
 		print_expression(p_dictionary->elements[i].key);
@@ -4949,7 +4943,7 @@ void GDScriptParser::WasgoPrinter::print_dictionary(DictionaryNode *p_dictionary
 		push_line(" ,");
 	}
 	decrease_indent();
-	push_text("}");
+	push_text(")");
 }
 
 void GDScriptParser::WasgoPrinter::print_expression(ExpressionNode *p_expression) {
@@ -5030,7 +5024,7 @@ void GDScriptParser::WasgoPrinter::print_enum(EnumNode *p_enum) {
 		push_line(" ,");
 	}
 	decrease_indent();
-	push_line("}");
+	push_line(")");
 }
 
 void GDScriptParser::WasgoPrinter::print_for(ForNode *p_for) {
@@ -5045,11 +5039,12 @@ void GDScriptParser::WasgoPrinter::print_for(ForNode *p_for) {
 	print_suite(p_for->loop);
 
 	decrease_indent();
-	push_line("}");
+	push_line(")");
 }
 
 void GDScriptParser::WasgoPrinter::print_function(FunctionNode *p_function, const String &p_context) {
 	for (const AnnotationNode *E : p_function->annotations) {
+		push_text(";; ");
 		print_annotation(E);
 	}
 	push_text(p_context);
@@ -5070,7 +5065,7 @@ void GDScriptParser::WasgoPrinter::print_function(FunctionNode *p_function, cons
 	increase_indent();
 	print_suite(p_function->body);
 	decrease_indent();
-	push_line("}");
+	push_line(")");
 }
 
 void GDScriptParser::WasgoPrinter::print_get_node(GetNodeNode *p_get_node) {
@@ -5094,13 +5089,13 @@ void GDScriptParser::WasgoPrinter::print_identifier(IdentifierNode *p_identifier
 
 void GDScriptParser::WasgoPrinter::print_if(IfNode *p_if, bool p_is_elif) {
 	if (p_is_elif) {
-		push_text("else if ");
+		push_text("(else (if ");
 	} else {
-		push_text("if ( ");
+		push_text("(if  ");
 	}
 	print_expression(p_if->condition);
-	push_text(" ) {");
-	push_line("");
+	push_text(")");
+	push_line(")");
 
 	increase_indent();
 	print_suite(p_if->true_block);
@@ -5113,7 +5108,7 @@ void GDScriptParser::WasgoPrinter::print_if(IfNode *p_if, bool p_is_elif) {
 		print_suite(p_if->false_block);
 		decrease_indent();
 	}
-	push_line("}");
+	push_line(")");
 }
 
 void GDScriptParser::WasgoPrinter::print_lambda(LambdaNode *p_lambda) {
@@ -5166,7 +5161,7 @@ void GDScriptParser::WasgoPrinter::print_match(MatchNode *p_match) {
 		print_match_branch(p_match->branches[i]);
 	}
 	decrease_indent();
-	push_line("}");
+	push_line(")");
 }
 
 void GDScriptParser::WasgoPrinter::print_match_branch(MatchBranchNode *p_match_branch) {
@@ -5183,7 +5178,7 @@ void GDScriptParser::WasgoPrinter::print_match_branch(MatchBranchNode *p_match_b
 	print_suite(p_match_branch->block);
 	push_line("break");
 	decrease_indent();
-	push_line("}");
+	push_line(")");
 }
 
 void GDScriptParser::WasgoPrinter::print_match_pattern(PatternNode *p_match_pattern) {
@@ -5384,7 +5379,7 @@ void GDScriptParser::WasgoPrinter::print_unary_op(UnaryOpNode *p_unary_op) {
 			push_text("-");
 			break;
 		case UnaryOpNode::OP_LOGIC_NOT:
-			push_text("NOT");
+			push_text("!");
 			break;
 		case UnaryOpNode::OP_COMPLEMENT:
 			push_text("~");
@@ -5400,10 +5395,10 @@ void GDScriptParser::WasgoPrinter::print_variable(VariableNode *p_variable) {
 		print_annotation(E);
 	}
 
-	push_text("let ");
+	push_text("(local ");
 	print_identifier(p_variable->identifier);
 
-	push_text(": ");
+	push_text(" ");
 	if (p_variable->datatype_specifier != nullptr) {
 		print_type(p_variable->datatype_specifier);
 	} else if (p_variable->infer_datatype) {
@@ -5412,79 +5407,83 @@ void GDScriptParser::WasgoPrinter::print_variable(VariableNode *p_variable) {
 		push_text("Variant");
 	}
 
-	push_text(" = ");
+	push_text(" ");
 	if (p_variable->initializer == nullptr) {
-		push_text("<default value>");
+		push_text("null)");
 	} else {
 		print_expression(p_variable->initializer);
+		push_text(")");
 	}
 
-	increase_indent();
+	// increase_indent();
 
-	if (p_variable->property != VariableNode::PROP_NONE) {
-		if (p_variable->getter != nullptr) {
-			push_text("Get");
-			if (p_variable->property == VariableNode::PROP_INLINE) {
-				push_line(":");
-				increase_indent();
-				print_suite(p_variable->getter->body);
-				decrease_indent();
-			} else {
-				push_line(" =");
-				increase_indent();
-				print_identifier(p_variable->getter_pointer);
-				push_line();
-				decrease_indent();
-			}
-		}
-		if (p_variable->setter != nullptr) {
-			push_text("Set (");
-			if (p_variable->property == VariableNode::PROP_INLINE) {
-				if (p_variable->setter_parameter != nullptr) {
-					print_identifier(p_variable->setter_parameter);
-				} else {
-					push_text("<missing>");
-				}
-				push_line("):");
-				increase_indent();
-				print_suite(p_variable->setter->body);
-				decrease_indent();
-			} else {
-				push_line(" =");
-				increase_indent();
-				print_identifier(p_variable->setter_pointer);
-				push_line();
-				decrease_indent();
-			}
-		}
-	}
+	// if (p_variable->property != VariableNode::PROP_NONE) {
+	// 	if (p_variable->getter != nullptr) {
+	// 		push_text("Get");
+	// 		if (p_variable->property == VariableNode::PROP_INLINE) {
+	// 			push_line(":");
+	// 			increase_indent();
+	// 			print_suite(p_variable->getter->body);
+	// 			decrease_indent();
+	// 		} else {
+	// 			push_line(" =");
+	// 			increase_indent();
+	// 			print_identifier(p_variable->getter_pointer);
+	// 			push_line();
+	// 			decrease_indent();
+	// 		}
+	// 	}
+	// 	if (p_variable->setter != nullptr) {
+	// 		push_text("Set (");
+	// 		if (p_variable->property == VariableNode::PROP_INLINE) {
+	// 			if (p_variable->setter_parameter != nullptr) {
+	// 				print_identifier(p_variable->setter_parameter);
+	// 			} else {
+	// 				push_text("<missing>");
+	// 			}
+	// 			push_line("):");
+	// 			increase_indent();
+	// 			print_suite(p_variable->setter->body);
+	// 			decrease_indent();
+	// 		} else {
+	// 			push_line(" =");
+	// 			increase_indent();
+	// 			print_identifier(p_variable->setter_pointer);
+	// 			push_line();
+	// 			decrease_indent();
+	// 		}
+	// 	}
+	// }
 
-	decrease_indent();
+	// decrease_indent();
 	push_line();
 }
 
 void GDScriptParser::WasgoPrinter::print_while(WhileNode *p_while) {
-	push_text("while ( ");
+	push_text("(while ");
+	push_line("(");
 	print_expression(p_while->condition);
-	push_line(" ) {");
+	push_line(")");
 
 	increase_indent();
+	push_line("(do ");
 	print_suite(p_while->loop);
+	push_line(")");
 	decrease_indent();
-	push_line("}");
+	push_line(")");
 }
 
 void GDScriptParser::WasgoPrinter::print_tree(const GDScriptParser &p_parser) {
 	ERR_FAIL_COND_MSG(p_parser.get_tree() == nullptr, "Parse the code before printing the parse tree.");
 
-	push_line("// Wasgo assemblyscript.");
+	push_line(";; Wasgo wax.");
 	if (p_parser.is_tool()) {
-		push_line("// @tool");
+		push_line(";; @tool");
 	}
 	if (!p_parser.get_tree()->icon_path.is_empty()) {
-		push_text("//(@icon (\")");
-		push_text(String("//") + p_parser.get_tree()->icon_path);
-		push_line("//\")");
+		push_text(";;(@icon (\")");
+		push_text(String(";;") + p_parser.get_tree()->icon_path);
+		push_line(";;\")");
 	}
 	print_class(p_parser.get_tree());
 

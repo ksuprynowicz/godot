@@ -1502,7 +1502,7 @@ public:
 		void print_expression(ExpressionNode *p_expression);
 		void print_enum(EnumNode *p_enum);
 		void print_for(ForNode *p_for);
-		void print_function(FunctionNode *p_function, const String &p_context = "function");
+		void print_function(FunctionNode *p_function, const String &p_context = "(func");
 		void print_get_node(GetNodeNode *p_get_node);
 		void print_if(IfNode *p_if, bool p_is_elif = false);
 		void print_identifier(IdentifierNode *p_identifier);
