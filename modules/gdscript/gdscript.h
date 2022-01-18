@@ -171,6 +171,8 @@ protected:
 	static void _bind_methods();
 
 public:
+	virtual Error print_tree();
+	virtual Error print_wasgo();
 	virtual bool is_valid() const override { return valid; }
 
 	bool inherits_script(const Ref<Script> &p_script) const override;

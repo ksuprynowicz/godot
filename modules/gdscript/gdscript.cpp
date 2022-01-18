@@ -1004,6 +1004,8 @@ void GDScript::_bind_methods() {
 	ClassDB::bind_vararg_method(METHOD_FLAGS_DEFAULT, "new", &GDScript::_new, MethodInfo("new"));
 
 	ClassDB::bind_method(D_METHOD("get_as_byte_code"), &GDScript::get_as_byte_code);
+	ClassDB::bind_method(D_METHOD("print_tree"), &GDScript::print_tree);
+	ClassDB::bind_method(D_METHOD("print_wasgo"), &GDScript::print_wasgo);
 }
 
 Vector<uint8_t> GDScript::get_as_byte_code() const {
@@ -2362,4 +2364,40 @@ void ResourceFormatSaverGDScript::get_recognized_extensions(const RES &p_resourc
 
 bool ResourceFormatSaverGDScript::recognize(const RES &p_resource) const {
 	return Object::cast_to<GDScript>(*p_resource) != nullptr;
+}
+
+Error GDScript::print_tree() {
+	GDScriptParser parser;
+	Error err = parser.parse(source, path, false);
+	if (err) {
+		if (EngineDebugger::is_active()) {
+			GDScriptLanguage::get_singleton()->debug_break_parse(_get_debug_path(), parser.get_errors().front()->get().line, "Parser Error: " + parser.get_errors().front()->get().message);
+		}
+		// TODO: Show all error messages.
+		_err_print_error("GDScript::reload", path.is_empty() ? "built-in" : (const char *)path.utf8().get_data(), parser.get_errors().front()->get().line, ("Parse Error: " + parser.get_errors().front()->get().message).utf8().get_data(), false, ERR_HANDLER_SCRIPT);
+		ERR_FAIL_V(ERR_PARSE_ERROR);
+	}
+#ifdef TOOLS_ENABLED
+	GDScriptParser::TreePrinter printer;
+	printer.print_tree(parser);
+#endif
+	return err;
+}
+
+Error GDScript::print_wasgo() {
+	GDScriptParser parser;
+	Error err = parser.parse(source, path, false);
+	if (err) {
+		if (EngineDebugger::is_active()) {
+			GDScriptLanguage::get_singleton()->debug_break_parse(_get_debug_path(), parser.get_errors().front()->get().line, "Parser Error: " + parser.get_errors().front()->get().message);
+		}
+		// TODO: Show all error messages.
+		_err_print_error("GDScript::reload", path.is_empty() ? "built-in" : (const char *)path.utf8().get_data(), parser.get_errors().front()->get().line, ("Parse Error: " + parser.get_errors().front()->get().message).utf8().get_data(), false, ERR_HANDLER_SCRIPT);
+		ERR_FAIL_V(ERR_PARSE_ERROR);
+	}
+#ifdef TOOLS_ENABLED
+	GDScriptParser::WasgoPrinter printer;
+	printer.print_tree(parser);
+#endif
+	return err;
 }
