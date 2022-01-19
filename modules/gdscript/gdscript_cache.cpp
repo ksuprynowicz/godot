@@ -30,6 +30,8 @@
 
 #include "gdscript_cache.h"
 
+#include "core/error/error_list.h"
+#include "core/error/error_macros.h"
 #include "core/io/file_access.h"
 #include "core/templates/vector.h"
 #include "gdscript.h"
@@ -133,7 +135,10 @@ Ref<GDScriptParserRef> GDScriptCache::get_parser(const String &p_path, GDScriptP
 		ref->path = p_path;
 		singleton->parser_map[p_path] = ref.ptr();
 	}
-
+	if (ref.is_null()) {
+		r_error = ERR_INVALID_DATA;
+		return nullptr;
+	}
 	r_error = ref->raise_status(p_status);
 
 	return ref;
