@@ -30,6 +30,7 @@
 
 #include "gdscript_function.h"
 
+#include "core/error/error_macros.h"
 #include "gdscript.h"
 
 const int *GDScriptFunction::get_code() const {
@@ -152,7 +153,7 @@ GDScriptFunction::~GDScriptFunction() {
 	for (int i = 0; i < lambdas.size(); i++) {
 		memdelete(lambdas[i]);
 	}
-
+	ERR_FAIL_NULL(GDScriptLanguage::get_singleton());
 #ifdef DEBUG_ENABLED
 
 	MutexLock lock(GDScriptLanguage::get_singleton()->lock);
