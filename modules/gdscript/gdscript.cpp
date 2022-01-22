@@ -36,6 +36,7 @@
 #include "core/config/project_settings.h"
 #include "core/core_constants.h"
 #include "core/core_string_names.h"
+#include "core/error/error_macros.h"
 #include "core/io/file_access.h"
 #include "core/io/file_access_encrypted.h"
 #include "core/os/os.h"
@@ -1223,6 +1224,7 @@ void GDScript::_init_rpc_methods_properties() {
 
 GDScript::~GDScript() {
 	{
+		ERR_FAIL_NULL(GDScriptLanguage::get_singleton());
 		MutexLock lock(GDScriptLanguage::get_singleton()->lock);
 
 		while (SelfList<GDScriptFunctionState> *E = pending_func_states.first()) {
@@ -1533,6 +1535,7 @@ void GDScriptInstance::notification(int p_notification) {
 
 	GDScript *sptr = script.ptr();
 	while (sptr) {
+		ERR_BREAK(!GDScriptLanguage::get_singleton());
 		Map<StringName, GDScriptFunction *>::Element *E = sptr->member_functions.find(GDScriptLanguage::get_singleton()->strings._notification);
 		if (E) {
 			Callable::CallError err;
@@ -1614,6 +1617,7 @@ GDScriptInstance::GDScriptInstance() {
 }
 
 GDScriptInstance::~GDScriptInstance() {
+	ERR_FAIL_NULL(GDScriptLanguage::get_singleton());
 	MutexLock lock(GDScriptLanguage::get_singleton()->lock);
 
 	while (SelfList<GDScriptFunctionState> *E = pending_func_states.first()) {
