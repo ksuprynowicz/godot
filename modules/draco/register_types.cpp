@@ -71,10 +71,12 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 				draco::GeometryAttribute::TEX_COORD, 2, draco::DT_FLOAT32);
 		const int32_t tex_att_id_1 = mesh_builder.AddAttribute(
 				draco::GeometryAttribute::TEX_COORD, 2, draco::DT_FLOAT32);
-		const int32_t bone_attr_id = mesh_builder.AddAttribute(
-				draco::GeometryAttribute::GENERIC, 8, draco::DT_INT32); // TODO: fire 2022-01-24 Support 8 bones weights.
-		const int32_t bone_weight_attr_id = mesh_builder.AddAttribute(
-				draco::GeometryAttribute::GENERIC, 8, draco::DT_FLOAT32); // TODO: fire 2022-01-24 Support 8 bones weights.
+		int32_t bone_weight_count = 0;
+		if (mdt->get_format() & Mesh::ARRAY_FORMAT_BONES && (mdt->get_format() & Mesh::ARRAY_FLAG_USE_8_BONE_WEIGHTS)) {
+			bone_weight_count = 8;
+		} else if (mdt->get_format() & Mesh::ARRAY_FORMAT_BONES) {
+			bone_weight_count = 4;
+		}
 		for (int32_t face_i = 0; face_i < mdt->get_face_count(); face_i++) {
 			int32_t vert_0 = mdt->get_face_vertex(face_i, 0);
 			int32_t vert_1 = mdt->get_face_vertex(face_i, 1);
@@ -96,26 +98,27 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 			Vector2 uv2_0 = mdt->get_vertex_uv2(vert_0);
 			Vector2 uv2_1 = mdt->get_vertex_uv2(vert_1);
 			Vector2 uv2_2 = mdt->get_vertex_uv2(vert_2);
-			mesh_builder.SetAttributeValuesForFace(
-					tex_att_id_1, draco::FaceIndex(face_i), &uv2_0, &uv2_1, &uv2_2);
-			Vector<int> bones_0 = mdt->get_vertex_bones(vert_0);
-			Vector<int> bones_1 = mdt->get_vertex_bones(vert_1);
-			Vector<int> bones_2 = mdt->get_vertex_bones(vert_2);
-			// TODO: fire 2022-01-24T23:42:57-0800 truncate properly
-			if (bones_0.size()) {
-				bones_0.resize(8);
-				bones_1.resize(8);
-				bones_2.resize(8);
+			mesh_builder.SetAttributeValuesForFace(tex_att_id_1, draco::FaceIndex(face_i), &uv2_0, &uv2_1, &uv2_2);
+		}
+		int32_t bone_attr_id = -1;
+		int32_t bone_weight_attr_id = -1;
+		if (bone_weight_count) {
+			bone_attr_id = mesh_builder.AddAttribute(
+					draco::GeometryAttribute::GENERIC, bone_weight_count, draco::DT_INT32);
+			bone_weight_attr_id = mesh_builder.AddAttribute(
+					draco::GeometryAttribute::GENERIC, bone_weight_count, draco::DT_FLOAT32);
+			for (int32_t face_i = 0; face_i < mdt->get_face_count(); face_i++) {
+				int32_t vert_0 = mdt->get_face_vertex(face_i, 0);
+				int32_t vert_1 = mdt->get_face_vertex(face_i, 1);
+				int32_t vert_2 = mdt->get_face_vertex(face_i, 2);
+				Vector<int> bones_0 = mdt->get_vertex_bones(vert_0);
+				Vector<int> bones_1 = mdt->get_vertex_bones(vert_1);
+				Vector<int> bones_2 = mdt->get_vertex_bones(vert_2);
 				mesh_builder.SetAttributeValuesForFace(
 						bone_attr_id, draco::FaceIndex(face_i), bones_0.ptrw(), bones_1.ptrw(), bones_2.ptrw());
-			}
-			Vector<float> weights_0 = mdt->get_vertex_weights(vert_0);
-			Vector<float> weights_1 = mdt->get_vertex_weights(vert_1);
-			Vector<float> weights_2 = mdt->get_vertex_weights(vert_2);
-			if (weights_0.size()) {
-				weights_0.resize(8);
-				weights_1.resize(8);
-				weights_2.resize(8);
+				Vector<float> weights_0 = mdt->get_vertex_weights(vert_0);
+				Vector<float> weights_1 = mdt->get_vertex_weights(vert_1);
+				Vector<float> weights_2 = mdt->get_vertex_weights(vert_2);
 				mesh_builder.SetAttributeValuesForFace(
 						bone_weight_attr_id, draco::FaceIndex(face_i), weights_0.ptrw(), weights_1.ptrw(), weights_2.ptrw());
 			}
@@ -141,46 +144,43 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 		const std::unique_ptr<draco::Mesh> &output_draco_mesh = status_or_mesh.value();
 		ERR_FAIL_COND_V(!output_draco_mesh, 0.0f);
 		int32_t quantized_points = output_draco_mesh->num_faces() * 3;
-		Array array;
-		array.resize(ArrayMesh::ARRAY_MAX);
-		const draco::PointAttribute *const pos_att = output_draco_mesh->GetAttributeByUniqueId(pos_att_id);
-		ERR_CONTINUE(!pos_att);
-		ERR_CONTINUE(pos_att->data_type() != draco::DataType::DT_FLOAT32);
 		Ref<SurfaceTool> surface_tool;
 		surface_tool.instantiate();
-		surface_tool->set_skin_weight_count(SurfaceTool::SKIN_8_WEIGHTS);
+		if (bone_weight_count == 8) {
+			surface_tool->set_skin_weight_count(SurfaceTool::SKIN_8_WEIGHTS);
+		}
 		surface_tool->begin(Mesh::PrimitiveType::PRIMITIVE_TRIANGLES);
 		for (draco::FaceIndex face_i(0); face_i < output_draco_mesh->num_faces(); ++face_i) {
 			for (int32_t tri_i = 0; tri_i < 3; tri_i++) {
+				if (bone_weight_count) {
+					int bone_val[8];
+					float weight_val[8];
+					const draco::PointAttribute *bone_attr = output_draco_mesh->GetAttributeByUniqueId(bone_attr_id);
+					bone_attr->GetMappedValue(output_draco_mesh->face(face_i)[tri_i], bone_val);
+					Vector<int> bones;
+					bones.resize(bone_weight_count);
+					for (int32_t bone_i = 0; bone_i < bone_weight_count; bone_i++) {
+						bones.write[bone_i] = bone_val[bone_i];
+					}
+					surface_tool->set_bones(bones);
+					const draco::PointAttribute *weight_attr = output_draco_mesh->GetAttributeByUniqueId(bone_weight_attr_id);
+					weight_attr->GetMappedValue(output_draco_mesh->face(face_i)[tri_i], weight_val);
+					Vector<float> weights;
+					weights.resize(bone_weight_count);
+					for (int32_t bone_i = 0; bone_i < bone_weight_count; bone_i++) {
+						weights.write[bone_i] = weight_val[bone_i];
+					}
+					surface_tool->set_weights(weights);
+				}
 				float pos_val[3];
 				float normal_val[3];
-				int bone_val[8];
-				float weight_val[8];
-
-				const draco::PointAttribute *bone_attr = output_draco_mesh->GetAttributeByUniqueId(bone_attr_id);
-				bone_attr->GetMappedValue(output_draco_mesh->face(face_i)[tri_i], bone_val);
-				const int32_t bone_weight_limit = 8;
-				Vector<int> bones;
-				bones.resize(bone_weight_limit);
-				for (int32_t bone_i = 0; bone_i < bone_weight_limit; bone_i++) {
-					bones.write[bone_i] = bone_val[bone_i];
-				}
-				surface_tool->set_bones(bones);
-				const draco::PointAttribute *weight_attr = output_draco_mesh->GetAttributeByUniqueId(bone_weight_attr_id);
-				weight_attr->GetMappedValue(output_draco_mesh->face(face_i)[tri_i], weight_val);
-				Vector<float> weights;
-				weights.resize(bone_weight_limit);
-				for (int32_t bone_i = 0; bone_i < bone_weight_limit; bone_i++) {
-					weights.write[bone_i] = weight_val[bone_i];
-				}
-				surface_tool->set_weights(weights);
+				float uv0_val[2];
 				const draco::PointAttribute *normal_attr = output_draco_mesh->GetAttributeByUniqueId(normal_att_id);
 				normal_attr->GetMappedValue(output_draco_mesh->face(face_i)[tri_i], normal_val);
 				surface_tool->set_normal(Vector3(normal_val[0], normal_val[1], normal_val[2]));
-				float uv_val[2];
 				const draco::PointAttribute *tex_0_attr = output_draco_mesh->GetAttributeByUniqueId(tex_att_id_0);
-				tex_0_attr->GetMappedValue(output_draco_mesh->face(face_i)[tri_i], uv_val);
-				surface_tool->set_uv(Vector2(uv_val[0], uv_val[1]));
+				tex_0_attr->GetMappedValue(output_draco_mesh->face(face_i)[tri_i], uv0_val);
+				surface_tool->set_uv(Vector2(uv0_val[0], uv0_val[1]));
 				const draco::PointAttribute *point_attr = output_draco_mesh->GetAttributeByUniqueId(pos_att_id);
 				ERR_BREAK(!point_attr);
 				point_attr->GetMappedValue(output_draco_mesh->face(face_i)[tri_i], pos_val);
@@ -191,7 +191,7 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 		r_importer_mesh->add_surface(Mesh::PRIMITIVE_TRIANGLES,
 				surface_tool->commit_to_arrays(), Array(), Dictionary(), mesh->surface_get_material(surface_i), mesh->surface_get_name(surface_i));
 		return (float)points / quantized_points;
-		// TODO: fire 2022-01-24T18:08:35-0800 Handle all surfaces
+		// TODO: fire 2022-01-24T18:08:35-0800 Handle all surfaces including blend shapes
 	}
 	return 0.0f;
 }
