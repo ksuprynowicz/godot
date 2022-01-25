@@ -52,17 +52,17 @@
 float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterMesh *r_importer_mesh, int p_position_bits = 14, int p_normal_bits = 10, int p_uv_bits = 12, int p_other_attributes_bits = 32) {
 	ERR_FAIL_NULL_V(p_importer_mesh, 0.0f);
 	ERR_FAIL_NULL_V(r_importer_mesh, 0.0f);
-	// Assumed deindexed
-	draco::TriangleSoupMeshBuilder mesh_builder;
 	Ref<MeshDataTool> mdt;
 	mdt.instantiate();
 	int32_t surface_count = p_importer_mesh->get_surface_count();
 
 	const Ref<ArrayMesh> mesh = p_importer_mesh->get_mesh();
+	ERR_FAIL_NULL_V(mesh, 0.0f);
 	int64_t points = 0;
 	int64_t quantized_points = 0;
 	for (int32_t surface_i = 0; surface_i < surface_count; surface_i++) {
 		mdt->create_from_surface(mesh, surface_i);
+		draco::TriangleSoupMeshBuilder mesh_builder;
 		mesh_builder.Start(mdt->get_face_count());
 		const int32_t pos_att_id = mesh_builder.AddAttribute(
 				draco::GeometryAttribute::POSITION, 3, draco::DT_FLOAT32);
@@ -133,8 +133,7 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 		encoder.SetAttributeQuantization(draco::GeometryAttribute::TEX_COORD, 12);
 		encoder.SetAttributeQuantization(draco::GeometryAttribute::COLOR, 10);
 		encoder.SetAttributeQuantization(draco::GeometryAttribute::NORMAL, 10);
-		encoder.SetAttributeQuantization(draco::GeometryAttribute::GENERIC, 30);
-		encoder.SetSpeedOptions(0, 5);
+		encoder.SetSpeedOptions(5, 5);
 		draco::EncoderBuffer buffer;
 		encoder.EncodeMeshToBuffer(*draco_mesh, &buffer);
 		draco::DecoderBuffer in_buffer;
