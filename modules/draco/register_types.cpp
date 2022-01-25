@@ -133,7 +133,7 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 		encoder.SetAttributeQuantization(draco::GeometryAttribute::TEX_COORD, 12);
 		encoder.SetAttributeQuantization(draco::GeometryAttribute::COLOR, 10);
 		encoder.SetAttributeQuantization(draco::GeometryAttribute::NORMAL, 10);
-		encoder.SetSpeedOptions(5, 5);
+		encoder.SetSpeedOptions(0, 5);
 		draco::EncoderBuffer buffer;
 		encoder.EncodeMeshToBuffer(*draco_mesh, &buffer);
 		draco::DecoderBuffer in_buffer;

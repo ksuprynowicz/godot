@@ -1518,12 +1518,6 @@ void ResourceImporterScene::_generate_meshes(Node *p_node, const Dictionary &p_m
 		mesh_node->set_skeleton_path(src_mesh_node->get_skeleton_path());
 		if (src_mesh_node->get_mesh().is_valid()) {
 			Ref<ArrayMesh> mesh;
-			{
-				Ref<ImporterMesh> importer_mesh;
-				importer_mesh.instantiate();
-				SurfaceTool::attribute_quantization_func(src_mesh_node->get_mesh().ptr(), importer_mesh.ptr(), 14, 12, 10, 14); // Make low, medium, strong
-				src_mesh_node->set_mesh(importer_mesh);
-			}
 			if (!src_mesh_node->get_mesh()->has_mesh()) {
 				//do mesh processing
 
@@ -1591,6 +1585,11 @@ void ResourceImporterScene::_generate_meshes(Node *p_node, const Dictionary &p_m
 						post_importer_plugins.write[i]->internal_process(EditorScenePostImportPlugin::INTERNAL_IMPORT_CATEGORY_MESH, nullptr, src_mesh_node, src_mesh_node->get_mesh(), mesh_settings);
 					}
 				}
+
+				Ref<ImporterMesh> importer_mesh;
+				importer_mesh.instantiate();
+				SurfaceTool::attribute_quantization_func(src_mesh_node->get_mesh().ptr(), importer_mesh.ptr(), 14, 12, 10, 14); // Make low, medium, strong
+				src_mesh_node->set_mesh(importer_mesh);
 
 				if (generate_lods) {
 					src_mesh_node->get_mesh()->generate_lods(merge_angle, split_angle);
