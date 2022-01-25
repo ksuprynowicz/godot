@@ -1,0 +1,157 @@
+#!/usr/bin/env python
+
+Import("env")
+Import("env_modules")
+
+env_draco = env_modules.Clone()
+
+# Thirdparty source files
+
+thirdparty_obj = []
+
+env_draco.Prepend(CPPPATH=["#thirdparty/draco/include"])
+env_draco.Prepend(CPPPATH=["#thirdparty/draco/src"])
+
+thirdparty_dir = "#thirdparty/draco/src/draco/"
+thirdparty_sources = [
+    # "src/main.cpp",
+    "attributes/attribute_octahedron_transform.cc",
+    "attributes/attribute_quantization_transform.cc",
+    "attributes/attribute_transform.cc",
+    "attributes/geometry_attribute.cc",
+    "attributes/point_attribute.cc",
+    "compression/attributes/attributes_decoder.cc",
+    "compression/attributes/kd_tree_attributes_decoder.cc",
+    "compression/attributes/sequential_attribute_decoder.cc",
+    "compression/attributes/sequential_attribute_decoders_controller.cc",
+    "compression/attributes/sequential_integer_attribute_decoder.cc",
+    "compression/attributes/sequential_normal_attribute_decoder.cc",
+    "compression/attributes/sequential_quantization_attribute_decoder.cc",
+    "compression/attributes/attributes_encoder.cc",
+    "compression/attributes/kd_tree_attributes_encoder.cc",
+    "compression/attributes/sequential_attribute_encoder.cc",
+    "compression/attributes/sequential_attribute_encoders_controller.cc",
+    "compression/attributes/sequential_integer_attribute_encoder.cc",
+    "compression/attributes/sequential_normal_attribute_encoder.cc",
+    "compression/attributes/sequential_quantization_attribute_encoder.cc",
+    "compression/attributes/prediction_schemes/prediction_scheme_encoder_factory.cc",
+    "compression/bit_coders/adaptive_rans_bit_decoder.cc",
+    "compression/bit_coders/adaptive_rans_bit_encoder.cc",
+    "compression/bit_coders/direct_bit_decoder.cc",
+    "compression/bit_coders/direct_bit_encoder.cc",
+    "compression/bit_coders/rans_bit_decoder.cc",
+    "compression/bit_coders/rans_bit_encoder.cc",
+    "compression/bit_coders/symbol_bit_decoder.cc",
+    "compression/bit_coders/symbol_bit_encoder.cc",
+    "compression/decode.cc",
+    "compression/encode.cc",
+    "compression/expert_encode.cc",
+    "compression/mesh/mesh_decoder.cc",
+    "compression/mesh/mesh_edgebreaker_decoder.cc",
+    "compression/mesh/mesh_edgebreaker_decoder_impl.cc",
+    "compression/mesh/mesh_sequential_decoder.cc",
+    "compression/mesh/mesh_edgebreaker_encoder.cc",
+    "compression/mesh/mesh_edgebreaker_encoder_impl.cc",
+    "compression/mesh/mesh_encoder.cc",
+    "compression/mesh/mesh_sequential_encoder.cc",
+    "compression/point_cloud/point_cloud_decoder.cc",
+    "compression/point_cloud/point_cloud_kd_tree_decoder.cc",
+    "compression/point_cloud/point_cloud_sequential_decoder.cc",
+    "compression/point_cloud/point_cloud_encoder.cc",
+    "compression/point_cloud/point_cloud_kd_tree_encoder.cc",
+    "compression/point_cloud/point_cloud_sequential_encoder.cc",
+    "compression/entropy/shannon_entropy.cc",
+    "compression/entropy/symbol_decoding.cc",
+    "compression/entropy/symbol_encoding.cc",
+    "core/bit_utils.cc",
+    "core/bounding_box.cc",
+    "core/cycle_timer.cc",
+    "core/data_buffer.cc",
+    "core/decoder_buffer.cc",
+    "core/divide.cc",
+    "core/draco_types.cc",
+    "core/encoder_buffer.cc",
+    "core/hash_utils.cc",
+    "core/options.cc",
+    "core/quantization_utils.cc",
+    "io/file_reader_factory.cc",
+    "io/file_utils.cc",
+    "io/file_writer_factory.cc",
+    "io/file_writer_utils.cc",
+    "io/mesh_io.cc",
+    # "io/obj_decoder.cc",
+    # "io/obj_encoder.cc",
+    "io/parser_utils.cc",
+    # "io/ply_decoder.cc",
+    # "io/ply_encoder.cc",
+    # "io/ply_reader.cc",
+    "io/point_cloud_io.cc",
+    # "io/stdio_file_reader.cc",
+    # "io/stdio_file_writer.cc",
+    "mesh/corner_table.cc",
+    "mesh/mesh.cc",
+    "mesh/mesh_are_equivalent.cc",
+    "mesh/mesh_attribute_corner_table.cc",
+    "mesh/mesh_cleanup.cc",
+    "mesh/mesh_misc_functions.cc",
+    "mesh/mesh_stripifier.cc",
+    "mesh/triangle_soup_mesh_builder.cc",
+    "point_cloud/point_cloud.cc",
+    "point_cloud/point_cloud_builder.cc",
+    "compression/point_cloud/algorithms/dynamic_integer_points_kd_tree_encoder.cc",
+    "compression/point_cloud/algorithms/float_points_tree_encoder.cc",
+    "metadata/geometry_metadata.cc",
+    "metadata/metadata.cc",
+    "metadata/metadata_encoder.cc",
+    "metadata/metadata_decoder.cc",
+    "animation/keyframe_animation.cc",
+    "animation/keyframe_animation_encoder.cc",
+    "animation/keyframe_animation_decoder.cc",
+    # "javascript/emscripten/decoder_webidl_wrapper.cc",
+    # "javascript/emscripten/draco_decoder_glue_wrapper.cc",
+    # "javascript/emscripten/draco_encoder_glue_wrapper.cc",
+    # "javascript/emscripten/encoder_webidl_wrapper.cc",
+    # "javascript/emscripten/animation_decoder_webidl_wrapper.cc",
+    # "javascript/emscripten/draco_animation_decoder_glue_wrapper.cc",
+    # "javascript/emscripten/animation_encoder_webidl_wrapper.cc",,
+    # "javascript/emscripten/draco_animation_encoder_glue_wrapper.cc"
+    "unity/draco_unity_plugin.cc",
+    "maya/draco_maya_plugin.cc",
+    "animation/animation.cc",
+    "animation/skin.cc",
+    # "io/gltf_decoder.cc",
+    # "io/gltf_encoder.cc",
+    # "io/gltf_utils.cc",
+    "io/scene_io.cc",
+    "io/texture_io.cc",
+    # "io/tiny_gltf_utils.cc",
+    "material/material.cc",
+    "material/material_library.cc",
+    "mesh/mesh_splitter.cc",
+    "mesh/mesh_utils.cc",
+    "scene/scene.cc",
+    "scene/scene_utils.cc",
+    "scene/trs_matrix.cc",
+    "texture/source_image.cc",
+    "texture/texture_library.cc",
+    "texture/texture_map.cc",
+    "texture/texture_transform.cc",
+    "texture/texture_utils.cc",
+]
+
+thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
+
+env_thirdparty = env_draco.Clone()
+env_thirdparty.disable_warnings()
+env_thirdparty.add_source_files(thirdparty_obj, thirdparty_sources)
+env.modules_sources += thirdparty_obj
+
+# Godot source files
+
+module_obj = []
+
+env_draco.add_source_files(module_obj, "*.cpp")
+env.modules_sources += module_obj
+
+# Needed to force rebuilding the module files when the thirdparty library is updated.
+env.Depends(module_obj, thirdparty_obj)
