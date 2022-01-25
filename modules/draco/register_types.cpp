@@ -59,7 +59,8 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 	int32_t surface_count = p_importer_mesh->get_surface_count();
 
 	const Ref<ArrayMesh> mesh = p_importer_mesh->get_mesh();
-
+	int64_t points = 0;
+	int64_t quantized_points = 0;
 	for (int32_t surface_i = 0; surface_i < surface_count; surface_i++) {
 		mdt->create_from_surface(mesh, surface_i);
 		mesh_builder.Start(mdt->get_face_count());
@@ -71,6 +72,8 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 				draco::GeometryAttribute::TEX_COORD, 2, draco::DT_FLOAT32);
 		const int32_t tex_att_id_1 = mesh_builder.AddAttribute(
 				draco::GeometryAttribute::TEX_COORD, 2, draco::DT_FLOAT32);
+
+		// Todo: fire 2022-01-25T00:50:51-0800 - 1-8 uvs, blend shapes, tangents, and bitangents
 		int32_t bone_weight_count = 0;
 		if (mdt->get_format() & Mesh::ARRAY_FORMAT_BONES && (mdt->get_format() & Mesh::ARRAY_FLAG_USE_8_BONE_WEIGHTS)) {
 			bone_weight_count = 8;
@@ -124,7 +127,7 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 			}
 		}
 		std::unique_ptr<draco::Mesh> draco_mesh = mesh_builder.Finalize();
-		int32_t points = draco_mesh->num_faces() * 3;
+		points += draco_mesh->num_faces() * 3;
 		draco::Encoder encoder;
 		encoder.SetAttributeQuantization(draco::GeometryAttribute::POSITION, 14);
 		encoder.SetAttributeQuantization(draco::GeometryAttribute::TEX_COORD, 12);
@@ -143,7 +146,7 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 		ERR_CONTINUE_MSG(status.code() != draco::Status::OK, vformat("Error decoding draco buffer '%s' message %d\n", status.error_msg(), status.code()));
 		const std::unique_ptr<draco::Mesh> &output_draco_mesh = status_or_mesh.value();
 		ERR_FAIL_COND_V(!output_draco_mesh, 0.0f);
-		int32_t quantized_points = output_draco_mesh->num_faces() * 3;
+		quantized_points += output_draco_mesh->num_faces() * 3;
 		Ref<SurfaceTool> surface_tool;
 		surface_tool.instantiate();
 		if (bone_weight_count == 8) {
@@ -190,10 +193,9 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 		surface_tool->index();
 		r_importer_mesh->add_surface(Mesh::PRIMITIVE_TRIANGLES,
 				surface_tool->commit_to_arrays(), Array(), Dictionary(), mesh->surface_get_material(surface_i), mesh->surface_get_name(surface_i));
-		return (float)points / quantized_points;
 		// TODO: fire 2022-01-24T18:08:35-0800 Handle all surfaces including blend shapes
 	}
-	return 0.0f;
+	return (float)points / quantized_points;
 }
 
 void register_draco_types() {
