@@ -31,18 +31,21 @@
 #include "register_types.h"
 #include "core/error/error_macros.h"
 #include "core/variant/array.h"
-#include "draco/attributes/geometry_indices.h"
-#include "draco/attributes/point_attribute.h"
-#include "draco/compression/attributes/mesh_attribute_indices_encoding_data.h"
 #include "draco/compression/decode.h"
+#include "draco/core/status.h"
 #include "scene/resources/mesh.h"
 #include "scene/resources/mesh_data_tool.h"
 #include "scene/resources/surface_tool.h"
 
 #include "draco/compression/encode.h"
+#include "draco/attributes/geometry_indices.h"
+#include "draco/attributes/point_attribute.h"
+#include "draco/compression/attributes/mesh_attribute_indices_encoding_data.h"
+#include "draco/compression/mesh/mesh_edgebreaker_decoder.h"
 #include "draco/core/draco_types.h"
 #include "draco/mesh/triangle_soup_mesh_builder.h"
 #include <stdint.h>
+#include <memory>
 
 float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterMesh *r_importer_mesh, int p_position_bits = 14, int p_normal_bits = 10, int p_uv_bits = 12, int p_other_attributes_bits = 32) {
 	ERR_FAIL_NULL_V(p_importer_mesh, 0.0f);
@@ -101,7 +104,7 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 			}
 		}
 		std::unique_ptr<draco::Mesh> draco_mesh = mesh_builder.Finalize();
-		int32_t points = draco_mesh->num_points();
+		int32_t points = draco_mesh->num_faces() * 3;
 		draco::Encoder encoder;
 		encoder.SetAttributeQuantization(draco::GeometryAttribute::POSITION, 14);
 		encoder.SetAttributeQuantization(draco::GeometryAttribute::TEX_COORD, 12);
@@ -114,13 +117,13 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 		draco::DecoderBuffer in_buffer;
 		in_buffer.Init(buffer.data(), buffer.size());
 		draco::Decoder decoder;
-		draco::StatusOr<std::unique_ptr<draco::Mesh>> draco_mesh_status = decoder.DecodeMeshFromBuffer(&in_buffer);
-		std::unique_ptr<draco::Mesh> output_draco_mesh;
-		draco::Status status = draco_mesh_status.status();
-		output_draco_mesh = std::move(draco_mesh_status).value();
-		ERR_CONTINUE_MSG(status.code() != draco::Status::OK, vformat("[draco] Error decoding draco buffer '%s' status=%d\n", status.error_msg(), status.code()));
+		draco::DecoderOptions options;
+		draco::StatusOr<std::unique_ptr<draco::Mesh>> status_or_mesh = decoder.DecodeMeshFromBuffer(&in_buffer);
+		draco::Status status = status_or_mesh.status();
+		ERR_CONTINUE_MSG(status.code() != draco::Status::OK, vformat("Error decoding draco buffer '%s' message %d\n", status.error_msg(), status.code()));		
+		const std::unique_ptr<draco::Mesh> &output_draco_mesh = status_or_mesh.value();
 		ERR_FAIL_COND_V(!output_draco_mesh, 0.0f);
-		int32_t quantized_points = output_draco_mesh->num_faces();
+		int32_t quantized_points = output_draco_mesh->num_faces() * 3;
 		Array array;
 		array.resize(ArrayMesh::ARRAY_MAX);
 		const draco::PointAttribute *const pos_att = output_draco_mesh->GetAttributeByUniqueId(pos_att_id);
@@ -130,11 +133,16 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 		pos_array.resize(quantized_points);
 		int32_t number_of_components = pos_att->num_components();
 		ERR_CONTINUE(number_of_components != 3);
-		for (draco::PointIndex i(0); i < output_draco_mesh->num_faces(); ++i) {
+		for (draco::FaceIndex i(0); i < output_draco_mesh->num_faces(); ++i) {
 			float pos_val[3];
 			const draco::PointAttribute *point_attr = output_draco_mesh->GetAttributeByUniqueId(pos_att_id);
-			point_attr->GetMappedValue(i, pos_val);
-			pos_array.write[i.value()] = Vector3(pos_val[0], pos_val[1], pos_val[2]);
+			ERR_BREAK(!point_attr);
+			point_attr->GetMappedValue(output_draco_mesh->face(i)[0], pos_val);
+			pos_array.write[i.value() * 3 + 0] = Vector3(pos_val[0], pos_val[1], pos_val[2]);
+			point_attr->GetMappedValue(output_draco_mesh->face(i)[1], pos_val);
+			pos_array.write[i.value() * 3 + 1] = Vector3(pos_val[0], pos_val[1], pos_val[2]);
+			point_attr->GetMappedValue(output_draco_mesh->face(i)[2], pos_val);
+			pos_array.write[i.value() * 3 + 2] = Vector3(pos_val[0], pos_val[1], pos_val[2]);
 		}
 		array[ArrayMesh::ARRAY_VERTEX] = pos_array;
 		r_importer_mesh->add_surface(ArrayMesh::PRIMITIVE_TRIANGLES, array);
