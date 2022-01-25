@@ -31,16 +31,17 @@
 #include "register_types.h"
 #include "core/error/error_macros.h"
 #include "core/variant/array.h"
+#include "core/variant/dictionary.h"
 #include "draco/compression/decode.h"
 #include "draco/core/status.h"
 #include "scene/resources/mesh.h"
 #include "scene/resources/mesh_data_tool.h"
 #include "scene/resources/surface_tool.h"
 
-#include "draco/compression/encode.h"
 #include "draco/attributes/geometry_indices.h"
 #include "draco/attributes/point_attribute.h"
 #include "draco/compression/attributes/mesh_attribute_indices_encoding_data.h"
+#include "draco/compression/encode.h"
 #include "draco/compression/mesh/mesh_edgebreaker_decoder.h"
 #include "draco/core/draco_types.h"
 #include "draco/mesh/triangle_soup_mesh_builder.h"
@@ -57,11 +58,14 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 	int32_t surface_count = p_importer_mesh->get_surface_count();
 
 	const Ref<ArrayMesh> mesh = p_importer_mesh->get_mesh();
+
 	for (int32_t surface_i = 0; surface_i < surface_count; surface_i++) {
 		mdt->create_from_surface(mesh, surface_i);
 		mesh_builder.Start(mdt->get_face_count());
 		const int32_t pos_att_id = mesh_builder.AddAttribute(
 				draco::GeometryAttribute::POSITION, 3, draco::DT_FLOAT32);
+		const int32_t normal_att_id = mesh_builder.AddAttribute(
+				draco::GeometryAttribute::NORMAL, 3, draco::DT_FLOAT32);
 		const int32_t tex_att_id_0 = mesh_builder.AddAttribute(
 				draco::GeometryAttribute::TEX_COORD, 2, draco::DT_FLOAT32);
 		const int32_t tex_att_id_1 = mesh_builder.AddAttribute(
@@ -79,6 +83,11 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 			Vector3 pos_2 = mdt->get_vertex(vert_2);
 			mesh_builder.SetAttributeValuesForFace(
 					pos_att_id, draco::FaceIndex(face_i), &pos_0, &pos_1, &pos_2);
+			Vector3 norm_0 = mdt->get_vertex_normal(vert_0);
+			Vector3 norm_1 = mdt->get_vertex_normal(vert_1);
+			Vector3 norm_2 = mdt->get_vertex_normal(vert_2);
+			mesh_builder.SetAttributeValuesForFace(
+					normal_att_id, draco::FaceIndex(face_i), &norm_0, &norm_1, &norm_2);
 			Vector2 uv_0 = mdt->get_vertex_uv(vert_0);
 			Vector2 uv_1 = mdt->get_vertex_uv(vert_1);
 			Vector2 uv_2 = mdt->get_vertex_uv(vert_2);
@@ -120,7 +129,7 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 		draco::DecoderOptions options;
 		draco::StatusOr<std::unique_ptr<draco::Mesh>> status_or_mesh = decoder.DecodeMeshFromBuffer(&in_buffer);
 		draco::Status status = status_or_mesh.status();
-		ERR_CONTINUE_MSG(status.code() != draco::Status::OK, vformat("Error decoding draco buffer '%s' message %d\n", status.error_msg(), status.code()));		
+		ERR_CONTINUE_MSG(status.code() != draco::Status::OK, vformat("Error decoding draco buffer '%s' message %d\n", status.error_msg(), status.code()));
 		const std::unique_ptr<draco::Mesh> &output_draco_mesh = status_or_mesh.value();
 		ERR_FAIL_COND_V(!output_draco_mesh, 0.0f);
 		int32_t quantized_points = output_draco_mesh->num_faces() * 3;
@@ -129,23 +138,30 @@ float draco_attribute_quantization_func(ImporterMesh *p_importer_mesh, ImporterM
 		const draco::PointAttribute *const pos_att = output_draco_mesh->GetAttributeByUniqueId(pos_att_id);
 		ERR_CONTINUE(!pos_att);
 		ERR_CONTINUE(pos_att->data_type() != draco::DataType::DT_FLOAT32);
-		Vector<Vector3> pos_array;
-		pos_array.resize(quantized_points);
-		int32_t number_of_components = pos_att->num_components();
-		ERR_CONTINUE(number_of_components != 3);
-		for (draco::FaceIndex i(0); i < output_draco_mesh->num_faces(); ++i) {
-			float pos_val[3];
-			const draco::PointAttribute *point_attr = output_draco_mesh->GetAttributeByUniqueId(pos_att_id);
-			ERR_BREAK(!point_attr);
-			point_attr->GetMappedValue(output_draco_mesh->face(i)[0], pos_val);
-			pos_array.write[i.value() * 3 + 0] = Vector3(pos_val[0], pos_val[1], pos_val[2]);
-			point_attr->GetMappedValue(output_draco_mesh->face(i)[1], pos_val);
-			pos_array.write[i.value() * 3 + 1] = Vector3(pos_val[0], pos_val[1], pos_val[2]);
-			point_attr->GetMappedValue(output_draco_mesh->face(i)[2], pos_val);
-			pos_array.write[i.value() * 3 + 2] = Vector3(pos_val[0], pos_val[1], pos_val[2]);
+		Ref<SurfaceTool> surface_tool;
+		surface_tool.instantiate();
+		surface_tool->begin(Mesh::PrimitiveType::PRIMITIVE_TRIANGLES);
+		for (draco::FaceIndex face_i(0); face_i < output_draco_mesh->num_faces(); ++face_i) {
+			for (int32_t tri_i = 0; tri_i < 3; tri_i++) {
+				float pos_val[3];
+				float normal_val[3];
+				const draco::PointAttribute *normal_attr = output_draco_mesh->GetAttributeByUniqueId(normal_att_id);
+				normal_attr->GetMappedValue(output_draco_mesh->face(face_i)[tri_i], normal_val);
+				surface_tool->set_normal(Vector3(normal_val[0], normal_val[1], normal_val[2]));
+				float uv_val[2];
+				const draco::PointAttribute *tex_0_attr = output_draco_mesh->GetAttributeByUniqueId(tex_att_id_0);
+				tex_0_attr->GetMappedValue(output_draco_mesh->face(face_i)[tri_i], uv_val);
+				surface_tool->set_uv(Vector2(uv_val[0], uv_val[1]));
+				const draco::PointAttribute *point_attr = output_draco_mesh->GetAttributeByUniqueId(pos_att_id);
+				ERR_BREAK(!point_attr);
+				point_attr->GetMappedValue(output_draco_mesh->face(face_i)[tri_i], pos_val);
+				surface_tool->add_vertex(Vector3(pos_val[0], pos_val[1], pos_val[2]));
+			}
 		}
-		array[ArrayMesh::ARRAY_VERTEX] = pos_array;
-		r_importer_mesh->add_surface(ArrayMesh::PRIMITIVE_TRIANGLES, array);
+		surface_tool->index();
+		r_importer_mesh->add_surface(Mesh::PRIMITIVE_TRIANGLES,
+				surface_tool->commit_to_arrays(), Array(), Dictionary(), mesh->surface_get_material(surface_i), mesh->surface_get_name(surface_i),
+				mesh->surface_get_format(surface_i));
 		return (float)points / quantized_points;
 		// TODO: fire 2022-01-24T18:08:35-0800 Handle all surfaces
 	}
