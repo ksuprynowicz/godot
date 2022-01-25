@@ -37,6 +37,7 @@ SurfaceTool::SimplifyFunc SurfaceTool::simplify_func = nullptr;
 SurfaceTool::SimplifyWithAttribFunc SurfaceTool::simplify_with_attrib_func = nullptr;
 SurfaceTool::SimplifyScaleFunc SurfaceTool::simplify_scale_func = nullptr;
 SurfaceTool::SimplifySloppyFunc SurfaceTool::simplify_sloppy_func = nullptr;
+SurfaceTool::AttributeQuantizationFunc SurfaceTool::attribute_quantization_func = nullptr;
 
 bool SurfaceTool::Vertex::operator==(const Vertex &p_vertex) const {
 	if (vertex != p_vertex.vertex) {

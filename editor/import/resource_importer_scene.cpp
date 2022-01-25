@@ -32,6 +32,7 @@
 
 #include "core/error/error_macros.h"
 #include "core/io/resource_saver.h"
+#include "core/variant/dictionary.h"
 #include "editor/editor_node.h"
 #include "editor/import/scene_import_settings.h"
 #include "scene/3d/area_3d.h"
@@ -51,6 +52,7 @@
 #include "scene/resources/sphere_shape_3d.h"
 #include "scene/resources/surface_tool.h"
 #include "scene/resources/world_boundary_shape_3d.h"
+#include <stdint.h>
 
 uint32_t EditorSceneFormatImporter::get_import_flags() const {
 	int ret;
@@ -1516,6 +1518,12 @@ void ResourceImporterScene::_generate_meshes(Node *p_node, const Dictionary &p_m
 		mesh_node->set_skeleton_path(src_mesh_node->get_skeleton_path());
 		if (src_mesh_node->get_mesh().is_valid()) {
 			Ref<ArrayMesh> mesh;
+			{
+				Ref<ImporterMesh> importer_mesh;
+				importer_mesh.instantiate();
+				SurfaceTool::attribute_quantization_func(src_mesh_node->get_mesh().ptr(), importer_mesh.ptr(), 14, 12, 10, 14); // Make low, medium, strong
+				src_mesh_node->set_mesh(importer_mesh);
+			}
 			if (!src_mesh_node->get_mesh()->has_mesh()) {
 				//do mesh processing
 
