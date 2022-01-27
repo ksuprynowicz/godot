@@ -686,6 +686,11 @@ bool OpenXRDevice::load_supported_view_configuration_views(XrViewConfigurationTy
 	view_configuration_views = (XrViewConfigurationView *)memalloc(sizeof(XrViewConfigurationView) * view_count);
 	ERR_FAIL_NULL_V(view_configuration_views, false);
 
+	for (uint32_t i = 0; i < view_count; i++) {
+		view_configuration_views[i].type = XR_TYPE_VIEW_CONFIGURATION_VIEW;
+		view_configuration_views[i].next = NULL;
+	}
+
 	result = xrEnumerateViewConfigurationViews(instance, system_id, p_configuration_type, view_count, &view_count, view_configuration_views);
 	ERR_FAIL_COND_V_MSG(XR_FAILED(result), false, "OpenXR: Failed to enumerate view configurations");
 
