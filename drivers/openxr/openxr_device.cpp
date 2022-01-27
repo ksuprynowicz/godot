@@ -1660,17 +1660,19 @@ void OpenXRDevice::pre_render() {
 #endif
 	}
 
-	if (frame_state.shouldRender) {
-		// let's start our frame..
-		XrFrameBeginInfo frame_begin_info = {
-			XR_TYPE_FRAME_BEGIN_INFO, // type
-			nullptr // next
-		};
-		result = xrBeginFrame(session, &frame_begin_info);
-		if (XR_FAILED(result)) {
-			print_line("OpenXR: failed to being frame [", get_error_string(result), "]");
-			return;
-		}
+	if (!frame_state.shouldRender) {
+		// TODO: Tell godot not do render VR to save resources.
+	}
+
+	// let's start our frame..
+	XrFrameBeginInfo frame_begin_info = {
+		XR_TYPE_FRAME_BEGIN_INFO, // type
+		nullptr // next
+	};
+	result = xrBeginFrame(session, &frame_begin_info);
+	if (XR_FAILED(result)) {
+		print_line("OpenXR: failed to being frame [", get_error_string(result), "]");
+		return;
 	}
 }
 
