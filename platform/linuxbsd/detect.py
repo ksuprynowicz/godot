@@ -393,6 +393,8 @@ def configure(env):
     env.Append(LIBS=["GL"])
 
     env.Append(LIBS=["pthread"])
+    
+    env.Append(LIBS=["stdc++fs"])
 
     if platform.system() == "Linux":
         env.Append(LIBS=["dl"])
