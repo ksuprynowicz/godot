@@ -1,0 +1,104 @@
+#!/usr/bin/env python
+
+Import("env")
+
+is_supported_on_platform = True
+if env["platform"] == "android":
+    # may need to set OPENXR_ANDROID_VERSION_SUFFIX
+    env.AppendUnique(CPPDEFINES=["XR_OS_ANDROID", "XR_USE_PLATFORM_ANDROID"])
+
+    # may need to include java parts of the openxr loader
+elif env["platform"] == "linuxbsd":
+    env.AppendUnique(CPPDEFINES=["XR_OS_LINUX", "XR_USE_PLATFORM_XLIB"])
+elif env["platform"] == "windows":
+    env.AppendUnique(CPPDEFINES=["XR_OS_WINDOWS", "NOMINMAX", "XR_USE_PLATFORM_WIN32", "HAVE_SECURE_GETENV"])
+else:
+    # don't build anything, OpenXR not supported on this platform
+    is_supported_on_platform = False
+
+if is_supported_on_platform:
+    thirdparty_obj = []
+    thirdparty_dir = "#thirdparty/openxr"
+
+    # Use bundled Vulkan headers
+    env.Prepend(
+        CPPPATH=[
+            thirdparty_dir,
+            thirdparty_dir + "/include",
+            thirdparty_dir + "/src",
+            thirdparty_dir + "/src/common",
+            thirdparty_dir + "/src/external/jsoncpp/include",
+            thirdparty_dir + "/src/loader",
+        ]
+    )
+
+    # may need to check and set:
+    # - XR_USE_TIMESPEC
+
+    # need to redo this to something more elegant
+
+    env_thirdparty = env.Clone()
+    env_thirdparty.disable_warnings()
+
+    env_thirdparty.add_source_files(thirdparty_obj, thirdparty_dir + "/src/xr_generated_dispatch_table.c")
+
+    # add in common files (hope these don't clash with us)
+    env_thirdparty.add_source_files(thirdparty_obj, thirdparty_dir + "/src/common/filesystem_utils.cpp")
+    env_thirdparty.add_source_files(thirdparty_obj, thirdparty_dir + "/src/common/object_info.cpp")
+
+    # add in JSON
+    env_thirdparty.add_source_files(
+        thirdparty_obj, thirdparty_dir + "/src/external/jsoncpp/src/lib_json/json_reader.cpp"
+    )
+    env_thirdparty.add_source_files(
+        thirdparty_obj, thirdparty_dir + "/src/external/jsoncpp/src/lib_json/json_value.cpp"
+    )
+    env_thirdparty.add_source_files(
+        thirdparty_obj, thirdparty_dir + "/src/external/jsoncpp/src/lib_json/json_writer.cpp"
+    )
+
+    # add in load
+    if env["platform"] == "android":
+        env_thirdparty.add_source_files(thirdparty_obj, thirdparty_dir + "/src/loader/android_utilities.cpp")
+
+    env_thirdparty.add_source_files(thirdparty_obj, thirdparty_dir + "/src/loader/api_layer_interface.cpp")
+    env_thirdparty.add_source_files(thirdparty_obj, thirdparty_dir + "/src/loader/loader_core.cpp")
+    env_thirdparty.add_source_files(thirdparty_obj, thirdparty_dir + "/src/loader/loader_instance.cpp")
+    env_thirdparty.add_source_files(thirdparty_obj, thirdparty_dir + "/src/loader/loader_logger_recorders.cpp")
+    env_thirdparty.add_source_files(thirdparty_obj, thirdparty_dir + "/src/loader/loader_logger.cpp")
+    env_thirdparty.add_source_files(thirdparty_obj, thirdparty_dir + "/src/loader/manifest_file.cpp")
+    env_thirdparty.add_source_files(thirdparty_obj, thirdparty_dir + "/src/loader/runtime_interface.cpp")
+    env_thirdparty.add_source_files(thirdparty_obj, thirdparty_dir + "/src/loader/xr_generated_loader.cpp")
+
+    env.drivers_sources += thirdparty_obj
+
+    # Godot source files
+
+    driver_obj = []
+
+    env.add_source_files(driver_obj, "openxr_device.cpp")
+
+    if env["platform"] == "android":
+        env.add_source_files(driver_obj, "openxr_android_extension.cpp")
+    if env["vulkan"]:
+        env.add_source_files(driver_obj, "openxr_vulkan_extension.cpp")
+    # if env["opengl3"]:
+    #    # might need XR_USE_GRAPHICS_API_OPENGL_ES on Android
+    #    env.add_source_files(driver_obj, "openxr_opengl_extension.cpp")
+
+    env.drivers_sources += driver_obj
+
+    # Needed to force rebuilding the driver files when the thirdparty code is updated.
+    env.Depends(driver_obj, thirdparty_obj)
+
+else:
+    # add in dummy driver so we can compile platforms that do not support OpenXR
+    driver_obj = []
+
+    env.AppendUnique(CPPDEFINES=["OPENXR_DUMMY"])
+
+    # env.add_source_files(driver_obj, "openxr_device_dummy.cpp")
+    # env.add_source_files(driver_obj, "openxr_vulkan_extension_dummy.cpp")
+    # env.add_source_files(driver_obj, "openxr_opengl_extension_dummy.cpp")
+
+    # env.drivers_sources += driver_obj
