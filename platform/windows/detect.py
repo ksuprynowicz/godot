@@ -434,6 +434,7 @@ def configure_mingw(env):
             "avrt",
             "uuid",
             "dwmapi",
+            "stdc++fs",
         ]
     )
 
