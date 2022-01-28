@@ -9,6 +9,6 @@ namespace fs = std::filesystem;
 #endif
 #endif
 #ifndef GHC_USE_STD_FS
-#include <ghc/filesystem.hpp>
+#include <filesystem.hpp>
 namespace fs = ghc::filesystem;
 #endif
