@@ -203,6 +203,9 @@ private:
 		COPY_TO_FB_COPY,
 		COPY_TO_FB_COPY_PANORAMA_TO_DP,
 		COPY_TO_FB_COPY2,
+
+		COPY_TO_FB_MULTIVIEW,
+		COPY_TO_FB_MULTIVIEW_WITH_DEPTH,
 		COPY_TO_FB_MAX,
 
 	};
@@ -274,7 +277,7 @@ private:
 
 		uint32_t glow_texture_size[2]; //  8 - 40
 		float glow_intensity; //  4 - 44
-		uint32_t pad3; //  4 - 48
+		float glow_map_strength; //  4 - 48
 
 		uint32_t glow_mode; //  4 - 52
 		float glow_levels[7]; // 28 - 80
@@ -874,6 +877,7 @@ private:
 		}
 	};
 
+	Map<TexturePair, RID> texture_pair_to_uniform_set_cache;
 	Map<RID, RID> texture_to_compute_uniform_set_cache;
 	Map<TexturePair, RID> texture_pair_to_compute_uniform_set_cache;
 	Map<TexturePair, RID> image_pair_to_compute_uniform_set_cache;
@@ -882,6 +886,7 @@ private:
 	RID _get_uniform_set_from_image(RID p_texture);
 	RID _get_uniform_set_for_input(RID p_texture);
 	RID _get_uniform_set_from_texture(RID p_texture, bool p_use_mipmaps = false);
+	RID _get_uniform_set_from_texture_pair(RID p_texture1, RID p_texture2, bool p_use_mipmaps = false);
 	RID _get_compute_uniform_set_from_texture(RID p_texture, bool p_use_mipmaps = false);
 	RID _get_compute_uniform_set_from_texture_and_sampler(RID p_texture, RID p_sampler);
 	RID _get_compute_uniform_set_from_texture_pair(RID p_texture, RID p_texture2, bool p_use_mipmaps = false);
@@ -891,7 +896,7 @@ public:
 	bool get_prefer_raster_effects();
 
 	void fsr_upscale(RID p_source_rd_texture, RID p_secondary_texture, RID p_destination_texture, const Size2i &p_internal_size, const Size2i &p_size, float p_fsr_upscale_sharpness);
-	void copy_to_fb_rect(RID p_source_rd_texture, RID p_dest_framebuffer, const Rect2i &p_rect, bool p_flip_y = false, bool p_force_luminance = false, bool p_alpha_to_zero = false, bool p_srgb = false, RID p_secondary = RID());
+	void copy_to_fb_rect(RID p_source_rd_texture, RID p_dest_framebuffer, const Rect2i &p_rect, bool p_flip_y = false, bool p_force_luminance = false, bool p_alpha_to_zero = false, bool p_srgb = false, RID p_secondary = RID(), bool p_multiview = false);
 	void copy_to_rect(RID p_source_rd_texture, RID p_dest_texture, const Rect2i &p_rect, bool p_flip_y = false, bool p_force_luminance = false, bool p_all_source = false, bool p_8_bit_dst = false, bool p_alpha_to_one = false);
 	void copy_cubemap_to_panorama(RID p_source_cube, RID p_dest_panorama, const Size2i &p_panorama_size, float p_lod, bool p_is_array);
 	void copy_depth_to_rect(RID p_source_rd_texture, RID p_dest_framebuffer, const Rect2i &p_rect, bool p_flip_y = false);
@@ -943,10 +948,12 @@ public:
 
 		GlowMode glow_mode = GLOW_MODE_ADD;
 		float glow_intensity = 1.0;
+		float glow_map_strength = 0.0f;
 		float glow_levels[7] = { 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0 };
 		Vector2i glow_texture_size;
 		bool glow_use_bicubic_upscale = false;
 		RID glow_texture;
+		RID glow_map;
 
 		RS::EnvironmentToneMapper tonemap_mode = RS::ENV_TONE_MAPPER_LINEAR;
 		float exposure = 1.0;

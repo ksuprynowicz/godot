@@ -65,10 +65,6 @@ void XRServer::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "primary_interface"), "set_primary_interface", "get_primary_interface");
 
-	ClassDB::bind_method(D_METHOD("get_last_process_usec"), &XRServer::get_last_process_usec);
-	ClassDB::bind_method(D_METHOD("get_last_commit_usec"), &XRServer::get_last_commit_usec);
-	ClassDB::bind_method(D_METHOD("get_last_frame_usec"), &XRServer::get_last_frame_usec);
-
 	BIND_ENUM_CONSTANT(TRACKER_HEAD);
 	BIND_ENUM_CONSTANT(TRACKER_CONTROLLER);
 	BIND_ENUM_CONSTANT(TRACKER_BASESTATION);
@@ -351,25 +347,11 @@ PackedStringArray XRServer::get_suggested_pose_names(const StringName &p_tracker
 	return arr;
 }
 
-uint64_t XRServer::get_last_process_usec() {
-	return last_process_usec;
-};
-
-uint64_t XRServer::get_last_commit_usec() {
-	return last_commit_usec;
-};
-
-uint64_t XRServer::get_last_frame_usec() {
-	return last_frame_usec;
-};
-
 void XRServer::_process() {
-	/* called from renderer_viewport.draw_viewports right before we start drawing our viewports */
+	// called from our main game loop before we handle physics and game logic
+	// note that we can have multiple interfaces active if we have interfaces that purely handle tracking
 
-	/* mark for our frame timing */
-	last_process_usec = OS::get_singleton()->get_ticks_usec();
-
-	/* process all active interfaces */
+	// process all active interfaces
 	for (int i = 0; i < interfaces.size(); i++) {
 		if (!interfaces[i].is_valid()) {
 			// ignore, not a valid reference
@@ -379,13 +361,32 @@ void XRServer::_process() {
 	};
 };
 
-void XRServer::_mark_commit() {
-	/* time this */
-	last_commit_usec = OS::get_singleton()->get_ticks_usec();
+void XRServer::pre_render() {
+	// called from RendererViewport.draw_viewports right before we start drawing our viewports
+	// note that we can have multiple interfaces active if we have interfaces that purely handle tracking
 
-	/* now store our difference as we may overwrite last_process_usec before this is accessed */
-	last_frame_usec = last_commit_usec - last_process_usec;
-};
+	// process all active interfaces
+	for (int i = 0; i < interfaces.size(); i++) {
+		if (!interfaces[i].is_valid()) {
+			// ignore, not a valid reference
+		} else if (interfaces[i]->is_initialized()) {
+			interfaces.write[i]->pre_render();
+		};
+	};
+}
+
+void XRServer::end_frame() {
+	// called from RenderingServerDefault after Vulkan queues have been submitted
+
+	// process all active interfaces
+	for (int i = 0; i < interfaces.size(); i++) {
+		if (!interfaces[i].is_valid()) {
+			// ignore, not a valid reference
+		} else if (interfaces[i]->is_initialized()) {
+			interfaces.write[i]->end_frame();
+		};
+	};
+}
 
 XRServer::XRServer() {
 	singleton = this;
