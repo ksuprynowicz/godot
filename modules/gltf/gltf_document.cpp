@@ -6598,7 +6598,7 @@ Error GLTFDocument::_parse(Ref<GLTFState> state, String p_path, FileAccess *f, i
 	for (int32_t ext_i = 0; ext_i < document_extensions.size(); ext_i++) {
 		Ref<GLTFDocumentExtension> ext = document_extensions[ext_i];
 		ERR_CONTINUE(ext.is_null());
-		err = ext->import_preflight(this);
+		err = ext->import_preflight(state);
 		ERR_FAIL_COND_V(err != OK, FAILED);
 	}
 	err = _parse_gltf_state(state, p_path, p_bake_fps);
@@ -6862,7 +6862,7 @@ Node *GLTFDocument::generate_scene(Ref<GLTFState> state, int32_t p_bake_fps) {
 	for (int32_t ext_i = 0; ext_i < document_extensions.size(); ext_i++) {
 		Ref<GLTFDocumentExtension> ext = document_extensions[ext_i];
 		ERR_CONTINUE(ext.is_null());
-		Error err = ext->import_post(this, root);
+		Error err = ext->import_post(state, root);
 		ERR_FAIL_COND_V(err != OK, nullptr);
 	}
 	ERR_FAIL_NULL_V(root, nullptr);
