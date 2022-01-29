@@ -19,6 +19,8 @@ else:
     # don't build anything, OpenXR not supported on this platform
     is_supported_on_platform = False
 
+env.Append(CPPDEFINES=['DISABLE_STD_FILESYSTEM'])
+
 if is_supported_on_platform:
     thirdparty_obj = []
     thirdparty_dir = "#thirdparty/openxr"
