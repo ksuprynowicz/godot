@@ -51,13 +51,13 @@ class GLTFDocumentExtension : public Resource {
 protected:
 	static void _bind_methods();
 	GDVIRTUAL0RC(Array, _get_import_setting_keys)
-	GDVIRTUAL1RC(Variant, _get_import_setting, StringName)
 	GDVIRTUAL2RC(Variant, _set_import_setting, StringName, Variant)
+	GDVIRTUAL1RC(Variant, _get_import_setting, StringName)
 	GDVIRTUAL1RC(int, _import_preflight, RES)
 	GDVIRTUAL2RC(int, _import_post, RES, Object *)
 	GDVIRTUAL0RC(Array, _get_export_setting_keys)
-	GDVIRTUAL1RC(Variant, _set_export_setting, StringName)
-	GDVIRTUAL2RC(Variant, _get_export_setting, StringName, Variant)
+	GDVIRTUAL2RC(Variant, _set_export_setting, StringName, Variant)
+	GDVIRTUAL1RC(Variant, _get_export_setting, StringName)
 	GDVIRTUAL2RC(int, _export_preflight, RES, Object *)
 	GDVIRTUAL1RC(int, _export_post, RES)
 
