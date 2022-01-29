@@ -50,6 +50,6 @@ protected:
 	static void _bind_methods();
 
 public:
-	Error import_post(Ref<GLTFDocument> p_document, Node *p_node) override;
+	Error import_post(Ref<GLTFState> p_state, Node *p_node) override;
 };
 #endif // GLTF_EXTENSION_EDITOR_H
