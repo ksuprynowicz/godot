@@ -246,6 +246,13 @@
 #define HAVE_RANDOM_INIT_BY_DEFAULT 1
 #endif
 
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L) && \
+    !(defined(LIBRESSL_VERSION_NUMBER) && \
+      LIBRESSL_VERSION_NUMBER < 0x2070100fL) && \
+    !defined(OPENSSL_IS_BORINGSSL)
+#define HAVE_OPENSSL_VERSION
+#endif
+
 struct ssl_backend_data {
   struct Curl_easy *logger; /* transfer handle to pass trace logs to, only
                                using sockindex 0 */
@@ -1428,6 +1435,12 @@ static void ossl_closeone(struct Curl_easy *data,
   if(backend->handle) {
     char buf[32];
     set_logger(conn, data);
+    /*
+     * The conn->sock[0] socket is passed to openssl with SSL_set_fd().  Make
+     * sure the socket is not closed before calling OpenSSL functions that
+     * will use it.
+     */
+    DEBUGASSERT(conn->sock[FIRSTSOCKET] != CURL_SOCKET_BAD);
 
     /* Maybe the server has already sent a close notify alert.
        Read it to avoid an RST on the TCP connection. */
@@ -1666,9 +1679,10 @@ static bool subj_alt_hostcheck(struct Curl_easy *data,
    hostname. In this case, the iPAddress subjectAltName must be present
    in the certificate and must exactly match the IP in the URI.
 
+   This function is now used from ngtcp2 (QUIC) as well.
 */
-static CURLcode verifyhost(struct Curl_easy *data, struct connectdata *conn,
-                           X509 *server_cert)
+CURLcode Curl_ossl_verifyhost(struct Curl_easy *data, struct connectdata *conn,
+                              X509 *server_cert)
 {
   bool matched = FALSE;
   int target = GEN_DNS; /* target type, GEN_DNS or GEN_IPADD */
@@ -3916,7 +3930,7 @@ static CURLcode servercert(struct Curl_easy *data,
   BIO_free(mem);
 
   if(SSL_CONN_CONFIG(verifyhost)) {
-    result = verifyhost(data, conn, backend->server_cert);
+    result = Curl_ossl_verifyhost(data, conn, backend->server_cert);
     if(result) {
       X509_free(backend->server_cert);
       backend->server_cert = NULL;
@@ -4396,13 +4410,7 @@ static ssize_t ossl_recv(struct Curl_easy *data,   /* transfer */
 static size_t ossl_version(char *buffer, size_t size)
 {
 #ifdef LIBRESSL_VERSION_NUMBER
-#if LIBRESSL_VERSION_NUMBER < 0x2070100fL
-  return msnprintf(buffer, size, "%s/%lx.%lx.%lx",
-                   OSSL_PACKAGE,
-                   (LIBRESSL_VERSION_NUMBER>>28)&0xf,
-                   (LIBRESSL_VERSION_NUMBER>>20)&0xff,
-                   (LIBRESSL_VERSION_NUMBER>>12)&0xff);
-#else /* OpenSSL_version() first appeared in LibreSSL 2.7.1 */
+#ifdef HAVE_OPENSSL_VERSION
   char *p;
   int count;
   const char *ver = OpenSSL_version(OPENSSL_VERSION);
@@ -4416,6 +4424,12 @@ static size_t ossl_version(char *buffer, size_t size)
       *p = '_';
   }
   return count;
+#else
+  return msnprintf(buffer, size, "%s/%lx.%lx.%lx",
+                   OSSL_PACKAGE,
+                   (LIBRESSL_VERSION_NUMBER>>28)&0xf,
+                   (LIBRESSL_VERSION_NUMBER>>20)&0xff,
+                   (LIBRESSL_VERSION_NUMBER>>12)&0xff);
 #endif
 #elif defined(OPENSSL_IS_BORINGSSL)
   return msnprintf(buffer, size, OSSL_PACKAGE);

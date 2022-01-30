@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 2012 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 2012 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
  * Copyright (C) 2010 - 2011, Hoi-Ho Chan, <hoiho.chan@gmail.com>
  *
  * This software is licensed as described in the file COPYING, which
@@ -319,36 +319,34 @@ mbed_connect_step1(struct Curl_easy *data, struct connectdata *conn,
   /* Load the trusted CA */
   mbedtls_x509_crt_init(&backend->cacert);
 
-  if(ca_info_blob) {
-    unsigned char *blob_data = (unsigned char *)ca_info_blob->data;
-
-    /* mbedTLS expects the terminating NULL byte to be included in the length
-       of the data */
-    size_t blob_data_len = ca_info_blob->len + 1;
-
-    ret = mbedtls_x509_crt_parse(&backend->cacert, blob_data,
-                                 blob_data_len);
-
+  if(ca_info_blob && verifypeer) {
+    /* Unfortunately, mbedtls_x509_crt_parse() requires the data to be null
+       terminated even when provided the exact length, forcing us to waste
+       extra memory here. */
+    unsigned char *newblob = malloc(ca_info_blob->len + 1);
+    if(!newblob)
+      return CURLE_OUT_OF_MEMORY;
+    memcpy(newblob, ca_info_blob->data, ca_info_blob->len);
+    newblob[ca_info_blob->len] = 0; /* null terminate */
+    ret = mbedtls_x509_crt_parse(&backend->cacert, newblob,
+                                 ca_info_blob->len + 1);
+    free(newblob);
     if(ret<0) {
       mbedtls_strerror(ret, errorbuf, sizeof(errorbuf));
-      failf(data, "Error importing ca cert blob %s - mbedTLS: (-0x%04X) %s",
-            ca_info_blob, -ret, errorbuf);
-
-      if(verifypeer)
-        return ret;
+      failf(data, "Error importing ca cert blob - mbedTLS: (-0x%04X) %s",
+            -ret, errorbuf);
+      return ret;
     }
   }
 
-  if(ssl_cafile) {
+  if(ssl_cafile && verifypeer) {
     ret = mbedtls_x509_crt_parse_file(&backend->cacert, ssl_cafile);
 
     if(ret<0) {
       mbedtls_strerror(ret, errorbuf, sizeof(errorbuf));
       failf(data, "Error reading ca cert file %s - mbedTLS: (-0x%04X) %s",
             ssl_cafile, -ret, errorbuf);
-
-      if(verifypeer)
-        return CURLE_SSL_CACERT_BADFILE;
+      return CURLE_SSL_CACERT_BADFILE;
     }
   }
 
@@ -381,10 +379,17 @@ mbed_connect_step1(struct Curl_easy *data, struct connectdata *conn,
   }
 
   if(ssl_cert_blob) {
-    const unsigned char *blob_data =
-      (const unsigned char *)ssl_cert_blob->data;
-    ret = mbedtls_x509_crt_parse(&backend->clicert, blob_data,
+    /* Unfortunately, mbedtls_x509_crt_parse() requires the data to be null
+       terminated even when provided the exact length, forcing us to waste
+       extra memory here. */
+    unsigned char *newblob = malloc(ssl_cert_blob->len + 1);
+    if(!newblob)
+      return CURLE_OUT_OF_MEMORY;
+    memcpy(newblob, ssl_cert_blob->data, ssl_cert_blob->len);
+    newblob[ssl_cert_blob->len] = 0; /* null terminate */
+    ret = mbedtls_x509_crt_parse(&backend->clicert, newblob,
                                  ssl_cert_blob->len);
+    free(newblob);
 
     if(ret) {
       mbedtls_strerror(ret, errorbuf, sizeof(errorbuf));
@@ -694,7 +699,7 @@ mbed_connect_step2(struct Curl_easy *data, struct connectdata *conn,
     mbedtls_x509_crt *p = NULL;
     unsigned char *pubkey = NULL;
 
-#if MBEDTLS_VERSION_NUMBER >= 0x03000000
+#if MBEDTLS_VERSION_NUMBER == 0x03000000
     if(!peercert || !peercert->MBEDTLS_PRIVATE(raw).MBEDTLS_PRIVATE(p) ||
        !peercert->MBEDTLS_PRIVATE(raw).MBEDTLS_PRIVATE(len)) {
 #else
@@ -721,7 +726,7 @@ mbed_connect_step2(struct Curl_easy *data, struct connectdata *conn,
     /* Make a copy of our const peercert because mbedtls_pk_write_pubkey_der
        needs a non-const key, for now.
        https://github.com/ARMmbed/mbedtls/issues/396 */
-#if MBEDTLS_VERSION_NUMBER >= 0x03000000
+#if MBEDTLS_VERSION_NUMBER == 0x03000000
     if(mbedtls_x509_crt_parse_der(p,
                         peercert->MBEDTLS_PRIVATE(raw).MBEDTLS_PRIVATE(p),
                         peercert->MBEDTLS_PRIVATE(raw).MBEDTLS_PRIVATE(len))) {
@@ -733,7 +738,7 @@ mbed_connect_step2(struct Curl_easy *data, struct connectdata *conn,
       goto pinnedpubkey_error;
     }
 
-#if MBEDTLS_VERSION_NUMBER >= 0x03000000
+#if MBEDTLS_VERSION_NUMBER == 0x03000000
     size = mbedtls_pk_write_pubkey_der(&p->MBEDTLS_PRIVATE(pk), pubkey,
                                        PUB_DER_MAX_BYTES);
 #else

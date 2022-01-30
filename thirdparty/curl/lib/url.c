@@ -5,7 +5,7 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -136,6 +136,15 @@ bool curl_win32_idn_to_ascii(const char *in, char **out);
 #include "curl_printf.h"
 #include "curl_memory.h"
 #include "memdebug.h"
+
+/* Count of the backend ssl objects to allocate */
+#ifdef USE_SSL
+#  ifndef CURL_DISABLE_PROXY
+#    define SSL_BACKEND_CNT 4
+#  else
+#    define SSL_BACKEND_CNT 2
+#  endif
+#endif
 
 static void conn_free(struct connectdata *conn);
 
@@ -540,8 +549,10 @@ CURLcode Curl_init_userdefined(struct Curl_easy *data)
    * libcurl 7.10 introduced SSL verification *by default*! This needs to be
    * switched off unless wanted.
    */
+#ifndef CURL_DISABLE_DOH
   set->doh_verifyhost = TRUE;
   set->doh_verifypeer = TRUE;
+#endif
   set->ssl.primary.verifypeer = TRUE;
   set->ssl.primary.verifyhost = TRUE;
 #ifdef USE_TLS_SRP
@@ -843,7 +854,7 @@ CURLcode Curl_disconnect(struct Curl_easy *data,
     return CURLE_OK;
   }
 
-  if(conn->dns_entry != NULL) {
+  if(conn->dns_entry) {
     Curl_resolv_unlock(data, conn->dns_entry);
     conn->dns_entry = NULL;
   }
@@ -1298,13 +1309,12 @@ ConnectionExists(struct Curl_easy *data,
             if(check->proxy_ssl[FIRSTSOCKET].state != ssl_connection_complete)
               continue;
           }
-          else {
-            if(!Curl_ssl_config_matches(&needle->ssl_config,
-                                        &check->ssl_config))
-              continue;
-            if(check->ssl[FIRSTSOCKET].state != ssl_connection_complete)
-              continue;
-          }
+
+          if(!Curl_ssl_config_matches(&needle->ssl_config,
+                                      &check->ssl_config))
+            continue;
+          if(check->ssl[FIRSTSOCKET].state != ssl_connection_complete)
+            continue;
         }
       }
 #endif
@@ -1681,7 +1691,7 @@ static struct connectdata *allocate_conn(struct Curl_easy *data)
      data becomes proxy backend data). */
   {
     size_t sslsize = Curl_ssl->sizeof_ssl_backend_data;
-    char *ssl = calloc(4, sslsize);
+    char *ssl = calloc(SSL_BACKEND_CNT, sslsize);
     if(!ssl) {
       free(conn);
       return NULL;
@@ -2591,7 +2601,7 @@ static CURLcode create_conn_helper_init_proxy(struct Curl_easy *data,
   if(data->set.str[STRING_PROXY]) {
     proxy = strdup(data->set.str[STRING_PROXY]);
     /* if global proxy is set, this is it */
-    if(NULL == proxy) {
+    if(!proxy) {
       failf(data, "memory shortage");
       result = CURLE_OUT_OF_MEMORY;
       goto out;
@@ -2601,7 +2611,7 @@ static CURLcode create_conn_helper_init_proxy(struct Curl_easy *data,
   if(data->set.str[STRING_PRE_PROXY]) {
     socksproxy = strdup(data->set.str[STRING_PRE_PROXY]);
     /* if global socks proxy is set, this is it */
-    if(NULL == socksproxy) {
+    if(!socksproxy) {
       failf(data, "memory shortage");
       result = CURLE_OUT_OF_MEMORY;
       goto out;

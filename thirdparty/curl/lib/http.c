@@ -3311,7 +3311,7 @@ checkhttpprefix(struct Curl_easy *data,
 #ifdef CURL_DOES_CONVERSIONS
   /* convert from the network encoding using a scratch area */
   char *scratch = strdup(s);
-  if(NULL == scratch) {
+  if(!scratch) {
     failf(data, "Failed to allocate memory for conversion!");
     return FALSE; /* can't return CURLE_OUT_OF_MEMORY so return FALSE */
   }
@@ -3351,7 +3351,7 @@ checkrtspprefix(struct Curl_easy *data,
 #ifdef CURL_DOES_CONVERSIONS
   /* convert from the network encoding using a scratch area */
   char *scratch = strdup(s);
-  if(NULL == scratch) {
+  if(!scratch) {
     failf(data, "Failed to allocate memory for conversion!");
     return FALSE; /* can't return CURLE_OUT_OF_MEMORY so return FALSE */
   }
@@ -4244,7 +4244,7 @@ CURLcode Curl_http_readwrite_headers(struct Curl_easy *data,
            The sscanf() line above will also allow zero-prefixed and negative
            numbers, so we check for that too here.
         */
-        else if(ISDIGIT(digit4) || (k->httpcode < 100)) {
+        else if(ISDIGIT(digit4) || (nc >= 4 && k->httpcode < 100)) {
           failf(data, "Unsupported response code in HTTP response");
           return CURLE_UNSUPPORTED_PROTOCOL;
         }
