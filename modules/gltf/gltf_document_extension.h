@@ -31,11 +31,17 @@
 #ifndef GLTF_DOCUMENT_EXTENSION_H
 #define GLTF_DOCUMENT_EXTENSION_H
 
+#include "core/error/error_list.h"
+#include "core/error/error_macros.h"
 #include "core/io/resource.h"
+#include "core/object/script_language.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/typed_array.h"
 #include "core/variant/variant.h"
-class GLTFDocument;
+
+#include "core/object/gdvirtual.gen.inc"
+
+class GLTFState;
 class GLTFDocumentExtension : public Resource {
 	GDCLASS(GLTFDocumentExtension, Resource);
 
@@ -44,20 +50,30 @@ class GLTFDocumentExtension : public Resource {
 
 protected:
 	static void _bind_methods();
+	GDVIRTUAL0RC(Array, _get_import_setting_keys)
+	GDVIRTUAL2RC(Variant, _set_import_setting, StringName, Variant)
+	GDVIRTUAL1RC(Variant, _get_import_setting, StringName)
+	GDVIRTUAL1RC(int, _import_preflight, RES)
+	GDVIRTUAL2RC(int, _import_post, RES, Object *)
+	GDVIRTUAL0RC(Array, _get_export_setting_keys)
+	GDVIRTUAL2RC(Variant, _set_export_setting, StringName, Variant)
+	GDVIRTUAL1RC(Variant, _get_export_setting, StringName)
+	GDVIRTUAL2RC(int, _export_preflight, RES, Object *)
+	GDVIRTUAL1RC(int, _export_post, RES)
 
 public:
+	virtual Error import_preflight(Ref<GLTFState> p_state);
+	virtual Error import_post(Ref<GLTFState> p_state, Node *p_node);
 	virtual Array get_import_setting_keys() const;
 	virtual Variant get_import_setting(const StringName &p_key) const;
 	virtual void set_import_setting(const StringName &p_key, Variant p_var);
-	virtual Error import_preflight(Ref<GLTFDocument> p_document) { return OK; }
-	virtual Error import_post(Ref<GLTFDocument> p_document, Node *p_node) { return OK; }
 
 public:
 	virtual Array get_export_setting_keys() const;
 	virtual Variant get_export_setting(const StringName &p_key) const;
 	virtual void set_export_setting(const StringName &p_key, Variant p_var);
-	virtual Error export_preflight(Ref<GLTFDocument> p_document, Node *p_node) { return OK; }
-	virtual Error export_post(Ref<GLTFDocument> p_document) { return OK; }
+	virtual Error export_preflight(Ref<GLTFState> p_state, Node *p_node);
+	virtual Error export_post(Ref<GLTFState> p_state);
 };
 
 #endif // GLTF_DOCUMENT_EXTENSION_H
