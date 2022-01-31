@@ -29,6 +29,9 @@ if env["opengl3"]:
     SConscript("gl_context/SCsub")
     SConscript("gles3/SCsub")
 
+if env["openxr"]:
+    SConscript("openxr/SCsub")
+
 # Core dependencies
 SConscript("png/SCsub")
 SConscript("spirv-reflect/SCsub")
