@@ -521,6 +521,24 @@ Patch files are provided in `oidn/patches/`.
 
 - scripts/resource_to_cpp.py (used in modules/denoise/resource_to_cpp.py)
 
+## OpenXR
+
+- Upstream: https://github.com/KhronosGroup/OpenXR-SDK
+- Version: 1.0.22 (458984d7f59d1ae6dc1b597d94b02e4f7132eaba, 2022)
+- License: Apache 2.0
+
+Files extracted from upstream source:
+
+- include/*
+- LICENSES/*
+- src/*
+- *
+
+Exclude:
+- src/external/jsoncpp/.github/*
+- src/external/jsoncpp/devtools/*
+- src/external/jsoncpp/example/*
+- src/external/jsoncpp/test/*
 
 ## pcre2
 
@@ -644,15 +662,13 @@ instead of `miniz.h` as an external dependency.
 ## thorvg
 
 - Upstream: https://github.com/Samsung/thorvg
-- Version: 0.7.0 (e527f565b770f0a41df821e6618ccaeea94f465e, 2021)
+- Version: 0.7.1 (d53eb2a880002cb770ace1c1ace9c5dfcfc28252, 2022)
 - License: MIT
 
 Files extracted from upstream source:
 
 See `thorvg/update-thorvg.sh` for extraction instructions. Set the version
 number and run the script.
-
-Patches in the `patches` directory should be re-applied after updates.
 
 
 ## vhacd
