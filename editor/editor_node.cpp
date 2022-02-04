@@ -4021,11 +4021,6 @@ Ref<Texture2D> EditorNode::get_object_icon(const Object *p_object, const String 
 		}
 	}
 
-	// should probably be deprecated in 4.x
-	if (p_object->has_meta("_editor_icon")) {
-		return p_object->get_meta("_editor_icon");
-	}
-
 	if (gui_base->has_theme_icon(p_object->get_class(), "EditorIcons")) {
 		return gui_base->get_theme_icon(p_object->get_class(), "EditorIcons");
 	}
