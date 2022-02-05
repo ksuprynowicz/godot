@@ -2337,7 +2337,7 @@ Map<Vector2i, TileMapCell> TileMapEditorTerrainsPlugin::_draw_terrains(const Map
 	bool to_replace_modified = true;
 	while (to_replace_modified) {
 		// Get the constraints from the removed cells.
-		removed_cells_constraints_set = tile_map->get_terrain_constraints_from_removed_cells_list(tile_map_layer, to_replace, p_terrain_set);
+		removed_cells_constraints_set = tile_map->get_terrain_constraints_from_removed_cells_list(tile_map_layer, to_replace, p_terrain_set, false);
 
 		// Filter the sources to make sure they are in the potential_to_replace.
 		Map<TileMap::TerrainConstraint, Set<Vector2i>> per_constraint_tiles;
@@ -3735,7 +3735,7 @@ void TileMapEditor::_move_tile_map_array_element(Object *p_undo_redo, Object *p_
 			String str = pi.name.trim_prefix(p_array_prefix);
 			int to_char_index = 0;
 			while (to_char_index < str.length()) {
-				if (str[to_char_index] < '0' || str[to_char_index] > '9') {
+				if (!is_digit(str[to_char_index])) {
 					break;
 				}
 				to_char_index++;

@@ -836,7 +836,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			if (I->next()) {
 				String vm = I->next()->get();
 
-				if (vm.find("x") == -1) { // invalid parameter format
+				if (!vm.contains("x")) { // invalid parameter format
 
 					OS::get_singleton()->print("Invalid resolution '%s', it should be e.g. '1280x720'.\n",
 							vm.utf8().get_data());
@@ -867,7 +867,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			if (I->next()) {
 				String vm = I->next()->get();
 
-				if (vm.find(",") == -1) { // invalid parameter format
+				if (!vm.contains(",")) { // invalid parameter format
 
 					OS::get_singleton()->print("Invalid position '%s', it should be e.g. '80,128'.\n",
 							vm.utf8().get_data());
@@ -949,7 +949,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		} else if (I->get() == "--debug-server") {
 			if (I->next()) {
 				debug_server_uri = I->next()->get();
-				if (debug_server_uri.find("://") == -1) { // wrong address
+				if (!debug_server_uri.contains("://")) { // wrong address
 					OS::get_singleton()->print("Invalid debug server uri. It should be of the form <protocol>://<bind_address>:<port>.\n");
 					goto error;
 				}
@@ -1082,7 +1082,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		} else if (I->get() == "--remote-debug") {
 			if (I->next()) {
 				debug_uri = I->next()->get();
-				if (debug_uri.find("://") == -1) { // wrong address
+				if (!debug_uri.contains("://")) { // wrong address
 					OS::get_singleton()->print(
 							"Invalid debug host address, it should be of the form <protocol>://<host/IP>:<port>.\n");
 					goto error;
@@ -1139,7 +1139,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	if (!remotefs.is_empty()) {
 		file_access_network_client = memnew(FileAccessNetworkClient);
 		int port;
-		if (remotefs.find(":") != -1) {
+		if (remotefs.contains(":")) {
 			port = remotefs.get_slicec(':', 1).to_int();
 			remotefs = remotefs.get_slicec(':', 0);
 		} else {
@@ -1319,7 +1319,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	ProjectSettings::get_singleton()->set_custom_property_info("display/window/size/viewport_width",
 			PropertyInfo(Variant::INT, "display/window/size/viewport_width",
 					PROPERTY_HINT_RANGE,
-					"0,7680,or_greater")); // 8K resolution
+					"0,7680,1,or_greater")); // 8K resolution
 
 	GLOBAL_DEF_BASIC("display/window/size/viewport_height", 600);
 	ProjectSettings::get_singleton()->set_custom_property_info("display/window/size/viewport_height",
@@ -1342,7 +1342,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			PropertyInfo(Variant::INT,
 					"display/window/size/window_height_override",
 					PROPERTY_HINT_RANGE,
-					"0,4320,or_greater")); // 8K resolution
+					"0,4320,1,or_greater")); // 8K resolution
 
 	if (use_custom_res) {
 		if (!force_res) {
