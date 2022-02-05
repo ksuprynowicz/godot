@@ -33,6 +33,7 @@
 #include "core/config/project_settings.h"
 #include "core/os/os.h"
 #include "core/string/print_string.h"
+#include "drivers/openxr/openxr_device.h"
 
 RendererCompositor *(*RendererCompositor::_create_func)() = nullptr;
 
@@ -45,7 +46,13 @@ bool RendererCompositor::is_xr_enabled() const {
 }
 
 RendererCompositor::RendererCompositor() {
-	xr_enabled = GLOBAL_GET("rendering/xr/enabled");
+	if (OpenXRDevice::openxr_is_enabled()) {
+		// enabling OpenXR overrides this project setting.
+		// OpenXR can't function without this.
+		xr_enabled = true;
+	} else {
+		xr_enabled = GLOBAL_GET("rendering/xr/enabled");
+	}
 }
 
 RendererCanvasRender *RendererCanvasRender::singleton = nullptr;
