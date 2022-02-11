@@ -31,11 +31,14 @@
 #ifndef VULKAN_CONTEXT_H
 #define VULKAN_CONTEXT_H
 
+// @TODO exclude code around OpenXR if OpenXR is not supported on the platform or not compiled in
+
 #include "core/error/error_list.h"
 #include "core/os/mutex.h"
 #include "core/string/ustring.h"
 #include "core/templates/map.h"
 #include "core/templates/rid_owner.h"
+#include "drivers/openxr/openxr_vulkan_extension.h"
 #include "servers/display_server.h"
 #include "servers/rendering/rendering_device.h"
 
@@ -82,6 +85,7 @@ private:
 		FRAME_LAG = 2
 	};
 
+	OpenXRVulkanExtension *openxr_vulkan_extension = nullptr;
 	VkInstance inst = VK_NULL_HANDLE;
 	VkPhysicalDevice gpu = VK_NULL_HANDLE;
 	VkPhysicalDeviceProperties gpu_props;
