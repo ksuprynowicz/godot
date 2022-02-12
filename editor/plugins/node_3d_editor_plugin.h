@@ -245,7 +245,7 @@ private:
 	void _compute_edit(const Point2 &p_point);
 	void _clear_selected();
 	void _select_clicked(bool p_allow_locked);
-	ObjectID _select_ray(const Point2 &p_pos);
+	ObjectID _select_ray(const Point2 &p_pos) const;
 	void _find_items_at_pos(const Point2 &p_pos, Vector<_RayResult> &r_results, bool p_include_locked);
 	Vector3 _get_ray_pos(const Vector2 &p_pos) const;
 	Vector3 _get_ray(const Vector2 &p_pos) const;
@@ -272,6 +272,7 @@ private:
 	float get_fov() const;
 
 	ObjectID clicked;
+	ObjectID material_target;
 	Vector<_RayResult> selection_results;
 	bool clicked_wants_append;
 	bool selection_in_progress = false;
@@ -399,8 +400,9 @@ private:
 
 	Node *_sanitize_preview_node(Node *p_node) const;
 
-	void _create_preview(const Vector<String> &files) const;
-	void _remove_preview();
+	void _create_preview_node(const Vector<String> &files) const;
+	void _remove_preview_node();
+	void _remove_preview_material(bool p_reset_target_material);
 	bool _cyclical_dependency_exists(const String &p_target_scene_path, Node *p_desired_node);
 	bool _create_instance(Node *parent, String &path, const Point2 &p_point);
 	void _perform_drop_data();
@@ -590,6 +592,10 @@ private:
 	// Scene drag and drop support
 	Node3D *preview_node;
 	AABB preview_bounds;
+
+	Ref<Material> preview_material;
+	Ref<Material> preview_reset_material;
+	ObjectID preview_material_target;
 
 	struct Gizmo {
 		bool visible = false;
@@ -849,6 +855,13 @@ public:
 	}
 
 	void set_can_preview(Camera3D *p_preview);
+
+	void set_preview_material(Ref<Material> p_material) { preview_material = p_material; }
+	Ref<Material> get_preview_material() { return preview_material; }
+	void set_preview_reset_material(Ref<Material> p_material) { preview_reset_material = p_material; }
+	Ref<Material> get_preview_reset_material() { return preview_reset_material; }
+	void set_preview_material_target(ObjectID p_object_id) { preview_material_target = p_object_id; }
+	ObjectID get_preview_material_target() { return preview_material_target; }
 
 	Node3DEditorViewport *get_editor_viewport(int p_idx) {
 		ERR_FAIL_INDEX_V(p_idx, static_cast<int>(VIEWPORTS_COUNT), nullptr);
