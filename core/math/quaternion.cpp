@@ -102,6 +102,39 @@ Quaternion Quaternion::inverse() const {
 	return Quaternion(-x, -y, -z, w);
 }
 
+Quaternion Quaternion::log() const {
+	Quaternion result = *this;
+	float a_0 = result.w;
+	result.w = 0.0;
+	if (Math::abs(a_0) < 1.0) {
+		float angle = Math::acos(a_0);
+		float sin_angle = Math::sin(angle);
+		if (!Math::is_equal_approx(Math::absf(sin_angle), 0.0f)) {
+			float coeff = angle / sin_angle;
+			result.x *= coeff;
+			result.y *= coeff;
+			result.z *= coeff;
+		}
+	}
+	return result;
+}
+
+Quaternion Quaternion::exp() const {
+	Quaternion rot = *this;
+	float angle = rot.length();
+	float coeff = 0.0f;
+
+	if (!Math::is_equal_approx(angle, 0.0f)) {
+		coeff = Math::sin(angle) / angle;
+	}
+	Quaternion result;
+	result.x = rot.x * coeff;
+	result.y = rot.y * coeff;
+	result.z = rot.z * coeff;
+	result.w = Math::cos(angle);
+	return result;
+}
+
 Quaternion Quaternion::slerp(const Quaternion &p_to, const real_t &p_weight) const {
 #ifdef MATH_CHECKS
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
@@ -178,11 +211,22 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
 	ERR_FAIL_COND_V_MSG(!p_b.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
 #endif
-	//the only way to do slerp :|
-	real_t t2 = (1.0f - p_weight) * p_weight * 2;
-	Quaternion sp = this->slerp(p_b, p_weight);
-	Quaternion sq = p_pre_a.slerpni(p_post_b, p_weight);
-	return sp.slerpni(sq, t2);
+	Quaternion prep = (p_pre_a - p_pre_a).length_squared() < (p_pre_a + p_pre_a).length_squared() ? p_pre_a : p_pre_a * -1.0f;
+	Quaternion ret = (prep - *this).length_squared() < (prep + *this).length_squared() ? *this : *this * -1.0f;
+	Quaternion q_b = (ret - p_b).length_squared() < (ret + p_b).length_squared() ? p_b : p_b * -1.0f;
+	Quaternion post_b = (q_b - p_post_b).length_squared() < (p_b + p_post_b).length_squared() ? p_post_b : p_post_b * -1.0f;
+
+	Quaternion ln_pre = prep.log();
+	Quaternion ln_ret = ret.log();
+	Quaternion ln_to = q_b.log();
+	Quaternion ln_post = post_b.log();
+	Quaternion ln = Quaternion(0, 0, 0, 0);
+	ln.x = Math::cubic_interpolate(ln_ret.x, ln_to.x, ln_pre.x, ln_post.x, p_weight);
+	ln.y = Math::cubic_interpolate(ln_ret.y, ln_to.y, ln_pre.y, ln_post.y, p_weight);
+	ln.z = Math::cubic_interpolate(ln_ret.z, ln_to.z, ln_pre.z, ln_post.z, p_weight);
+	ret = ln.exp();
+	// calculate final values
+	return ret;
 }
 
 Quaternion::operator String() const {
