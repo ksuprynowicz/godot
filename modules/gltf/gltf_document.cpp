@@ -2730,14 +2730,14 @@ Error GLTFDocument::_parse_meshes(Ref<GLTFState> state) {
 				array[Mesh::ARRAY_INDEX] = indices;
 			}
 
-			bool generate_tangents = (primitive == Mesh::PRIMITIVE_TRIANGLES && !a.has("TANGENT") && a.has("TEXCOORD_0") && a.has("NORMAL"));
+			bool generate_tangents = (primitive == Mesh::PRIMITIVE_TRIANGLES);
 
 			if (generate_tangents) {
 				//must generate mikktspace tangents.. ergh..
 				Ref<SurfaceTool> st;
 				st.instance();
 				st->create_from_triangle_arrays(array);
-				st->generate_tangents();
+				st->generate_tangents(true);
 				array = st->commit_to_arrays();
 			}
 
@@ -2854,7 +2854,7 @@ Error GLTFDocument::_parse_meshes(Ref<GLTFState> state) {
 						st.instance();
 						st->create_from_triangle_arrays(array_copy);
 						st->deindex();
-						st->generate_tangents();
+						st->generate_tangents(true);
 						array_copy = st->commit_to_arrays();
 					}
 

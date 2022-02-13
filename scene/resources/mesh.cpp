@@ -1044,7 +1044,7 @@ void ArrayMesh::regen_normalmaps() {
 }
 
 //dirty hack
-bool (*array_mesh_lightmap_unwrap_callback)(float p_texel_size, const float *p_vertices, const float *p_normals, int p_vertex_count, const int *p_indices, const int *p_face_materials, int p_index_count, float **r_uv, int **r_vertex, int *r_vertex_count, int **r_index, int *r_index_count, int *r_size_hint_x, int *r_size_hint_y) = nullptr;
+bool (*array_mesh_lightmap_unwrap_callback)(float p_padding, float p_texel_size, const float *p_vertices, const float *p_normals, int p_vertex_count, const int *p_indices, const int *p_face_materials, int p_index_count, float **r_uv, int **r_vertex, int *r_vertex_count, int **r_index, int *r_index_count, int *r_size_hint_x, int *r_size_hint_y) = nullptr;
 
 struct ArrayMeshLightmapSurface {
 	Ref<Material> material;
@@ -1057,10 +1057,10 @@ Error ArrayMesh::lightmap_unwrap(const Transform &p_base_transform, float p_texe
 	int *cache_data = nullptr;
 	unsigned int cache_size = 0;
 	bool use_cache = false; // Don't use cache
-	return lightmap_unwrap_cached(cache_data, cache_size, use_cache, p_base_transform, p_texel_size);
+	return lightmap_unwrap_cached(cache_data, cache_size, use_cache, p_base_transform, p_texel_size, 1.0);
 }
 
-Error ArrayMesh::lightmap_unwrap_cached(int *&r_cache_data, unsigned int &r_cache_size, bool &r_used_cache, const Transform &p_base_transform, float p_texel_size) {
+Error ArrayMesh::lightmap_unwrap_cached(int *&r_cache_data, unsigned int &r_cache_size, bool &r_used_cache, const Transform &p_base_transform, float p_texel_size, float p_force_mesh_uv, float p_padding) {
 	ERR_FAIL_COND_V(!array_mesh_lightmap_unwrap_callback, ERR_UNCONFIGURED);
 	ERR_FAIL_COND_V_MSG(blend_shapes.size() != 0, ERR_UNAVAILABLE, "Can't unwrap mesh with blend shapes.");
 
@@ -1248,7 +1248,7 @@ Error ArrayMesh::lightmap_unwrap_cached(int *&r_cache_data, unsigned int &r_cach
 	}
 
 	if (!cached) {
-		bool ok = array_mesh_lightmap_unwrap_callback(p_texel_size, vertices.ptr(), normals.ptr(), vertices.size() / 3, indices.ptr(), face_materials.ptr(), indices.size(), &gen_uvs, &gen_vertices, &gen_vertex_count, &gen_indices, &gen_index_count, &size_x, &size_y);
+		bool ok = array_mesh_lightmap_unwrap_callback(p_padding, p_texel_size, vertices.ptr(), normals.ptr(), vertices.size() / 3, indices.ptr(), face_materials.ptr(), indices.size(), &gen_uvs, &gen_vertices, &gen_vertex_count, &gen_indices, &gen_index_count, &size_x, &size_y);
 
 		if (!ok) {
 			return ERR_CANT_CREATE;
@@ -1349,7 +1349,11 @@ Error ArrayMesh::lightmap_unwrap_cached(int *&r_cache_data, unsigned int &r_cach
 			}
 
 			Vector2 uv2(gen_uvs[gen_indices[i + j] * 2 + 0], gen_uvs[gen_indices[i + j] * 2 + 1]);
-			surfaces_tools[surface]->add_uv2(uv2);
+			if (!p_force_mesh_uv) {
+				surfaces_tools[surface]->add_uv2(uv2);
+			} else {
+				surfaces_tools[surface]->add_uv(uv2);
+			}
 
 			surfaces_tools[surface]->add_vertex(v.vertex);
 		}
@@ -1371,6 +1375,14 @@ Error ArrayMesh::lightmap_unwrap_cached(int *&r_cache_data, unsigned int &r_cach
 	}
 
 	return OK;
+}
+
+
+Error ArrayMesh::mesh_unwrap(const Transform &p_base_transform, float p_texel_size, float p_padding) {
+	int *cache_data = nullptr;
+	unsigned int cache_size = 0;
+	bool use_cache = false; // Don't use cache
+	return lightmap_unwrap_cached(cache_data, cache_size, use_cache, p_base_transform, p_texel_size, p_padding);
 }
 
 void ArrayMesh::_bind_methods() {
@@ -1399,6 +1411,7 @@ void ArrayMesh::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("regen_normalmaps"), &ArrayMesh::regen_normalmaps);
 	ClassDB::set_method_flags(get_class_static(), _scs_create("regen_normalmaps"), METHOD_FLAGS_DEFAULT | METHOD_FLAG_EDITOR);
 	ClassDB::bind_method(D_METHOD("lightmap_unwrap", "transform", "texel_size"), &ArrayMesh::lightmap_unwrap);
+	ClassDB::bind_method(D_METHOD("mesh_unwrap", "transform", "texel_size", "padding"), &ArrayMesh::mesh_unwrap);
 	ClassDB::set_method_flags(get_class_static(), _scs_create("lightmap_unwrap"), METHOD_FLAGS_DEFAULT | METHOD_FLAG_EDITOR);
 	ClassDB::bind_method(D_METHOD("get_faces"), &ArrayMesh::get_faces);
 	ClassDB::bind_method(D_METHOD("generate_triangle_mesh"), &ArrayMesh::generate_triangle_mesh);

@@ -898,9 +898,35 @@ void SurfaceTool::mikktSetTSpaceDefault(const SMikkTSpaceContext *pContext, cons
 	}
 }
 
-void SurfaceTool::generate_tangents() {
-	ERR_FAIL_COND(!(format & Mesh::ARRAY_FORMAT_TEX_UV));
-	ERR_FAIL_COND(!(format & Mesh::ARRAY_FORMAT_NORMAL));
+void SurfaceTool::generate_tangents(bool p_force) {
+	if (!p_force) {		
+       ERR_FAIL_COND(!(format & Mesh::ARRAY_FORMAT_TEX_UV));
+       ERR_FAIL_COND(!(format & Mesh::ARRAY_FORMAT_NORMAL));
+	} else {
+		if (!(format & Mesh::ARRAY_FORMAT_NORMAL)) {
+			bool has_smooth_groups = smooth_groups.size();
+			if (!has_smooth_groups) {
+				if (index_array.size()) {
+					for (int32_t index_i = 0; index_i < index_array.size(); index_i++){
+						smooth_groups[index_i] = true;
+					}
+				} else {
+					for (int32_t vertex_i = 0; vertex_i < vertex_array.size(); vertex_i++){
+						smooth_groups[vertex_i] = true;
+					}
+				}
+			}
+			generate_normals();
+		}
+		if (!(format & Mesh::ARRAY_FORMAT_TEX_UV)) {
+			Ref<ArrayMesh> mesh = commit();
+			mesh->mesh_unwrap(Transform());
+			clear();
+			for (int32_t surface_i = 0; surface_i < mesh->get_surface_count(); surface_i++) {
+				append_from(mesh, surface_i, Transform());
+			}
+		}
+	}
 
 	SMikkTSpaceInterface mkif;
 	mkif.m_getNormal = mikktGetNormal;
