@@ -81,22 +81,26 @@ void Transform3D::set_look_at(const Vector3 &p_eye, const Vector3 &p_target, con
 }
 
 Transform3D Transform3D::sphere_interpolate_with(const Transform3D &p_transform, real_t p_c) const {
-	/* not sure if very "efficient" but good enough? */
+	// If you plan on calling sphere_interpolate_with with the same two transform but for different values of p_c.
+	// The following terms can be cached for use by the last block of code.
 
-	Transform3D interp;
+	Transform3D inverse = this->affine_inverse();
+	Transform3D h = p_transform * inverse;
+	Basis s = h.basis.log();
+	real_t s_0 = s.elements[2][1];
+	real_t s_1 = s.elements[0][2];
+	real_t s_2 = s.elements[1][0];
+	real_t theta = Math::sqrt(s_0 * s_0 + s_1 * s_1 + s_2 * s_2);
+	Basis inv_v_1 = s._compute_inverse_v_1(theta);
+	Vector3 u = inv_v_1.xform(h.origin);
+	// End section that can be cached.
 
-	Vector3 src_scale = basis.get_scale();
-	Quaternion src_rot = basis.get_rotation_quaternion();
-	Vector3 src_loc = origin;
-
-	Vector3 dst_scale = p_transform.basis.get_scale();
-	Quaternion dst_rot = p_transform.basis.get_rotation_quaternion();
-	Vector3 dst_loc = p_transform.origin;
-
-	interp.basis.set_quaternion_scale(src_rot.slerp(dst_rot, p_c).normalized(), src_scale.lerp(dst_scale, p_c));
-	interp.origin = src_loc.lerp(dst_loc, p_c);
-
-	return interp;
+	Basis interp_r = s.exp(p_c, theta);
+	Basis interp_t_t_times_v = s._compute_t_times_v(theta, p_c);
+	Transform3D interp_h;
+	interp_h.basis = basis * interp_r;
+	interp_h.origin = interp_r.xform(origin + interp_t_t_times_v.xform(u));
+	return interp_h;
 }
 
 Transform3D Transform3D::interpolate_with(const Transform3D &p_transform, real_t p_c) const {
@@ -215,4 +219,11 @@ Transform3D::Transform3D(const Vector3 &p_x, const Vector3 &p_y, const Vector3 &
 Transform3D::Transform3D(real_t xx, real_t xy, real_t xz, real_t yx, real_t yy, real_t yz, real_t zx, real_t zy, real_t zz, real_t ox, real_t oy, real_t oz) {
 	basis = Basis(xx, xy, xz, yx, yy, yz, zx, zy, zz);
 	origin = Vector3(ox, oy, oz);
+}
+
+Transform3D Transform3D::cubic_interpolate(const Transform3D &p_b, const Transform3D &p_pre_a, const Transform3D &p_post_b, const real_t &p_weight) const {
+	real_t t2 = (1.0f - p_weight) * p_weight * 2;
+	Transform3D sp = this->sphere_interpolate_with(p_b, p_weight);
+	Transform3D sq = p_pre_a.sphere_interpolate_with(p_post_b, p_weight);
+	return sp.sphere_interpolate_with(sq, t2);
 }
