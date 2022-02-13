@@ -132,15 +132,9 @@ Quaternion Quaternion::slerp(const Quaternion &p_to, const real_t &p_weight) con
 	// adjust signs (if necessary)
 	if (cosom < 0.0f) {
 		cosom = -cosom;
-		to1.x = -p_to.x;
-		to1.y = -p_to.y;
-		to1.z = -p_to.z;
-		to1.w = -p_to.w;
+		to1 = -p_to;
 	} else {
-		to1.x = p_to.x;
-		to1.y = p_to.y;
-		to1.z = p_to.z;
-		to1.w = p_to.w;
+		to1 = p_to;
 	}
 
 	// calculate coefficients
@@ -194,11 +188,33 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
 	ERR_FAIL_COND_V_MSG(!p_b.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
 #endif
-	//the only way to do slerp :|
-	real_t t2 = (1.0f - p_weight) * p_weight * 2;
-	Quaternion sp = this->slerp(p_b, p_weight);
-	Quaternion sq = p_pre_a.slerpni(p_post_b, p_weight);
-	return sp.slerpni(sq, t2);
+	Basis prep = p_pre_a;
+	Basis ret = *this;
+	Basis q_b = p_b;
+	Basis postq = p_post_b;
+
+	Vector3 prep_x = prep.get_axis(Vector3::AXIS_X);
+	Vector3 ret_x = ret.get_axis(Vector3::AXIS_X);
+	Vector3 q_b_x = q_b.get_axis(Vector3::AXIS_X);
+	Vector3 post_x = postq.get_axis(Vector3::AXIS_X);
+
+	Vector3 prep_y = prep.get_axis(Vector3::AXIS_Y);
+	Vector3 ret_y = ret.get_axis(Vector3::AXIS_Y);
+	Vector3 q_b_y = q_b.get_axis(Vector3::AXIS_Y);
+	Vector3 post_y = postq.get_axis(Vector3::AXIS_Y);
+
+	Vector3 axis_x = ret_x.cubic_interpolate(q_b_x, prep_x, post_x, p_weight);
+	Vector3 axis_y = ret_y.cubic_interpolate(q_b_y, prep_y, post_y, p_weight);
+
+	Vector3 x = axis_x.normalized();
+	Vector3 z = x.cross(axis_y);
+	z = z.normalized();
+	Vector3 y = z.cross(x);
+	Basis basis;
+	basis.set_axis(Vector3::AXIS_X, x);
+	basis.set_axis(Vector3::AXIS_Y, y);
+	basis.set_axis(Vector3::AXIS_Z, z);
+	return basis.get_rotation_quaternion();
 }
 
 Quaternion::operator String() const {
