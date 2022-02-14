@@ -188,29 +188,26 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
 	ERR_FAIL_COND_V_MSG(!p_b.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
 #endif
-	Quaternion ret = *this;
-	// Modify quaternions for shortest path
-	// https://math.stackexchange.com/questions/2650188/super-confused-by-squad-algorithm-for-quaternion-interpolation
-	Quaternion prep = (ret - p_pre_a).length_squared() < (ret + p_pre_a).length_squared() ? p_pre_a : p_pre_a * -1.0f;
-	Quaternion q_b = (ret - p_b).length_squared() < (ret + p_b).length_squared() ? p_b : p_b * -1.0f;
-	Quaternion postq = (p_b - p_post_b).length_squared() < (p_b + p_post_b).length_squared() ? p_post_b : p_post_b * -1.0f;
-
+	Quaternion ret = signbit((p_b * inverse()).w) ? -*this : *this;
+	Quaternion prep = p_pre_a;
+	Quaternion q_b = p_b;
+	Quaternion post_b = p_post_b;
 	// calculate coefficients
 	if ((1.0 - Math::abs(dot(p_b))) > CMP_EPSILON) {
 		Quaternion ln_ret = ret.log();
 		Quaternion ln_to = q_b.log();
 		Quaternion ln_pre = prep.log();
-		Quaternion ln_post = postq.log();
+		Quaternion ln_post = post_b.log();
 		Quaternion ln = Quaternion(0, 0, 0, 0);
 		ln.x = Math::cubic_interpolate(ln_ret.x, ln_to.x, ln_pre.x, ln_post.x, p_weight);
 		ln.y = Math::cubic_interpolate(ln_ret.y, ln_to.y, ln_pre.y, ln_post.y, p_weight);
 		ln.z = Math::cubic_interpolate(ln_ret.z, ln_to.z, ln_pre.z, ln_post.z, p_weight);
 		ret = ln.exp();
 	} else {
-		ret.x = Math::cubic_interpolate(ret.x, q_b.x, prep.x, postq.x, p_weight);
-		ret.y = Math::cubic_interpolate(ret.y, q_b.y, prep.y, postq.y, p_weight);
-		ret.z = Math::cubic_interpolate(ret.z, q_b.z, prep.z, postq.z, p_weight);
-		ret.w = Math::cubic_interpolate(ret.w, q_b.w, prep.w, postq.w, p_weight);
+		ret.x = Math::cubic_interpolate(ret.x, q_b.x, prep.x, post_b.x, p_weight);
+		ret.y = Math::cubic_interpolate(ret.y, q_b.y, prep.y, post_b.y, p_weight);
+		ret.z = Math::cubic_interpolate(ret.z, q_b.z, prep.z, post_b.z, p_weight);
+		ret.w = Math::cubic_interpolate(ret.w, q_b.w, prep.w, post_b.w, p_weight);
 	}
 	// calculate final values
 	return ret;
