@@ -211,11 +211,10 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
 	ERR_FAIL_COND_V_MSG(!p_b.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
 #endif
-	Quaternion prep = signbit((p_pre_a * p_pre_a.inverse()).w) ? -p_pre_a : p_pre_a;
-	Quaternion ret = signbit((p_pre_a * inverse()).w) ? -*this : *this;
-	Quaternion q_b = signbit((ret * p_b.inverse()).w) ? -p_b : p_b;
-	Quaternion post_b = signbit((q_b * p_post_b.inverse()).w) ? -p_post_b : p_post_b;
-
+	Quaternion ret = signbit((p_b * inverse()).w) ? -*this : *this;
+	Quaternion prep = p_pre_a;
+	Quaternion q_b = p_b;
+	Quaternion post_b = p_post_b;
 	Quaternion ln_pre = prep.log();
 	Quaternion ln_ret = ret.log();
 	Quaternion ln_to = q_b.log();
