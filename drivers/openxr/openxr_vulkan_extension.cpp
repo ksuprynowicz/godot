@@ -128,12 +128,19 @@ bool OpenXRVulkanExtension::check_graphics_api_support(XrVersion p_desired_versi
 	print_line(" - maxApiVersionSupported: ", OpenXRUtil::make_xr_version_string(vulkan_requirements.maxApiVersionSupported));
 	// #endif
 
-	if (p_desired_version > vulkan_requirements.maxApiVersionSupported || p_desired_version < vulkan_requirements.minApiVersionSupported) {
-		print_line("OpenXR: Runtime does not support requested Vulkan version.");
+	if (p_desired_version < vulkan_requirements.minApiVersionSupported) {
+		("OpenXR: Requested Vulkan version does not meet the minimum version this runtime supports.");
 		print_line("- desired_version ", OpenXRUtil::make_xr_version_string(p_desired_version));
 		print_line("- minApiVersionSupported ", OpenXRUtil::make_xr_version_string(vulkan_requirements.minApiVersionSupported));
 		print_line("- maxApiVersionSupported ", OpenXRUtil::make_xr_version_string(vulkan_requirements.maxApiVersionSupported));
 		return false;
+	}
+
+	if (p_desired_version > vulkan_requirements.maxApiVersionSupported) {
+		print_line("OpenXR: Requested Vulkan version exceeds the maximum version this runtime has been tested on and is known to support.");
+		print_line("- desired_version ", OpenXRUtil::make_xr_version_string(p_desired_version));
+		print_line("- minApiVersionSupported ", OpenXRUtil::make_xr_version_string(vulkan_requirements.minApiVersionSupported));
+		print_line("- maxApiVersionSupported ", OpenXRUtil::make_xr_version_string(vulkan_requirements.maxApiVersionSupported));
 	}
 
 	return true;
