@@ -1,12 +1,12 @@
 /*************************************************************************/
-/*  register_types.h                                                     */
+/*  resource_format_loader_video_stream_extension.h                      */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
 /*                      https://godotengine.org                          */
 /*************************************************************************/
-/* Copyright (c) 2007-2022 Juan Linietsky, Ariel Manzur.                 */
-/* Copyright (c) 2014-2022 Godot Engine contributors (cf. AUTHORS.md).   */
+/* Copyright (c) 2007-2021 Juan Linietsky, Ariel Manzur.                 */
+/* Copyright (c) 2014-2021 Godot Engine contributors (cf. AUTHORS.md).   */
 /*                                                                       */
 /* Permission is hereby granted, free of charge, to any person obtaining */
 /* a copy of this software and associated documentation files (the       */
@@ -28,10 +28,17 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef VIDEODECODER_REGISTER_TYPES_H
-#define VIDEODECODER_REGISTER_TYPES_H
+#ifndef RESOURCE_FORMAT_LOADER_VIDEO_STREAM_EXTENSION
+#define RESOURCE_FORMAT_LOADER_VIDEO_STREAM_EXTENSION
 
-void register_videodecoder_types();
-void unregister_videodecoder_types();
+#include "core/io/resource_loader.h"
 
-#endif // VIDEODECODER_REGISTER_TYPES_H
+class ResourceFormatLoaderVideoStreamExtension : public ResourceFormatLoader {
+public:
+	RES load(const String &p_path, const String &p_original_path = "", Error *r_error = nullptr, bool p_use_sub_threads = false, float *r_progress = nullptr, CacheMode p_cache_mode = CACHE_MODE_REUSE) override;
+	void get_recognized_extensions(List<String> *p_extensions) const override;
+	bool handles_type(const String &p_type) const override;
+	String get_resource_type(const String &p_path) const override;
+};
+
+#endif // RESOURCE_FORMAT_LOADER_VIDEO_STREAM_EXTENSION
