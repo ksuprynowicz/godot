@@ -889,7 +889,6 @@ void register_scene_types() {
 	GDREGISTER_CLASS(SceneTree);
 	GDREGISTER_VIRTUAL_CLASS(SceneTreeTimer); // sorry, you can't create it
 
-#ifndef DISABLE_DEPRECATED
 	// Dropped in 4.0, near approximation.
 	ClassDB::add_compatibility_class("AnimationTreePlayer", "AnimationTree");
 	ClassDB::add_compatibility_class("BitmapFont", "Font");
@@ -1043,7 +1042,6 @@ void register_scene_types() {
 	ClassDB::add_compatibility_class("VisualShaderNodeScalarDerivativeFunc", "VisualShaderNodeDerivativeFunc");
 	ClassDB::add_compatibility_class("VisualShaderNodeVectorDerivativeFunc", "VisualShaderNodeDerivativeFunc");
 	ClassDB::add_compatibility_class("World", "World3D");
-#endif /* DISABLE_DEPRECATED */
 
 	OS::get_singleton()->yield(); // may take time to init
 
