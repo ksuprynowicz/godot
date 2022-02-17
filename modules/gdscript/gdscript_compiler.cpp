@@ -109,8 +109,10 @@ GDScriptDataType GDScriptCompiler::_gdtype_from_datatype(const GDScriptParser::D
 			// Locate class by constructing the path to it and following that path
 			GDScriptParser::ClassNode *class_type = p_datatype.class_type;
 			if (class_type) {
-				const bool is_inner_by_path = (!main_script->path.is_empty()) && (class_type->fqcn.split("::")[0] == main_script->path);
-				const bool is_inner_by_name = (!main_script->name.is_empty()) && (class_type->fqcn.split("::")[0] == main_script->name);
+				Vector<String> fqcn_split = class_type->fqcn.split("::", true);
+
+				const bool is_inner_by_path = (fqcn_split[0] == main_script->path);
+				const bool is_inner_by_name = (fqcn_split[0] == main_script->name);
 				if (is_inner_by_path || is_inner_by_name) {
 					// Local class.
 					List<StringName> names;
@@ -2618,7 +2620,7 @@ Error GDScriptCompiler::compile(const GDScriptParser *p_parser, GDScript *p_scri
 		return err;
 	}
 
-	return GDScriptCache::finish_compiling(p_script->get_path());
+	return GDScriptCache::finish_compiling(source);
 }
 
 String GDScriptCompiler::get_error() const {

@@ -219,6 +219,11 @@ Ref<GDScript> GDScriptCache::get_full_script(const String &p_path, Error &r_erro
 }
 
 Error GDScriptCache::finish_compiling(const String &p_owner) {
+	// No owner
+	if (p_owner.is_empty()) {
+		return OK;
+	}
+
 	// Mark this as compiled.
 	Ref<GDScript> script = get_shallow_script(p_owner);
 	singleton->full_gdscript_cache[p_owner] = script.ptr();
