@@ -2137,11 +2137,10 @@ Error ResourceImporterScene::import(const String &p_source_file, const String &p
 
 	Ref<PackedScene> packer = memnew(PackedScene);
 	packer->pack(scene);
+	memdelete(scene);
 	print_verbose("Saving scene to: " + p_save_path + ".scn");
 	err = ResourceSaver::save(p_save_path + ".scn", packer); //do not take over, let the changed files reload themselves
 	ERR_FAIL_COND_V_MSG(err != OK, err, "Cannot save scene to file '" + p_save_path + ".scn'.");
-
-	memdelete(scene);
 
 	//this is not the time to reimport, wait until import process is done, import file is saved, etc.
 	//EditorNode::get_singleton()->reload_scene(p_source_file);
