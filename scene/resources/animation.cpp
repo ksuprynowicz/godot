@@ -988,34 +988,6 @@ bool Animation::track_get_interpolation_loop_wrap(int p_track) const {
 	return tracks[p_track]->loop_wrap;
 }
 
-template <>
-int Animation::_insert(double p_time, Vector<TKey<Quaternion>> &p_keys, const TKey<Quaternion> &p_value) {
-	int idx = p_keys.size();
-
-	while (true) {
-		TKey<Quaternion> value = p_value;
-		if (idx >= 0) {
-			value.value = signbit((p_keys[idx - 1].value * p_value.value.inverse()).w) ? -p_value.value : p_value.value;
-		}
-		// Condition for replacement.
-		if (idx > 0 && Math::is_equal_approx((double)p_keys[idx - 1].time, p_time)) {
-			float transition = p_keys[idx - 1].transition;
-			p_keys.write[idx - 1] = value;
-			p_keys.write[idx - 1].transition = transition;
-			return idx - 1;
-
-		} else if (idx == 0 || p_keys[idx - 1].time < p_time) {
-			// Condition for insert.
-			p_keys.insert(idx, value);
-			return idx;
-		}
-
-		idx--;
-	}
-
-	return -1;
-}
-
 template <class T, class V>
 int Animation::_insert(double p_time, T &p_keys, const V &p_value) {
 	int idx = p_keys.size();

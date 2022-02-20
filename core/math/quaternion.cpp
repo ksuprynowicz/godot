@@ -188,8 +188,7 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
 	ERR_FAIL_COND_V_MSG(!p_b.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
 #endif
-	// The rotations required are shortest path to the previous keyframe.
-	Quaternion ret = *this;
+	Quaternion ret = signbit((p_b * inverse()).w) ? -*this : *this;
 	Quaternion prep = p_pre_a;
 	Quaternion q_b = p_b;
 	Quaternion post_b = p_post_b;
