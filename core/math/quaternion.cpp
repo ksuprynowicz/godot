@@ -235,11 +235,15 @@ Quaternion::Quaternion(const Vector3 &p_axis, real_t p_angle) {
 	ERR_FAIL_COND_MSG(!p_axis.is_normalized(), "The axis Vector3 must be normalized.");
 #endif
 	real_t d = p_axis.length();
-	if (d == 0) {
-		x = 0;
-		y = 0;
-		z = 0;
-		w = 0;
+	// When the theta is small, we need to avoid 0 division, so approxmate the value with using taylor expansion, the theta will be divided by 48.
+	// https://www.cs.cmu.edu/~spiff/moedit99/expmap.pdf
+	if (d < Math::pow(CMP_EPSILON, 0.25)) {
+		real_t cos_angle = Math::cos(p_angle * 0.5f);
+		real_t s = 0.5 + d * d * 0.0208;
+		x = p_axis.x * s;
+		y = p_axis.y * s;
+		z = p_axis.z * s;
+		w = cos_angle;
 	} else {
 		real_t sin_angle = Math::sin(p_angle * 0.5f);
 		real_t cos_angle = Math::cos(p_angle * 0.5f);
