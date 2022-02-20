@@ -188,10 +188,11 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
 	ERR_FAIL_COND_V_MSG(!p_b.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
 #endif
-	Quaternion ret = signbit((p_b * inverse()).w) ? -*this : *this;
-	Quaternion prep = p_pre_a;
-	Quaternion q_b = p_b;
-	Quaternion post_b = p_post_b;
+	Quaternion ret = *this;
+	Quaternion prep = (ret - p_pre_a).length_squared() < (ret + p_pre_a).length_squared() ? p_pre_a : p_pre_a * -1.0f;
+	Quaternion q_b = (ret - p_b).length_squared() < (ret + p_b).length_squared() ? p_b : p_b * -1.0f;
+	Quaternion post_b = (p_b - p_post_b).length_squared() < (p_b + p_post_b).length_squared() ? p_post_b : p_post_b * -1.0f;
+
 	// calculate coefficients
 	if ((1.0 - Math::abs(dot(p_b))) > CMP_EPSILON) {
 		Quaternion ln_ret = ret.log();
