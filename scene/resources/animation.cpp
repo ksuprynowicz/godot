@@ -1102,19 +1102,8 @@ int Animation::rotation_track_insert_key(int p_track, double p_time, const Quate
 
 	TKey<Quaternion> tkey;
 	tkey.time = p_time;
+	tkey.value = p_rotation;
 
-	// https://arxiv.org/pdf/1812.07035.pdf
-	Basis basis = p_rotation;
-	Vector3 basis_x = basis.get_axis(0);
-	Vector3 basis_y = basis.get_axis(1);
-	Vector3 x = basis_x.normalized();
-	Vector3 z = x.cross(basis_y);
-	z = z.normalized();
-	Vector3 y = z.cross(x);
-	basis.set_axis(Vector3::AXIS_X, x);
-	basis.set_axis(Vector3::AXIS_Y, y);
-	basis.set_axis(Vector3::AXIS_Z, z);
-	tkey.value = basis.get_rotation_quaternion();
 	int ret = _insert(p_time, rt->rotations, tkey);
 	emit_changed();
 	return ret;
