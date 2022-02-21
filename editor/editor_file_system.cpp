@@ -659,6 +659,7 @@ void EditorFileSystem::scan() {
 		return;
 	}
 	_update_extensions();
+	_clear_local_unique_ids_cache();
 
 	abort_scan = false;
 	if (!use_threads) {
@@ -668,6 +669,8 @@ void EditorFileSystem::scan() {
 		if (filesystem) {
 			memdelete(filesystem);
 		}
+		_update_unique_ids_from_local_cache(true);
+
 		//file_type_cache.clear();
 		filesystem = new_filesystem;
 		new_filesystem = nullptr;
@@ -880,11 +883,7 @@ void EditorFileSystem::_scan_new_dir(EditorFileSystemDirectory *p_dir, DirAccess
 		}
 
 		if (fi->uid != ResourceUID::INVALID_ID) {
-			if (ResourceUID::get_singleton()->has_id(fi->uid)) {
-				ResourceUID::get_singleton()->set_id(fi->uid, path);
-			} else {
-				ResourceUID::get_singleton()->add_id(fi->uid, path);
-			}
+			local_unique_ids[fi->uid] = path;
 		}
 
 		for (int i = 0; i < ScriptServer::get_language_count(); i++) {
@@ -1140,6 +1139,8 @@ void EditorFileSystem::scan_changes() {
 
 	abort_scan = false;
 
+	_clear_local_unique_ids_cache();
+
 	if (!use_threads) {
 		if (filesystem) {
 			EditorProgressBG pr("sources", TTR("ScanSources"), 1000);
@@ -1152,6 +1153,7 @@ void EditorFileSystem::scan_changes() {
 			if (_update_scan_actions()) {
 				emit_signal(SNAME("filesystem_changed"));
 			}
+			_update_unique_ids_from_local_cache(false);
 		}
 		scanning_changes = false;
 		scanning_changes_done = true;
@@ -1207,6 +1209,9 @@ void EditorFileSystem::_notification(int p_what) {
 						set_process(false);
 
 						thread_sources.wait_to_finish();
+
+						_update_unique_ids_from_local_cache(false);
+
 						if (_update_scan_actions()) {
 							emit_signal(SNAME("filesystem_changed"));
 						}
@@ -1223,6 +1228,9 @@ void EditorFileSystem::_notification(int p_what) {
 					filesystem = new_filesystem;
 					new_filesystem = nullptr;
 					thread.wait_to_finish();
+
+					_update_unique_ids_from_local_cache(true);
+
 					_update_scan_actions();
 					emit_signal(SNAME("filesystem_changed"));
 					emit_signal(SNAME("sources_changed"), sources_changed.size() > 0);
@@ -2407,6 +2415,28 @@ void EditorFileSystem::_update_extensions() {
 	}
 }
 
+void EditorFileSystem::_clear_local_unique_ids_cache() {
+	local_unique_ids.clear();
+}
+
+void EditorFileSystem::_update_unique_ids_from_local_cache(bool p_clear) {
+	if (p_clear) {
+		ResourceUID::get_singleton()->clear();
+	}
+
+	for (OrderedHashMap<int64_t, String>::Element E = local_unique_ids.front(); E; E = E.next()) {
+		if (E.key() != ResourceUID::INVALID_ID) {
+			if (ResourceUID::get_singleton()->has_id(E.key())) {
+				ResourceUID::get_singleton()->set_id(E.key(), E.value());
+			} else {
+				ResourceUID::get_singleton()->add_id(E.key(), E.value());
+			}
+		}
+	}
+
+	_clear_local_unique_ids_cache();
+}
+
 EditorFileSystem::EditorFileSystem() {
 	ResourceLoader::import = _resource_import;
 	reimport_on_missing_imported_files = GLOBAL_DEF("editor/import/reimport_missing_imported_files", true);
@@ -2437,7 +2467,6 @@ EditorFileSystem::EditorFileSystem() {
 	scan_changes_pending = false;
 	revalidate_import_files = false;
 	import_threads.init();
-	ResourceUID::get_singleton()->clear(); //will be updated on scan
 	ResourceSaver::set_get_resource_id_for_path(_resource_saver_get_resource_id_for_path);
 }
 
