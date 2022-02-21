@@ -30,6 +30,7 @@
 
 #include "importer_mesh.h"
 
+#include "core/error/error_macros.h"
 #include "core/math/random_pcg.h"
 #include "core/math/static_raycaster.h"
 #include "scene/resources/surface_tool.h"
@@ -554,6 +555,7 @@ void ImporterMesh::generate_lods(float p_normal_merge_angle, float p_normal_spli
 						bool found = false;
 						for (unsigned int l = 0; l < normal_group_indices.size(); l++) {
 							LocalVector<int> &group_indices = normal_group_indices[l];
+							ERR_FAIL_INDEX(l, normal_group_averages.size());
 							Vector3 n = normal_group_averages[l] / group_indices.size();
 							if (n.dot(ray_normal) > normal_pre_split_threshold) {
 								found = true;
