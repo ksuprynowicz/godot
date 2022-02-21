@@ -33,7 +33,7 @@
 #include "editor/editor_node.h"
 #include "modules/fbx/editor_scene_importer_fbx.h"
 
-#ifdef TOOLS_ENABLED
+#if defined(TOOLS_ENABLED) && !defined(DISABLE_DEPRECATED)
 static void _editor_init() {
 	Ref<EditorSceneFormatImporterFBX> import_fbx;
 	import_fbx.instantiate();
@@ -42,7 +42,7 @@ static void _editor_init() {
 #endif
 
 void register_fbx_types() {
-#ifdef TOOLS_ENABLED
+#if defined(TOOLS_ENABLED) && !defined(DISABLE_DEPRECATED)
 	ClassDB::APIType prev_api = ClassDB::get_current_api();
 	ClassDB::set_current_api(ClassDB::API_EDITOR);
 
