@@ -325,10 +325,11 @@ bool EditorHelpSearch::Runner::_phase_match_classes_init() {
 
 bool EditorHelpSearch::Runner::_phase_match_classes() {
 	DocData::ClassDoc &class_doc = iterator_doc->value();
+	if (class_doc.name.is_empty()) {
+		return false;
+	}
 	if (!_is_class_disabled_by_feature_profile(class_doc.name)) {
-		matches[class_doc.name] = ClassMatch();
-		ClassMatch &match = matches[class_doc.name];
-
+		ClassMatch match;
 		match.doc = &class_doc;
 
 		// Match class name.
@@ -399,6 +400,7 @@ bool EditorHelpSearch::Runner::_phase_match_classes() {
 					}
 				}
 			}
+			matches[class_doc.name] = match;
 		}
 	}
 
@@ -417,6 +419,9 @@ bool EditorHelpSearch::Runner::_phase_class_items_init() {
 }
 
 bool EditorHelpSearch::Runner::_phase_class_items() {
+	if (!iterator_match) {
+		return false;
+	}
 	ClassMatch &match = iterator_match->value();
 
 	if (search_flags & SEARCH_SHOW_HIERARCHY) {
@@ -441,6 +446,13 @@ bool EditorHelpSearch::Runner::_phase_member_items_init() {
 
 bool EditorHelpSearch::Runner::_phase_member_items() {
 	ClassMatch &match = iterator_match->value();
+
+	if (!match.doc) {
+		return false;
+	}
+	if (match.doc->name.is_empty()) {
+		return false;
+	}
 
 	TreeItem *parent = (search_flags & SEARCH_SHOW_HIERARCHY) ? class_items[match.doc->name] : root_item;
 	bool constructor_created = false;
@@ -509,6 +521,9 @@ void EditorHelpSearch::Runner::_match_item(TreeItem *p_item, const String &p_tex
 }
 
 TreeItem *EditorHelpSearch::Runner::_create_class_hierarchy(const ClassMatch &p_match) {
+	if (p_match.doc->name.is_empty()) {
+		return nullptr;
+	}
 	if (class_items.has(p_match.doc->name)) {
 		return class_items[p_match.doc->name];
 	}
@@ -520,7 +535,9 @@ TreeItem *EditorHelpSearch::Runner::_create_class_hierarchy(const ClassMatch &p_
 			parent = class_items[p_match.doc->inherits];
 		} else {
 			ClassMatch &base_match = matches[p_match.doc->inherits];
-			parent = _create_class_hierarchy(base_match);
+			if (base_match.doc) {
+				parent = _create_class_hierarchy(base_match);
+			}
 		}
 	}
 
