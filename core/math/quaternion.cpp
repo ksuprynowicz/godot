@@ -189,21 +189,56 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 	ERR_FAIL_COND_V_MSG(!p_b.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
 #endif
 	Quaternion ret = *this;
-	Quaternion prep = (ret - p_pre_a).length_squared() < (ret + p_pre_a).length_squared() ? p_pre_a : p_pre_a * -1.0f;
-	Quaternion q_b = (ret - p_b).length_squared() < (ret + p_b).length_squared() ? p_b : p_b * -1.0f;
-	Quaternion post_b = (p_b - p_post_b).length_squared() < (p_b + p_post_b).length_squared() ? p_post_b : p_post_b * -1.0f;
+	Quaternion prep = p_pre_a;
+	Quaternion q_b = p_b;
+	Quaternion post_b = p_post_b;
 
 	// calculate coefficients
 	if ((1.0 - Math::abs(dot(p_b))) > CMP_EPSILON) {
-		Quaternion ln_ret = ret.log();
-		Quaternion ln_to = q_b.log();
-		Quaternion ln_pre = prep.log();
-		Quaternion ln_post = post_b.log();
-		Quaternion ln = Quaternion(0, 0, 0, 0);
-		ln.x = Math::cubic_interpolate(ln_ret.x, ln_to.x, ln_pre.x, ln_post.x, p_weight);
-		ln.y = Math::cubic_interpolate(ln_ret.y, ln_to.y, ln_pre.y, ln_post.y, p_weight);
-		ln.z = Math::cubic_interpolate(ln_ret.z, ln_to.z, ln_pre.z, ln_post.z, p_weight);
-		ret = ln.exp();
+		Basis ln_ret = ret;
+		{
+			Quaternion rot = ret;
+			ln_ret.set_axis_angle(rot.get_axis() * rot.get_angle(), 0.f);
+		}
+		Basis ln_to = q_b;
+		{
+			Quaternion rot = q_b;
+			ln_to.set_axis_angle(rot.get_axis() * rot.get_angle(), 0.f);
+		}
+		Basis ln_pre = prep;
+		{
+			Quaternion rot = prep;
+			ln_pre.set_axis_angle(rot.get_axis() * rot.get_angle(), 0.f);
+		}
+		Basis ln_post = post_b;
+		{
+			Quaternion rot = post_b;
+			ln_post.set_axis_angle(rot.get_axis() * rot.get_angle(), 0.f);
+		}
+		Basis ln;
+		Vector3 ln_ret_x_axis = ln_ret.get_axis(0);
+		Vector3 ln_to_x_axis = ln_to.get_axis(0);
+		Vector3 ln_pre_x_axis = ln_pre.get_axis(0);
+		Vector3 ln_post_x_axis = ln_post.get_axis(0);
+		Vector3 x_axis = ln_ret_x_axis.cubic_interpolate(ln_to_x_axis, ln_pre_x_axis, ln_post_x_axis, p_weight);
+		ln.set_axis(0, x_axis);
+		Vector3 ln_ret_y_axis = ln_ret.get_axis(1);
+		Vector3 ln_to_y_axis = ln_to.get_axis(1);
+		Vector3 ln_pre_y_axis = ln_pre.get_axis(1);
+		Vector3 ln_post_y_axis = ln_post.get_axis(1);
+		Vector3 y_axis = ln_ret_y_axis.cubic_interpolate(ln_to_y_axis, ln_pre_y_axis, ln_post_y_axis, p_weight);
+		ln.set_axis(1, y_axis);
+		Vector3 ln_ret_z_axis = ln_ret.get_axis(2);
+		Vector3 ln_to_z_axis = ln_to.get_axis(2);
+		Vector3 ln_pre_z_axis = ln_pre.get_axis(2);
+		Vector3 ln_post_z_axis = ln_post.get_axis(2);
+		Vector3 z_axis = ln_ret_z_axis.cubic_interpolate(ln_to_z_axis, ln_pre_z_axis, ln_post_z_axis, p_weight);
+		ln.set_axis(2, z_axis);
+		Vector3 axis;
+		real_t angle;
+		ln.get_axis_angle(axis, angle);
+		Vector3 src_v = axis * angle;
+		ret = Quaternion(src_v.x, src_v.y, src_v.z, 0).exp();
 	} else {
 		ret.x = Math::cubic_interpolate(ret.x, q_b.x, prep.x, post_b.x, p_weight);
 		ret.y = Math::cubic_interpolate(ret.y, q_b.y, prep.y, post_b.y, p_weight);
