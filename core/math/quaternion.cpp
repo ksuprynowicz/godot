@@ -223,11 +223,7 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 		ln.get_axis_angle(axis, angle);
 		Vector3 src_v = axis * angle;
 		float theta = src_v.length();
-		if (theta >= CMP_EPSILON) {
-			ret = Quaternion(src_v.normalized(), theta);
-		} else {
-			ret = Quaternion();
-		}
+		ret = Quaternion(src_v.normalized(), theta);
 	} else {
 		ret.x = Math::cubic_interpolate(ret.x, q_b.x, prep.x, post_b.x, p_weight);
 		ret.y = Math::cubic_interpolate(ret.y, q_b.y, prep.y, post_b.y, p_weight);
