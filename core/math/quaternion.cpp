@@ -192,10 +192,10 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 
 	// calculate coefficients
 	if ((1.0 - Math::abs(dot(p_b))) > CMP_EPSILON) {
-		Quaternion ln_ret = ret.inverse().slerp_choose(ret, 1.0f).get_rotation_quaternion().log();
-		Quaternion ln_to = q_b.inverse().slerp_choose(q_b, 1.0f).get_rotation_quaternion().log();
+		Quaternion ln_ret = prep.slerp_choose(ret, 1.0f).get_rotation_quaternion().log();
+		Quaternion ln_to = ret.slerp_choose(q_b, 1.0f).get_rotation_quaternion().log();
 		Quaternion ln_pre = prep.inverse().slerp_choose(prep, 1.0f).get_rotation_quaternion().log();
-		Quaternion ln_post = post_b.inverse().slerp_choose(post_b, 1.0f).get_rotation_quaternion().log();
+		Quaternion ln_post = q_b.slerp_choose(post_b, 1.0f).get_rotation_quaternion().log();
 		Quaternion ln = Quaternion(0, 0, 0, 0);
 		ln.x = Math::cubic_interpolate(ln_ret.x, ln_to.x, ln_pre.x, ln_post.x, p_weight);
 		ln.y = Math::cubic_interpolate(ln_ret.y, ln_to.y, ln_pre.y, ln_post.y, p_weight);
