@@ -102,22 +102,6 @@ Quaternion Quaternion::inverse() const {
 	return Quaternion(-x, -y, -z, w);
 }
 
-Quaternion Quaternion::log() const {
-	Quaternion src = *this;
-	Vector3 src_v = src.get_axis() * src.get_angle();
-	return Quaternion(src_v.x, src_v.y, src_v.z, 0);
-}
-
-Quaternion Quaternion::exp() const {
-	Quaternion src = *this;
-	Vector3 src_v = Vector3(src.x, src.y, src.z);
-	float theta = src_v.length();
-	if (theta < CMP_EPSILON) {
-		return Quaternion();
-	}
-	return Quaternion(src_v.normalized(), theta);
-}
-
 Quaternion Quaternion::slerp(const Quaternion &p_to, const real_t &p_weight) const {
 #ifdef MATH_CHECKS
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
@@ -238,7 +222,12 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 		real_t angle;
 		ln.get_axis_angle(axis, angle);
 		Vector3 src_v = axis * angle;
-		ret = Quaternion(src_v.x, src_v.y, src_v.z, 0).exp();
+		float theta = src_v.length();
+		if (theta >= CMP_EPSILON) {
+			ret = Quaternion(src_v.normalized(), theta);
+		} else {
+			ret = Quaternion();
+		}
 	} else {
 		ret.x = Math::cubic_interpolate(ret.x, q_b.x, prep.x, post_b.x, p_weight);
 		ret.y = Math::cubic_interpolate(ret.y, q_b.y, prep.y, post_b.y, p_weight);
