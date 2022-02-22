@@ -184,18 +184,20 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 #ifdef MATH_CHECKS
 	ERR_FAIL_COND_V_MSG(!is_normalized(), Quaternion(), "The start quaternion must be normalized.");
 	ERR_FAIL_COND_V_MSG(!p_b.is_normalized(), Quaternion(), "The end quaternion must be normalized.");
-#endif
+#endif	
 	Quaternion ret = *this;
-	Quaternion prep = p_pre_a;
-	Quaternion q_b = p_b;
-	Quaternion post_b = p_post_b;
+	// Modify quaternions for shortest path
+	// https://math.stackexchange.com/questions/2650188/super-confused-by-squad-algorithm-for-quaternion-interpolation
+	Quaternion prep = (ret - p_pre_a).length_squared() < (ret + p_pre_a).length_squared() ? p_pre_a : p_pre_a * -1.0f;
+	Quaternion q_b = (ret - p_b).length_squared() < (ret + p_b).length_squared() ? p_b : p_b * -1.0f;
+	Quaternion post_b = (p_b - p_post_b).length_squared() < (p_b + p_post_b).length_squared() ? p_post_b : p_post_b * -1.0f;
 
 	// calculate coefficients
 	if ((1.0 - Math::abs(dot(p_b))) > CMP_EPSILON) {
-		Quaternion ln_ret = prep.slerp_choose(ret, 1.0f).get_rotation_quaternion().log();
-		Quaternion ln_to = ret.slerp_choose(q_b, 1.0f).get_rotation_quaternion().log();
-		Quaternion ln_pre = prep.inverse().slerp_choose(prep, 1.0f).get_rotation_quaternion().log();
-		Quaternion ln_post = q_b.slerp_choose(post_b, 1.0f).get_rotation_quaternion().log();
+		Quaternion ln_ret = ret.log();
+		Quaternion ln_to = q_b.log();
+		Quaternion ln_pre = prep.log();
+		Quaternion ln_post = post_b.log();
 		Quaternion ln = Quaternion(0, 0, 0, 0);
 		ln.x = Math::cubic_interpolate(ln_ret.x, ln_to.x, ln_pre.x, ln_post.x, p_weight);
 		ln.y = Math::cubic_interpolate(ln_ret.y, ln_to.y, ln_pre.y, ln_post.y, p_weight);
@@ -208,7 +210,7 @@ Quaternion Quaternion::cubic_slerp(const Quaternion &p_b, const Quaternion &p_pr
 		ret.w = Math::cubic_interpolate(ret.w, q_b.w, prep.w, post_b.w, p_weight);
 	}
 	// calculate final values
-	return ret;
+	return prep.slerp_choose(ret, 1.0f);
 }
 
 Quaternion::operator String() const {
@@ -278,7 +280,7 @@ Quaternion::Quaternion(const Vector3 &p_euler) {
 	w = sin_a1 * sin_a2 * sin_a3 + cos_a1 * cos_a2 * cos_a3;
 }
 
-Basis Quaternion::slerp_choose(const Basis &p_to, const real_t &p_weight) {
+Basis Quaternion::slerp_choose(const Basis &p_to, const real_t &p_weight) const {
 	Method method = find_method(*this, p_to);
 	Basis result;
 	switch (method) {

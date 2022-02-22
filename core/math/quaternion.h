@@ -169,7 +169,7 @@ struct _NO_DISCARD_ Quaternion {
 		INTERP_SCALED_SLERP,
 	};
 
-	Basis slerp_choose(const Basis &p_to, const real_t &p_weight);
+	Basis slerp_choose(const Basis &p_to, const real_t &p_weight) const;
 	Quaternion _basis_to_quaternion_unchecked(const Basis &p_basis) const;
 	Quaternion _quat_slerp_unchecked(const Quaternion &p_from, const Quaternion &p_to, real_t p_fraction) const;
 	Basis _basis_slerp_unchecked(Basis p_from, Basis p_to, real_t p_fraction) const;
