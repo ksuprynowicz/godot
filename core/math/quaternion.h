@@ -36,6 +36,7 @@
 #include "core/math/vector3.h"
 #include "core/string/ustring.h"
 
+struct Basis;
 struct _NO_DISCARD_ Quaternion {
 	union {
 		struct {
@@ -162,6 +163,27 @@ struct _NO_DISCARD_ Quaternion {
 			w = s * 0.5f;
 		}
 	}
+	enum Method {
+		INTERP_LERP,
+		INTERP_SLERP,
+		INTERP_SCALED_SLERP,
+	};
+
+	Basis slerp_choose(const Basis &p_to, const real_t &p_weight);
+	Quaternion _basis_to_quaternion_unchecked(const Basis &p_basis) const;
+	Quaternion _quat_slerp_unchecked(const Quaternion &p_from, const Quaternion &p_to, real_t p_fraction) const;
+	Basis _basis_slerp_unchecked(Basis p_from, Basis p_to, real_t p_fraction) const;
+	void interpolate_basis_scaled_slerp(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction) const;
+	void interpolate_basis_linear(const Basis &p_prev, const Basis &p_curr, Basis &r_result, real_t p_fraction) const;
+	// Return the length of the vector3.
+	real_t _vector3_normalize(Vector3 &p_vec) const;
+	// Returns lengths.
+	Vector3 _basis_orthonormalize(Basis &r_basis) const;
+	Quaternion::Method _test_basis(Basis p_basis, bool r_needed_normalize, Quaternion &r_quat) const;
+	// This check doesn't seem to be needed but is preserved in case of bugs.
+	bool _basis_is_orthogonal_any_scale(const Basis &p_basis) const;
+	bool _basis_is_orthogonal(const Basis &p_basis, real_t p_epsilon = 0.01) const;
+	Quaternion::Method find_method(const Basis &p_a, const Basis &p_b) const;
 };
 
 real_t Quaternion::dot(const Quaternion &p_q) const {
