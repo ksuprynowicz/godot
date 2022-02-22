@@ -1081,6 +1081,9 @@ bool ResourceFormatLoaderBinary::handles_type(const String &p_type) const {
 
 void ResourceFormatLoaderBinary::get_dependencies(const String &p_path, List<String> *p_dependencies, bool p_add_types) {
 	FileAccess *f = FileAccess::open(p_path, FileAccess::READ);
+	if (!f && p_path.begins_with("res://.godot/imported/")) {
+		return;
+	}
 	ERR_FAIL_COND_MSG(!f, "Cannot open file '" + p_path + "'.");
 
 	ResourceLoaderBinary loader;
