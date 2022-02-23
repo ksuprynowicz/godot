@@ -509,7 +509,7 @@ void Node3DEditorViewport::_select_clicked(bool p_allow_locked) {
 	}
 }
 
-ObjectID Node3DEditorViewport::_select_ray(const Point2 &p_pos) {
+ObjectID Node3DEditorViewport::_select_ray(const Point2 &p_pos) const {
 	Vector3 ray = _get_ray(p_pos);
 	Vector3 pos = _get_ray_pos(p_pos);
 	Vector2 shrinked_pos = p_pos / subviewport_container->get_stretch_shrink();
@@ -1254,7 +1254,8 @@ void Node3DEditorViewport::_surface_mouse_enter() {
 }
 
 void Node3DEditorViewport::_surface_mouse_exit() {
-	_remove_preview();
+	_remove_preview_node();
+	_remove_preview_material(true);
 }
 
 void Node3DEditorViewport::_surface_focus_enter() {
@@ -3763,7 +3764,7 @@ Node *Node3DEditorViewport::_sanitize_preview_node(Node *p_node) const {
 	return p_node;
 }
 
-void Node3DEditorViewport::_create_preview(const Vector<String> &files) const {
+void Node3DEditorViewport::_create_preview_node(const Vector<String> &files) const {
 	for (int i = 0; i < files.size(); i++) {
 		String path = files[i];
 		RES res = ResourceLoader::load(path);
@@ -3790,7 +3791,7 @@ void Node3DEditorViewport::_create_preview(const Vector<String> &files) const {
 	*preview_bounds = _calculate_spatial_bounds(preview_node);
 }
 
-void Node3DEditorViewport::_remove_preview() {
+void Node3DEditorViewport::_remove_preview_node() {
 	if (preview_node->get_parent()) {
 		for (int i = preview_node->get_child_count() - 1; i >= 0; i--) {
 			Node *node = preview_node->get_child(i);
@@ -3799,6 +3800,26 @@ void Node3DEditorViewport::_remove_preview() {
 		}
 		EditorNode::get_singleton()->get_scene_root()->remove_child(preview_node);
 	}
+}
+
+void Node3DEditorViewport::_remove_preview_material(bool p_reset_target_material) {
+	Node3DEditor *editor = Node3DEditor::get_singleton();
+
+	if (p_reset_target_material) {
+		// Reset the material on the target if nessecary
+		ObjectID target = editor->get_preview_material_target();
+		if (target.is_valid()) {
+			GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(target));
+			if (geometry_instance) {
+				Ref<Material> reset_material = editor->get_preview_reset_material();
+				geometry_instance->set_material_override(reset_material);
+			}
+		}
+	}
+
+	editor->set_preview_material(Ref<Material>());
+	editor->set_preview_reset_material(Ref<Material>());
+	editor->set_preview_material_target(ObjectID());
 }
 
 bool Node3DEditorViewport::_cyclical_dependency_exists(const String &p_target_scene_path, Node *p_desired_node) {
@@ -3899,7 +3920,7 @@ bool Node3DEditorViewport::_create_instance(Node *parent, String &path, const Po
 }
 
 void Node3DEditorViewport::_perform_drop_data() {
-	_remove_preview();
+	_remove_preview_node();
 
 	Vector<String> error_files;
 
@@ -3919,9 +3940,22 @@ void Node3DEditorViewport::_perform_drop_data() {
 				error_files.push_back(path);
 			}
 		}
+
+		Node3DEditor *editor = Node3DEditor::get_singleton();
+
+		if (editor->get_preview_material_target().is_valid()) {
+			GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(editor->get_preview_material_target()));
+			if (geometry_instance) {
+				geometry_instance->set_material_override(editor->get_preview_material());
+				editor_data->get_undo_redo().add_do_method(geometry_instance, "set_material_override", editor->get_preview_material());
+				editor_data->get_undo_redo().add_undo_method(geometry_instance, "set_material_override", editor->get_preview_reset_material());
+			}
+		}
 	}
 
 	editor_data->get_undo_redo().commit_action();
+
+	_remove_preview_material(false);
 
 	if (error_files.size() > 0) {
 		String files_str;
@@ -3937,7 +3971,9 @@ void Node3DEditorViewport::_perform_drop_data() {
 bool Node3DEditorViewport::can_drop_data_fw(const Point2 &p_point, const Variant &p_data, Control *p_from) const {
 	bool can_instantiate = false;
 
-	if (!preview_node->is_inside_tree()) {
+	Node3DEditor *editor = Node3DEditor::get_singleton();
+
+	if (!preview_node->is_inside_tree() && editor->get_preview_material().is_null()) {
 		Dictionary d = p_data;
 		if (d.has("type") && (String(d["type"]) == "files")) {
 			Vector<String> files = d["files"];
@@ -3946,40 +3982,106 @@ bool Node3DEditorViewport::can_drop_data_fw(const Point2 &p_point, const Variant
 			ResourceLoader::get_recognized_extensions_for_type("PackedScene", &scene_extensions);
 			List<String> mesh_extensions;
 			ResourceLoader::get_recognized_extensions_for_type("Mesh", &mesh_extensions);
+			List<String> material_extensions;
+			ResourceLoader::get_recognized_extensions_for_type("Material", &material_extensions);
+			List<String> texture_extensions;
+			ResourceLoader::get_recognized_extensions_for_type("Texture", &texture_extensions);
 
 			for (int i = 0; i < files.size(); i++) {
 				// Check if dragged files with mesh or scene extension can be created at least once.
-				if (mesh_extensions.find(files[i].get_extension()) || scene_extensions.find(files[i].get_extension())) {
+				if (mesh_extensions.find(files[i].get_extension()) ||
+						scene_extensions.find(files[i].get_extension()) ||
+						material_extensions.find(files[i].get_extension()) ||
+						texture_extensions.find(files[i].get_extension())) {
 					RES res = ResourceLoader::load(files[i]);
 					if (res.is_null()) {
 						continue;
 					}
 					Ref<PackedScene> scn = res;
+					Ref<Material> mat = res;
+					Ref<Texture2D> tex = res;
 					if (scn.is_valid()) {
 						Node *instantiated_scene = scn->instantiate(PackedScene::GEN_EDIT_STATE_INSTANCE);
 						if (!instantiated_scene) {
 							continue;
 						}
 						memdelete(instantiated_scene);
+					} else if (mat.is_valid()) {
+						Ref<BaseMaterial3D> base_mat = res;
+						Ref<ShaderMaterial> shader_mat = res;
+
+						if (base_mat.is_null() && !shader_mat.is_null()) {
+							break;
+						}
+
+						editor->set_preview_material(mat);
+						break;
+					} else if (tex.is_valid()) {
+						Ref<StandardMaterial3D> new_mat = memnew(StandardMaterial3D);
+						new_mat->set_texture(BaseMaterial3D::TEXTURE_ALBEDO, tex);
+
+						editor->set_preview_material(new_mat);
+						break;
+					} else {
+						continue;
 					}
 					can_instantiate = true;
 					break;
 				}
 			}
 			if (can_instantiate) {
-				_create_preview(files);
+				_create_preview_node(files);
 			}
 		}
 	} else {
-		can_instantiate = true;
+		if (preview_node->is_inside_tree()) {
+			can_instantiate = true;
+		}
 	}
 
 	if (can_instantiate) {
 		Transform3D global_transform = Transform3D(Basis(), _get_instance_position(p_point));
 		preview_node->set_global_transform(global_transform);
+		return true;
 	}
 
-	return can_instantiate;
+	if (editor->get_preview_material().is_valid()) {
+		ObjectID new_object_id = _select_ray(p_point);
+
+		// Get the corresponding GeometryInstance for new_object_id, and if it is not valid, reset the new_object_id
+		if (new_object_id.is_valid()) {
+			GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(new_object_id));
+			if (!geometry_instance) {
+				new_object_id = ObjectID();
+			}
+		}
+
+		// Execute only if the new_object_id does not the preview_material_target
+		if (editor->get_preview_material_target() != new_object_id) {
+			// If we have an existing preview_material_target, reset its material
+			if (editor->get_preview_material_target().is_valid()) {
+				GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(editor->get_preview_material_target()));
+				if (geometry_instance) {
+					geometry_instance->set_material_override(editor->get_preview_reset_material());
+				}
+			}
+
+			// If new_object_id is valid, save the original material as the preview_reset_material and assign the new preview_material
+			if (new_object_id.is_valid()) {
+				GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(new_object_id));
+				if (geometry_instance) {
+					editor->set_preview_reset_material(geometry_instance->get_material_override());
+					geometry_instance->set_material_override(editor->get_preview_material());
+				}
+			}
+
+			// Save the new preview_material_target
+			editor->set_preview_material_target(new_object_id);
+		}
+		return true;
+	}
+
+	return false;
 }
 
 void Node3DEditorViewport::drop_data_fw(const Point2 &p_point, const Variant &p_data, Control *p_from) {
@@ -4017,7 +4119,8 @@ void Node3DEditorViewport::drop_data_fw(const Point2 &p_point, const Variant &p_
 	} else {
 		accept->set_text(TTR("Cannot drag and drop into multiple selected nodes."));
 		accept->popup_centered();
-		_remove_preview();
+		_remove_preview_node();
+		_remove_preview_material(true);
 		return;
 	}
 
@@ -7665,6 +7768,9 @@ Node3DEditor::Node3DEditor() {
 	// Drag and drop support;
 	preview_node = memnew(Node3D);
 	preview_bounds = AABB();
+	preview_material = Ref<Material>();
+	preview_reset_material = Ref<Material>();
+	preview_material_target = ObjectID();
 
 	ED_SHORTCUT("spatial_editor/bottom_view", TTR("Bottom View"), KeyModifierMask::ALT + Key::KP_7);
 	ED_SHORTCUT("spatial_editor/top_view", TTR("Top View"), Key::KP_7);
