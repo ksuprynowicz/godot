@@ -936,14 +936,15 @@ void AnimationTree::_process_graph(double p_delta) {
 #ifndef _3D_DISABLED
 						TrackCacheTransform *t = static_cast<TrackCacheTransform *>(track);
 
-						if (track->root_motion) {
-							if (t->process_pass != process_pass) {
-								t->process_pass = process_pass;
-								t->loc = Vector3();
-								t->rot = Quaternion();
-								t->scale = Vector3(1, 1, 1);
-							}
+						if (t->process_pass != process_pass) {
+							t->process_pass = process_pass;
+							t->loc = Vector3();
+							t->rot = Quaternion();
+							t->rot_blend_accum = 0;
+							t->scale = Vector3(1, 1, 1);
+						}
 
+						if (track->root_motion) {
 							double prev_time = time - delta;
 							if (!backward) {
 								if (prev_time < 0) {
@@ -1016,12 +1017,6 @@ void AnimationTree::_process_graph(double p_delta) {
 							Vector3 loc;
 
 							Error err = a->position_track_interpolate(i, time, &loc);
-
-							if (t->process_pass != process_pass) {
-								t->process_pass = process_pass;
-								t->loc = loc;
-							}
-
 							if (err != OK) {
 								continue;
 							}
@@ -1034,14 +1029,15 @@ void AnimationTree::_process_graph(double p_delta) {
 #ifndef _3D_DISABLED
 						TrackCacheTransform *t = static_cast<TrackCacheTransform *>(track);
 
-						if (track->root_motion) {
-							if (t->process_pass != process_pass) {
-								t->process_pass = process_pass;
-								t->loc = Vector3();
-								t->rot = Quaternion();
-								t->scale = Vector3(1, 1, 1);
-							}
+						if (t->process_pass != process_pass) {
+							t->process_pass = process_pass;
+							t->loc = Vector3();
+							t->rot = Quaternion();
+							t->rot_blend_accum = 0;
+							t->scale = Vector3(1, 1, 1);
+						}
 
+						if (track->root_motion) {
 							double prev_time = time - delta;
 							if (!backward) {
 								if (prev_time < 0) {
@@ -1117,17 +1113,18 @@ void AnimationTree::_process_graph(double p_delta) {
 							Quaternion rot;
 
 							Error err = a->rotation_track_interpolate(i, time, &rot);
-
-							if (t->process_pass != process_pass) {
-								t->process_pass = process_pass;
-								t->rot = rot;
-							}
-
 							if (err != OK) {
 								continue;
 							}
 
-							t->rot = t->rot.slerp(rot, blend).normalized();
+							if (t->rot_blend_accum == 0) {
+								t->rot = rot;
+								t->rot_blend_accum = blend;
+							} else {
+								real_t rot_total = t->rot_blend_accum + blend;
+								t->rot = rot.slerp(t->rot, t->rot_blend_accum / rot_total).normalized();
+								t->rot_blend_accum = rot_total;
+							}
 						}
 #endif // _3D_DISABLED
 					} break;
@@ -1135,14 +1132,15 @@ void AnimationTree::_process_graph(double p_delta) {
 #ifndef _3D_DISABLED
 						TrackCacheTransform *t = static_cast<TrackCacheTransform *>(track);
 
-						if (track->root_motion) {
-							if (t->process_pass != process_pass) {
-								t->process_pass = process_pass;
-								t->loc = Vector3();
-								t->rot = Quaternion();
-								t->scale = Vector3(1, 1, 1);
-							}
+						if (t->process_pass != process_pass) {
+							t->process_pass = process_pass;
+							t->loc = Vector3();
+							t->rot = Quaternion();
+							t->rot_blend_accum = 0;
+							t->scale = Vector3(1, 1, 1);
+						}
 
+						if (track->root_motion) {
 							double prev_time = time - delta;
 							if (!backward) {
 								if (prev_time < 0) {
@@ -1215,12 +1213,6 @@ void AnimationTree::_process_graph(double p_delta) {
 							Vector3 scale;
 
 							Error err = a->scale_track_interpolate(i, time, &scale);
-
-							if (t->process_pass != process_pass) {
-								t->process_pass = process_pass;
-								t->scale = scale;
-							}
-
 							if (err != OK) {
 								continue;
 							}
