@@ -285,7 +285,9 @@ void SkeletonModification3DFABRIK::chain_apply() {
 			current_trans.basis.rotate_to_align(forward_vector, current_trans.origin.direction_to(next_trans.origin));
 			current_trans.basis.rotate_local(forward_vector, fabrik_data_chain[i].roll);
 		}
-		stack->skeleton->set_bone_local_pose_override(current_bone_idx, stack->skeleton->global_pose_to_local_pose(current_bone_idx, current_trans), stack->strength, true);
+		stack->skeleton->set_bone_pose_override(current_bone_idx,
+				stack->skeleton->get_bone_pose_no_override(current_bone_idx).interpolate_with(stack->skeleton->global_pose_to_local_pose(current_bone_idx, current_trans), stack->strength),
+				true);
 	}
 
 	// Update all the bones so the next modification has up-to-date data.

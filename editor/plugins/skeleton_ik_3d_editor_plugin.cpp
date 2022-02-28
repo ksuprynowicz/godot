@@ -46,7 +46,7 @@ void SkeletonIK3DEditorPlugin::_play() {
 		skeleton_ik->start();
 	} else {
 		skeleton_ik->stop();
-		skeleton_ik->get_parent_skeleton()->clear_bones_global_pose_override();
+		skeleton_ik->get_parent_skeleton()->clear_bones_pose_override();
 	}
 }
 
