@@ -98,6 +98,7 @@ public:
 	int getChannels() const;
 	int getAudioDepth() const;
 
+	float seek(float p_time);
 	bool readFrame(WebMFrame *videoFrame, WebMFrame *audioFrame);
 
 private:
@@ -118,6 +119,8 @@ private:
 	const mkvparser::AudioTrack *m_audioTrack;
 	AUDIO_CODEC m_aCodec;
 
+	bool m_isSeek;
+	float m_seekTime;
 	bool m_isOpen;
 	bool m_eos;
 };
