@@ -1182,6 +1182,8 @@
 		<member name="TranslationServer" type="TranslationServer" setter="" getter="">
 			The [TranslationServer] singleton.
 		</member>
+		<member name="VideoDecoderServer" type="VideoDecoderServer" setter="" getter="">
+		</member>
 		<member name="VisualScriptCustomNodes" type="VisualScriptCustomNodes" setter="" getter="">
 			The [VisualScriptCustomNodes] singleton.
 		</member>
