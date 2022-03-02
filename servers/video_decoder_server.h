@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  register_types.cpp                                                   */
+/*  video_decoder_server.h                                               */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,21 +28,41 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#include "register_types.h"
+#ifndef VIDEO_DECODER_SERVER_H
+#define VIDEO_DECODER_SERVER_H
 
-#include "core/object/class_db.h"
-#include "video_stream_gdnative.h"
+#include "servers/video/video_stream_extension.h"
 
-static Ref<ResourceFormatLoaderVideoStreamGDNative> resource_loader_vsgdnative;
+class VideoDecoderServer : public Object {
+	GDCLASS(VideoDecoderServer, Object);
+	_THREAD_SAFE_CLASS_
+	Vector<Ref<VideoStreamExtension>> decoders;
+	Vector<String> extensions;
+	Map<String, Vector<Ref<VideoStreamExtension>>> decoder_support;
 
-void register_videodecoder_types() {
-	resource_loader_vsgdnative.instantiate();
-	ResourceLoader::add_resource_format_loader(resource_loader_vsgdnative, true);
+protected:
+	static VideoDecoderServer *singleton;
+	static Ref<ResourceFormatLoader> resource_format_loader;
 
-	GDREGISTER_CLASS(VideoStreamGDNative);
-}
+	static void _bind_methods();
+	void register_resource_loader();
+	void unregister_resource_loader();
+	void reload_resource_loader();
 
-void unregister_videodecoder_types() {
-	ResourceLoader::remove_resource_format_loader(resource_loader_vsgdnative);
-	resource_loader_vsgdnative.unref();
-}
+public:
+	static VideoDecoderServer *get_singleton();
+
+	bool has_extension(const String &ext);
+	Vector<String> get_recognized_extensions();
+
+	void add_interface(const Ref<VideoStreamExtension> &extension_stream);
+	void remove_interface(const Ref<VideoStreamExtension> &extension_stream);
+
+	Ref<VideoStreamExtension> get_extension_stream(const String &extension);
+
+	VideoDecoderServer();
+
+	virtual ~VideoDecoderServer();
+};
+
+#endif // VIDEO_DECODER_SERVER_H
