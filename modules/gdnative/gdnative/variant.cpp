@@ -761,6 +761,13 @@ godot_bool GDAPI godot_variant_booleanize(const godot_variant *p_self) {
 	return self->booleanize();
 }
 
+void GDAPI godot_variant_sub(const godot_variant *p_a, const godot_variant *p_b, godot_variant *r_dst) {
+	const Variant *a = (const Variant *)p_a;
+	const Variant *b = (const Variant *)p_b;
+	Variant *dst = (Variant *)r_dst;
+	Variant::sub(*a, *b, *dst);
+}
+
 void GDAPI godot_variant_blend(const godot_variant *p_a, const godot_variant *p_b, float p_c, godot_variant *r_dst) {
 	const Variant *a = (const Variant *)p_a;
 	const Variant *b = (const Variant *)p_b;
