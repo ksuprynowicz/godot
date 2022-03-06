@@ -2879,7 +2879,7 @@ void PhysicalBone3D::_body_state_changed(PhysicsDirectBodyState3D *p_state) {
 	// Update skeleton
 	if (parent_skeleton) {
 		if (-1 != bone_id) {
-			parent_skeleton->set_bone_global_pose_override(bone_id, parent_skeleton->get_global_transform().affine_inverse() * (global_transform * body_offset_inverse), 1.0, true);
+			parent_skeleton->set_bone_global_pose_override(bone_id, parent_skeleton->get_global_transform().affine_inverse() * (global_transform * body_offset_inverse), true);
 		}
 	}
 }
@@ -3379,7 +3379,7 @@ void PhysicalBone3D::_stop_physics_simulation() {
 	}
 	if (_internal_simulate_physics) {
 		PhysicsServer3D::get_singleton()->body_set_state_sync_callback(get_rid(), nullptr, nullptr);
-		parent_skeleton->set_bone_global_pose_override(bone_id, Transform3D(), 0.0, false);
+		parent_skeleton->set_bone_pose_override(bone_id, Transform3D(), false);
 		set_as_top_level(false);
 		_internal_simulate_physics = false;
 	}
