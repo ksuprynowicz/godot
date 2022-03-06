@@ -21,7 +21,6 @@ def _build_gdnative_api_struct_header(api):
         "#include <android/godot_android.h>",
         "#include <nativescript/godot_nativescript.h>",
         "#include <pluginscript/godot_pluginscript.h>",
-        "#include <videodecoder/godot_videodecoder.h>",
         "",
         "#ifdef __cplusplus",
         'extern "C" {',
