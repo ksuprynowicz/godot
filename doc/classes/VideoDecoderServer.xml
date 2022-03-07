@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VideoDecoderServer" inherits="Object" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_interface">
+			<return type="void" />
+			<argument index="0" name="extension_stream" type="VideoStreamExtension" />
+			<description>
+			</description>
+		</method>
+		<method name="get_extension_stream">
+			<return type="VideoStreamExtension" />
+			<argument index="0" name="extension" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_recognized_extensions">
+			<return type="PackedStringArray" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_interface">
+			<return type="void" />
+			<argument index="0" name="extension_stream" type="VideoStreamExtension" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>
