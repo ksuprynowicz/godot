@@ -293,6 +293,7 @@ godot_variant GDAPI godot_variant_iter_get(const godot_variant *p_self, godot_va
 /// Variant functions.
 godot_bool GDAPI godot_variant_hash_compare(const godot_variant *p_self, const godot_variant *p_other);
 godot_bool GDAPI godot_variant_booleanize(const godot_variant *p_self);
+void GDAPI godot_variant_sub(const godot_variant *p_a, const godot_variant *p_b, godot_variant *r_dst);
 void GDAPI godot_variant_blend(const godot_variant *p_a, const godot_variant *p_b, float p_c, godot_variant *r_dst);
 void GDAPI godot_variant_interpolate(const godot_variant *p_a, const godot_variant *p_b, float p_c, godot_variant *r_dst);
 godot_variant GDAPI godot_variant_duplicate(const godot_variant *p_self, godot_bool p_deep);
