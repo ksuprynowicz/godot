@@ -490,8 +490,9 @@ DirectionalLight3D::DirectionalLight3D() :
 		Light3D(RenderingServer::LIGHT_DIRECTIONAL) {
 	set_param(PARAM_SHADOW_MAX_DISTANCE, 100);
 	set_param(PARAM_SHADOW_FADE_START, 0.8);
-	// Increase the default shadow bias to better suit most scenes.
+	// Increase the default shadow bias and normal bias to better suit most scenes.
 	set_param(PARAM_SHADOW_BIAS, 0.1);
+	set_param(PARAM_SHADOW_NORMAL_BIAS, 2.0);
 	set_shadow_mode(SHADOW_PARALLEL_4_SPLITS);
 	blend_splits = false;
 }
@@ -531,8 +532,6 @@ void OmniLight3D::_bind_methods() {
 OmniLight3D::OmniLight3D() :
 		Light3D(RenderingServer::LIGHT_OMNI) {
 	set_shadow_mode(SHADOW_CUBE);
-	// Increase the default shadow biases to better suit most scenes.
-	set_param(PARAM_SHADOW_BIAS, 0.2);
 }
 
 TypedArray<String> SpotLight3D::get_configuration_warnings() const {
