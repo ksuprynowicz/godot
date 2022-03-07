@@ -733,10 +733,9 @@ public:
 		Multiplayer::RPCConfig rpc_config;
 		MethodInfo info;
 		LambdaNode *source_lambda = nullptr;
-#ifdef TOOLS_ENABLED
+
 		Vector<Variant> default_arg_values;
 		String doc_description;
-#endif // TOOLS_ENABLED
 
 		bool resolved_signature = false;
 		bool resolved_body = false;
