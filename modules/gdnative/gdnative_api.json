@@ -1485,6 +1485,24 @@
 				]
 			},
 			{
+				"name": "godot_variant_sub",
+				"return_type": "void",
+				"arguments": [
+					[
+						"const godot_variant *",
+						"p_a"
+					],
+					[
+						"const godot_variant *",
+						"p_b"
+					],
+					[
+						"godot_variant *",
+						"r_dst"
+					]
+				]
+			},
+			{
 				"name": "godot_variant_blend",
 				"return_type": "void",
 				"arguments": [
