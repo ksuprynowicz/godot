@@ -141,6 +141,10 @@ class EditorFileSystem : public Node {
 	bool abort_scan;
 	bool scanning;
 	bool importing;
+	bool currently_in_notification_process;
+	bool notification_process_scan_pending;
+	Vector<String> notification_process_update_files_requested;
+
 	bool first_scan;
 	bool scan_pending;
 	bool scan_changes_pending;
