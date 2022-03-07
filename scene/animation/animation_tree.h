@@ -197,9 +197,12 @@ private:
 		bool loc_used = false;
 		bool rot_used = false;
 		bool scale_used = false;
+		Vector3 init_loc = Vector3();
+		Quaternion init_rot = Quaternion();
+		Quaternion init_rot_log = Quaternion();
+		Vector3 init_scale = Vector3(1, 1, 1);
 		Vector3 loc;
 		Quaternion rot;
-		real_t rot_blend_accum = 0.0;
 		Vector3 scale;
 
 		TrackCacheTransform() {
@@ -209,12 +212,14 @@ private:
 
 	struct TrackCacheBlendShape : public TrackCache {
 		MeshInstance3D *mesh_3d = nullptr;
+		float init_value = 0;
 		float value = 0;
 		int shape_index = -1;
 		TrackCacheBlendShape() { type = Animation::TYPE_BLEND_SHAPE; }
 	};
 
 	struct TrackCacheValue : public TrackCache {
+		Variant init_value;
 		Variant value;
 		Vector<StringName> subpath;
 		TrackCacheValue() { type = Animation::TYPE_VALUE; }
@@ -225,6 +230,7 @@ private:
 	};
 
 	struct TrackCacheBezier : public TrackCache {
+		real_t init_value = 0.0;
 		real_t value = 0.0;
 		Vector<StringName> subpath;
 		TrackCacheBezier() {
