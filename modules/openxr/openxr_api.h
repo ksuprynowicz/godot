@@ -210,6 +210,7 @@ public:
 	String get_swapchain_format_name(int64_t p_swapchain_format) const;
 
 	void register_extension_wrapper(OpenXRExtensionWrapper *p_extension_wrapper);
+	void unregister_extension_wrapper(OpenXRExtensionWrapper *p_extension_wrapper);
 
 	bool is_initialized();
 	bool is_running();
