@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  openxr_action.h                                                      */
+/*  openxr_action_map_editor.h                                           */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,59 +28,70 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef OPENXR_ACTION_H
-#define OPENXR_ACTION_H
+#ifndef OPENXR_ACTION_MAP_EDITOR_H
+#define OPENXR_ACTION_MAP_EDITOR_H
 
-#include "core/io/resource.h"
+#include "../action_map/openxr_action_map.h"
+#include "../editor/openxr_action_set_editor.h"
+#include "../editor/openxr_interaction_profile_editor.h"
+#include "../editor/openxr_select_interaction_profile_dialog.h"
 
-class OpenXRActionSet;
+#include "editor/editor_plugin.h"
+#include "scene/gui/box_container.h"
+#include "scene/gui/button.h"
+#include "scene/gui/label.h"
+#include "scene/gui/scroll_container.h"
+#include "scene/gui/tab_container.h"
 
-class OpenXRAction : public Resource {
-	GDCLASS(OpenXRAction, Resource);
-
-public:
-	enum ActionType {
-		OPENXR_ACTION_BOOL,
-		OPENXR_ACTION_FLOAT,
-		OPENXR_ACTION_VECTOR2,
-		OPENXR_ACTION_POSE,
-		OPENXR_ACTION_HAPTIC,
-		OPENXR_ACTION_MAX
-	};
+class OpenXRActionMapEditor : public VBoxContainer {
+	GDCLASS(OpenXRActionMapEditor, VBoxContainer);
 
 private:
-	String localized_name;
-	ActionType action_type = OPENXR_ACTION_FLOAT;
+	String edited_path;
+	Ref<OpenXRActionMap> action_map;
+	Vector<Node *> interaction_profiles;
 
-	PackedStringArray toplevel_paths;
+	HBoxContainer *top_hb = nullptr;
+	Label *header_label = nullptr;
+	Button *add_action_set = nullptr;
+	Button *add_interaction_profile = nullptr;
+	Button *load = nullptr;
+	Button *save_as = nullptr;
+	Button *_default = nullptr;
+	TabContainer *tabs = nullptr;
+	ScrollContainer *actionsets_scroll = nullptr;
+	VBoxContainer *actionsets_vb = nullptr;
+	OpenXRSelectInteractionProfileDialog *select_interaction_profile_dialog = nullptr;
+
+	void _add_action_set_editor(Ref<OpenXRActionSet> p_action_set);
+	void _update_action_sets();
+	void _add_interaction_profile_editor(Ref<OpenXRInteractionProfile> p_interaction_profile);
+	void _update_interaction_profiles();
+
+	void _add_action_set(String p_name);
+	void _remove_action_set(String p_name);
+
+	void _on_add_action_set();
+	void _on_remove_action_set(Object *p_action_set_editor);
+	void _on_add_interaction_profile();
+	void _on_interaction_profile_selected(const String p_path);
+
+	void _load_action_map(const String p_path, bool p_create_new_if_missing = false);
+	void _on_save_action_map();
+	void _on_reset_to_default_layout();
+
+	void _on_tabs_tab_changed(int p_tab);
+	void _on_tab_button_pressed(int p_tab);
 
 protected:
-	friend class OpenXRActionSet;
-
-	OpenXRActionSet *action_set = nullptr; // action belongs to this action set.
-
 	static void _bind_methods();
+	void _notification(int p_what);
 
 public:
-	static Ref<OpenXRAction> new_action(const char *p_name, const char *p_localized_name, const ActionType p_action_type, const char *p_toplevel_paths); // Helper function to add and configure an action
+	void open_action_map(String p_path);
 
-	String get_name_with_set() const; // Retrieve the name of this action as <action_set>/<action>
-
-	void set_localized_name(const String p_localized_name); // Set the localized name of this action
-	String get_localized_name() const; // Get the localized name of this action
-
-	void set_action_type(const ActionType p_action_type); // Set the type of this action
-	ActionType get_action_type() const; // Get the type of this action
-
-	void set_toplevel_paths(const PackedStringArray p_toplevel_paths); // Set the toplevel paths of this action
-	PackedStringArray get_toplevel_paths() const; // Get the toplevel paths of this action
-
-	void add_toplevel_path(const String p_toplevel_path); // Add a top level path to this action
-	void rem_toplevel_path(const String p_toplevel_path); // Remove a toplevel path from this action
-
-	void parse_toplevel_paths(const String p_toplevel_paths); // Parse and set the top level paths from a comma separated string
+	OpenXRActionMapEditor();
+	~OpenXRActionMapEditor();
 };
 
-VARIANT_ENUM_CAST(OpenXRAction::ActionType);
-
-#endif // !OPENXR_ACTION_H
+#endif // !OPENXR_ACTION_MAP_EDITOR_H
