@@ -31,6 +31,19 @@
 				Setup this action set with our default actions.
 			</description>
 		</method>
+		<method name="get_action_set" qualifiers="const">
+			<return type="OpenXRActionSet" />
+			<argument index="0" name="name" type="String" />
+			<description>
+				Retrieve an action set by name.
+			</description>
+		</method>
+		<method name="get_action_set_count" qualifiers="const">
+			<return type="int" />
+			<description>
+				Retrieve the number of actions sets in our action map.
+			</description>
+		</method>
 		<method name="remove_action_set">
 			<return type="void" />
 			<argument index="0" name="action_set" type="OpenXRActionSet" />
@@ -48,8 +61,10 @@
 	</methods>
 	<members>
 		<member name="action_sets" type="Array" setter="set_action_sets" getter="get_action_sets" default="[]">
+			Collection of [OpenXRActionSet]s that are part of this action map.
 		</member>
 		<member name="interaction_profiles" type="Array" setter="set_interaction_profiles" getter="get_interaction_profiles" default="[]">
+			Collection of [OpenXRInteractionProfile]s that are part of this action map.
 		</member>
 	</members>
 </class>
