@@ -528,7 +528,7 @@ Error ResourceLoaderBinary::parse_variant(Variant &r_v) {
 			Vector<Vector2> array;
 			array.resize(len);
 			Vector2 *w = array.ptrw();
-			if (sizeof(Vector2) == 8) {
+			if (sizeof(Vector2) == sizeof(real_t) * 2) {
 				f->get_buffer((uint8_t *)w, len * sizeof(real_t) * 2);
 #ifdef BIG_ENDIAN_ENABLED
 				{
@@ -541,7 +541,7 @@ Error ResourceLoaderBinary::parse_variant(Variant &r_v) {
 #endif
 
 			} else {
-				ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "Vector2 size is NOT 8!");
+				ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "Vector2 size is NOT a multiple of sizeof(real_t) * 2!");
 			}
 
 			r_v = array;
@@ -553,7 +553,7 @@ Error ResourceLoaderBinary::parse_variant(Variant &r_v) {
 			Vector<Vector3> array;
 			array.resize(len);
 			Vector3 *w = array.ptrw();
-			if (sizeof(Vector3) == 12) {
+			if (sizeof(Vector3) == sizeof(real_t) * 3) {
 				f->get_buffer((uint8_t *)w, len * sizeof(real_t) * 3);
 #ifdef BIG_ENDIAN_ENABLED
 				{
@@ -566,7 +566,7 @@ Error ResourceLoaderBinary::parse_variant(Variant &r_v) {
 #endif
 
 			} else {
-				ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "Vector3 size is NOT 12!");
+				ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "Vector3 size is NOT of sizeof(real_t) * 3!");
 			}
 
 			r_v = array;
@@ -591,7 +591,7 @@ Error ResourceLoaderBinary::parse_variant(Variant &r_v) {
 #endif
 
 			} else {
-				ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "Color size is NOT 16!");
+				ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "Color size is NOT sizeof(real_t) * 4!");
 			}
 
 			r_v = array;
