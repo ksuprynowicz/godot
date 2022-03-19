@@ -540,6 +540,22 @@ Error ResourceLoaderBinary::parse_variant(Variant &r_v) {
 
 #endif
 
+			} else if (sizeof(Vector2) == 16) {
+				for (int32_t array_i = 0; array_i < len; array_i += 2) {
+					real_t elem_x = f->get_float();
+					real_t elem_y = f->get_float();
+					array.write[array_i] = Vector2(elem_x, elem_y);
+				}
+#ifdef BIG_ENDIAN_ENABLED
+				{
+					uint32_t *ptr = (uint32_t *)w.ptr();
+					for (int i = 0; i < len * 2; i++) {
+						ptr[i] = BSWAP32(ptr[i]);
+					}
+				}
+
+#endif
+
 			} else {
 				ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "Vector2 size is NOT 8!");
 			}
@@ -565,6 +581,23 @@ Error ResourceLoaderBinary::parse_variant(Variant &r_v) {
 
 #endif
 
+			} else if (sizeof(Vector3) == 24) {
+				for (int32_t array_i = 0; array_i < len; array_i += 3) {
+					real_t elem_x = f->get_float();
+					real_t elem_y = f->get_float();
+					real_t elem_z = f->get_float();
+					array.write[array_i] = Vector3(elem_x, elem_y, elem_z);
+				}
+#ifdef BIG_ENDIAN_ENABLED
+				{
+					uint32_t *ptr = (uint32_t *)w.ptr();
+					for (int i = 0; i < len * 3; i++) {
+						ptr[i] = BSWAP32(ptr[i]);
+					}
+				}
+
+#endif
+
 			} else {
 				ERR_FAIL_V_MSG(ERR_UNAVAILABLE, "Vector3 size is NOT 12!");
 			}
@@ -580,6 +613,24 @@ Error ResourceLoaderBinary::parse_variant(Variant &r_v) {
 			Color *w = array.ptrw();
 			if (sizeof(Color) == 16) {
 				f->get_buffer((uint8_t *)w, len * sizeof(real_t) * 4);
+#ifdef BIG_ENDIAN_ENABLED
+				{
+					uint32_t *ptr = (uint32_t *)w.ptr();
+					for (int i = 0; i < len * 4; i++) {
+						ptr[i] = BSWAP32(ptr[i]);
+					}
+				}
+
+#endif
+
+			} else if (sizeof(Color) == 32) {
+				for (int32_t array_i = 0; array_i < len; array_i += 4) {
+					real_t elem_r = f->get_float();
+					real_t elem_g = f->get_float();
+					real_t elem_b = f->get_float();
+					real_t elem_a = f->get_float();
+					array.write[array_i] = Color(elem_r, elem_g, elem_b, elem_a);
+				}
 #ifdef BIG_ENDIAN_ENABLED
 				{
 					uint32_t *ptr = (uint32_t *)w.ptr();
