@@ -528,7 +528,7 @@ Error ResourceLoaderBinary::parse_variant(Variant &r_v) {
 			Vector<Vector2> array;
 			array.resize(len);
 			Vector2 *w = array.ptrw();
-			if (sizeof(Vector2) == 8) {
+			if (len % sizeof(float) * 2 == 0) {
 				f->get_buffer((uint8_t *)w, len * sizeof(real_t) * 2);
 #ifdef BIG_ENDIAN_ENABLED
 				{
@@ -553,7 +553,7 @@ Error ResourceLoaderBinary::parse_variant(Variant &r_v) {
 			Vector<Vector3> array;
 			array.resize(len);
 			Vector3 *w = array.ptrw();
-			if (sizeof(Vector3) == 12) {
+			if (len % sizeof(float) * 3 == 0) {
 				f->get_buffer((uint8_t *)w, len * sizeof(real_t) * 3);
 #ifdef BIG_ENDIAN_ENABLED
 				{
@@ -578,7 +578,7 @@ Error ResourceLoaderBinary::parse_variant(Variant &r_v) {
 			Vector<Color> array;
 			array.resize(len);
 			Color *w = array.ptrw();
-			if (sizeof(Color) == 16) {
+			if (len % sizeof(float) * 4 == 0) {
 				f->get_buffer((uint8_t *)w, len * sizeof(real_t) * 4);
 #ifdef BIG_ENDIAN_ENABLED
 				{
