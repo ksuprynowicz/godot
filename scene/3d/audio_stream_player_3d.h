@@ -32,6 +32,8 @@
 #define AUDIO_STREAM_PLAYER_3D_H
 
 #include "core/os/mutex.h"
+#include "core/templates/safe_refcount.h"
+#include "modules/resonanceaudio/resonance_audio_wrapper.h"
 #include "scene/3d/area_3d.h"
 #include "scene/3d/node_3d.h"
 #include "scene/3d/velocity_tracker_3d.h"
@@ -115,6 +117,9 @@ private:
 
 	float _get_attenuation_db(float p_distance) const;
 
+#ifdef RESONANCEAUDIO_ENABLED
+	AudioSourceId audio_source_id;
+#endif
 protected:
 	void _validate_property(PropertyInfo &property) const override;
 	void _notification(int p_what);
