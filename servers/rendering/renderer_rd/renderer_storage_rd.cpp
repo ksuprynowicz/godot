@@ -3264,7 +3264,10 @@ void RendererStorageRD::particles_set_emitting(RID p_particles, bool p_emitting)
 }
 
 bool RendererStorageRD::particles_get_emitting(RID p_particles) {
-	ERR_FAIL_COND_V_MSG(RSG::threaded, false, "This function should never be used with threaded rendering, as it stalls the renderer.");
+	if (RSG::threaded) {
+		ERR_PRINT_ONCE("This function should never be used with threaded rendering, as it stalls the renderer.");
+		return false;
+	}
 	Particles *particles = particles_owner.get_or_null(p_particles);
 	ERR_FAIL_COND_V(!particles, false);
 
@@ -4524,7 +4527,10 @@ void RendererStorageRD::update_particles() {
 }
 
 bool RendererStorageRD::particles_is_inactive(RID p_particles) const {
-	ERR_FAIL_COND_V_MSG(RSG::threaded, false, "This function should never be used with threaded rendering, as it stalls the renderer.");
+	if (RSG::threaded) {
+		ERR_PRINT_ONCE("This function should never be used with threaded rendering, as it stalls the renderer.");
+		return false;
+	}
 	const Particles *particles = particles_owner.get_or_null(p_particles);
 	ERR_FAIL_COND_V(!particles, false);
 	return !particles->emitting && particles->inactive;
