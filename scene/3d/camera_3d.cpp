@@ -31,13 +31,13 @@
 #include "camera_3d.h"
 
 #include "collision_object_3d.h"
-#include "core/math/camera_matrix.h"
 #include "core/config/project_settings.h"
-#include "modules/resonanceaudio/resonance_audio_wrapper.h"
+#include "core/math/camera_matrix.h"
 #include "scene/main/viewport.h"
 #include "scene/resources/material.h"
 #include "scene/resources/surface_tool.h"
 #include "servers/audio_server.h"
+#include "servers/resonanceaudio/resonance_audio_wrapper.h"
 
 void Camera3D::_update_audio_listener_state() {
 }

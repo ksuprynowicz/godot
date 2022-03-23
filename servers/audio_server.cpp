@@ -39,10 +39,10 @@
 #include "core/os/os.h"
 #include "core/string/string_name.h"
 #include "core/templates/pair.h"
-#include "modules/resonanceaudio/resonance_audio_wrapper.h"
 #include "scene/resources/audio_stream_sample.h"
 #include "servers/audio/audio_driver_dummy.h"
 #include "servers/audio/effects/audio_effect_compressor.h"
+#include "servers/resonanceaudio/resonance_audio_wrapper.h"
 
 #include <cstring>
 

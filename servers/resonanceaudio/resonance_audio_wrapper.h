@@ -140,10 +140,6 @@ class ResonanceAudioServer : public Object {
 		uint64_t msdelay = 1000;
 
 		while (!resonance_wrapper->exit_thread) {
-			if (!resonance_wrapper->is_empty()) {
-				resonance_wrapper->lock();
-				resonance_wrapper->unlock();
-			}
 			OS::get_singleton()->delay_usec(msdelay * 1000);
 		}
 	}
@@ -303,7 +299,9 @@ public:
 		singleton = this;
 		default_bus = create_bus();
 	}
-	virtual ~ResonanceAudioServer() {}
+	virtual ~ResonanceAudioServer() {
+		clear();
+	}
 };
 
 #endif

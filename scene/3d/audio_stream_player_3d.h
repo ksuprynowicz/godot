@@ -33,7 +33,7 @@
 
 #include "core/os/mutex.h"
 #include "core/templates/safe_refcount.h"
-#include "modules/resonanceaudio/resonance_audio_wrapper.h"
+#include "servers/resonanceaudio/resonance_audio_wrapper.h"
 #include "scene/3d/area_3d.h"
 #include "scene/3d/node_3d.h"
 #include "scene/3d/velocity_tracker_3d.h"

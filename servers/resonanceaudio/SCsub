@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
 Import("env")
-Import("env_modules")
 
-env_resonance = env_modules.Clone()
+env_resonance = env.Clone()
 
 # Thirdparty source files
 thirdparty_dir = "#thirdparty/"
@@ -109,7 +108,7 @@ env_thirdparty = env_resonance.Clone()
 
 env_thirdparty.Append(CPPDEFINES=["TASKING_INTERNAL"])
 env_thirdparty.Append(CPPDEFINES=["_USE_MATH_DEFINES"])
-env_thirdparty.add_source_files(env.modules_sources, thirdparty_sources)
+env_thirdparty.add_source_files(env.servers_sources, thirdparty_sources)
 
 # Godot source files
-env_resonance.add_source_files(env.modules_sources, "*.cpp")
+env_resonance.add_source_files(env.servers_sources, "*.cpp")

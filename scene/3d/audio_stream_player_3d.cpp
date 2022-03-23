@@ -30,11 +30,11 @@
 
 #include "audio_stream_player_3d.h"
 
-#include "modules/resonanceaudio/resonance_audio_wrapper.h"
 #include "scene/3d/area_3d.h"
 #include "scene/3d/audio_listener_3d.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/main/viewport.h"
+#include "servers/resonanceaudio/resonance_audio_wrapper.h"
 
 #include "core/config/project_settings.h"
 
