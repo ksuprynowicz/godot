@@ -29,16 +29,9 @@
 /*************************************************************************/
 
 #include "register_types.h"
-#include "core/object/class_db.h"
-#include "resonance_audio_wrapper.h"
-
-ResonanceAudioWrapper *resonance_audio_wrapper;
 
 void register_resonanceaudio_types() {
-	GDREGISTER_CLASS(ResonanceAudioWrapper);
-	resonance_audio_wrapper = memnew(ResonanceAudioWrapper);
 }
 
 void unregister_resonanceaudio_types() {
-	memdelete(resonance_audio_wrapper);
 }
