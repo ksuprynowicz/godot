@@ -2854,7 +2854,7 @@ void Main::cleanup(bool p_force) {
 	}
 
 	if (resonance_audio_server) {
-		memdelete(audio_server);
+		memdelete(resonance_audio_server);
 	}
 
 	if (audio_server) {
