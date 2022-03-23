@@ -98,7 +98,9 @@ public:
 		bool success = resonance_api->FillInterleavedOutputBuffer(/* num_channels= */ 2, num_frames, (float *)frames);
 		if (!success) {
 			// Zero out the array because Resonance Audio fills buffers with garbage on error under some circumstances.
-			memset(frames, 0, num_frames * sizeof(AudioFrame));
+			for(int32_t frame_i = 0; frame_i < num_frames; frame_i++){
+				frames[frame_i] = {};
+			}
 		}
 		return success;
 	}
