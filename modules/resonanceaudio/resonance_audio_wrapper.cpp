@@ -40,7 +40,7 @@ ResonanceAudioWrapper *ResonanceAudioWrapper::get_singleton() {
 }
 
 AudioSourceId ResonanceAudioWrapper::register_audio_source() {
-	AudioSourceId new_source;
+	AudioSourceId new_source = {};
 	resonance_api->CreateSoundObjectSource(vraudio::RenderingMode::kBinauralHighQuality);
 	resonance_api->SetSourceDistanceModel(
 			new_source.id,
@@ -52,6 +52,9 @@ AudioSourceId ResonanceAudioWrapper::register_audio_source() {
 }
 
 void ResonanceAudioWrapper::unregister_audio_source(AudioSourceId audio_source) {
+	if (audio_source.id == -1) {
+		return;
+	}
 	resonance_api->DestroySource(audio_source.id);
 }
 
