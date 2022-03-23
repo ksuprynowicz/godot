@@ -150,7 +150,6 @@ protected:
 	}
 
 private:
-	uint64_t counter = 0;
 	RID_Owner<ResonanceAudioBus, true> bus_owner;
 	RID master_bus;
 
