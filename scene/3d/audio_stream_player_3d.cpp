@@ -252,12 +252,12 @@ void AudioStreamPlayer3D::_notification(int p_what) {
 		} break;
 		case NOTIFICATION_INSTANCED: {
 			if (GLOBAL_GET("audio/enable_resonance_audio")) {
-				audio_source_id = ResonanceAudioWrapper::get_singleton()->register_audio_source();
+				audio_source_id = ResonanceAudioServer::get_singleton()->register_audio_source(ResonanceAudioServer::get_singleton()->get_default_bus());
 			}
 		} break;
 		case NOTIFICATION_PREDELETE: {
 			if (GLOBAL_GET("audio/enable_resonance_audio")) {
-				ResonanceAudioWrapper::get_singleton()->unregister_audio_source(audio_source_id);
+				ResonanceAudioServer::get_singleton()->unregister_audio_source(audio_source_id);
 			}
 		} break;
 		case NOTIFICATION_EXIT_TREE: {
@@ -284,7 +284,7 @@ void AudioStreamPlayer3D::_notification(int p_what) {
 
 			if (p_what == NOTIFICATION_INTERNAL_PHYSICS_PROCESS) {
 				if (GLOBAL_GET("audio/enable_resonance_audio")) {
-					ResonanceAudioWrapper::get_singleton()->set_source_transform(audio_source_id, get_global_transform());
+					ResonanceAudioServer::get_singleton()->set_source_transform(audio_source_id, get_global_transform());
 				}
 				//update anything related to position first, if possible of course
 				Vector<AudioFrame> volume_vector;
@@ -481,7 +481,7 @@ Vector<AudioFrame> AudioStreamPlayer3D::_update_panning() {
 		linear_attenuation = Math::db2linear(db_att);
 		for (Ref<AudioStreamPlayback> &playback : stream_playbacks) {
 			if (GLOBAL_GET("audio/enable_resonance_audio")) {
-				ResonanceAudioWrapper::get_singleton()->set_source_attenuation(audio_source_id, linear_attenuation);
+				ResonanceAudioServer::get_singleton()->set_source_attenuation(audio_source_id, linear_attenuation);
 				AudioServer::get_singleton()->set_playback_highshelf_params(playback, linear_attenuation, attenuation_filter_cutoff_hz, audio_source_id);
 			} else {
 				AudioServer::get_singleton()->set_playback_highshelf_params(playback, linear_attenuation, attenuation_filter_cutoff_hz);

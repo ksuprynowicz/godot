@@ -599,8 +599,7 @@ void AudioServer::_mix_step() {
 				for (uint32_t j = 0; j < buffer_size; j++) {
 					target_buf[j] += buf[j];
 				}
-			}
-			else {
+			} else {
 				if (GLOBAL_GET("audio/enable_resonance_audio")) {
 					AudioFrame *master_buf = thread_get_channel_mix_buffer(0, 0);
 					bool success = false;
@@ -608,7 +607,7 @@ void AudioServer::_mix_step() {
 						for (int frame_idx = 0; frame_idx < spatial_pull_buffer.size(); frame_idx++) {
 							spatial_pull_buffer.write[frame_idx] = master_buf[frame_idx];
 						}
-						success = ResonanceAudioWrapper::get_singleton()->pull_listener_buffer(buffer_size, spatial_pull_buffer.ptrw());
+						success = ResonanceAudioServer::get_singleton()->pull_listener_buffer(ResonanceAudioServer::get_singleton()->get_default_bus(), buffer_size, spatial_pull_buffer.ptrw());
 					}
 					if (success) {
 						for (int frame_idx = 0; frame_idx < spatial_pull_buffer.size(); frame_idx++) {
@@ -631,7 +630,7 @@ void AudioServer::_mix_step_for_channel(AudioFrame *p_out_buf, AudioFrame *p_sou
 			float lerp_param = (float)frame_idx / buffer_size;
 			p_out_buf[frame_idx] += (p_vol_final * lerp_param + (1 - lerp_param) * p_vol_start) * p_source_buf[frame_idx];
 		}
-		ResonanceAudioWrapper::get_singleton()->push_source_buffer(p_audio_source_id, buffer_size, p_out_buf);
+		ResonanceAudioServer::get_singleton()->push_source_buffer(p_audio_source_id, buffer_size, p_out_buf);
 	} else if (p_highshelf_gain != 0) {
 		AudioFilterSW filter;
 		filter.set_mode(AudioFilterSW::HIGHSHELF);
@@ -1205,7 +1204,6 @@ void AudioServer::stop_playback_stream(Ref<AudioStreamPlayback> p_playback) {
 }
 
 void AudioServer::set_playback_bus_exclusive(Ref<AudioStreamPlayback> p_playback, StringName p_bus, Vector<AudioFrame> p_volumes, AudioSourceId p_audio_source_id) {
-
 	ERR_FAIL_COND(p_volumes.size() != MAX_CHANNELS_PER_BUS);
 
 	Map<StringName, Vector<AudioFrame>> map;

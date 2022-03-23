@@ -111,7 +111,7 @@ void Camera3D::_notification(int p_what) {
 
 		case NOTIFICATION_TRANSFORM_CHANGED: {
 			if (viewport->is_audio_listener_3d() && GLOBAL_GET("audio/enable_resonance_audio")) {
-				ResonanceAudioWrapper::get_singleton()->set_head_transform(get_global_transform());
+				ResonanceAudioServer::get_singleton()->set_head_transform(ResonanceAudioServer::get_singleton()->get_default_bus(), get_global_transform());
 			}
 
 			_request_camera_update();

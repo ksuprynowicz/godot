@@ -29,78 +29,12 @@
 /*************************************************************************/
 
 #include "resonance_audio_wrapper.h"
-#include "core/error/error_macros.h"
 #include "servers/audio_server.h"
 
-ResonanceAudioWrapper *ResonanceAudioWrapper::singleton = nullptr;
+ResonanceAudioServer *ResonanceAudioServer::singleton = nullptr;
 
-ResonanceAudioWrapper *ResonanceAudioWrapper::get_singleton() {
-	return singleton;
-}
-
-AudioSourceId ResonanceAudioWrapper::register_audio_source() {
-	AudioSourceId new_source = {};
-	resonance_api->CreateSoundObjectSource(vraudio::RenderingMode::kBinauralHighQuality);
-	resonance_api->SetSourceDistanceModel(
-			new_source.id,
-			vraudio::DistanceRolloffModel::kNone,
-			/* min_distance= */ 0,
-			/* max_distance= */ 0);
-
-	return new_source;
-}
-
-void ResonanceAudioWrapper::unregister_audio_source(AudioSourceId audio_source) {
-	if (audio_source.id == -1) {
-		return;
-	}
-	resonance_api->DestroySource(audio_source.id);
-}
-
-void ResonanceAudioWrapper::set_source_transform(AudioSourceId source, Transform3D source_transform) {
-	
-	Quaternion source_rotation = Quaternion(source_transform.basis);
-	resonance_api->SetSourcePosition(source.id, source_transform.origin.x, source_transform.origin.y, source_transform.origin.z);
-	resonance_api->SetSourceRotation(source.id, source_rotation.x, source_rotation.y, source_rotation.z, source_rotation.w);
-}
-
-void ResonanceAudioWrapper::set_head_transform(Transform3D head_transform) {
-	Quaternion head_rotation = Quaternion(head_transform.basis);
-	resonance_api->SetHeadPosition(head_transform.origin.x, head_transform.origin.y, head_transform.origin.z);
-	resonance_api->SetHeadRotation(head_rotation.x, head_rotation.y, head_rotation.z, head_rotation.w);
-}
-
-void ResonanceAudioWrapper::push_source_buffer(AudioSourceId source, int num_frames, AudioFrame *frames) {
-	// Frames are just interleaved floats.
-	resonance_api->SetInterleavedBuffer(source.id, (const float *)frames, /* num_channels= */ 2, num_frames);
-}
-
-bool ResonanceAudioWrapper::pull_listener_buffer(int num_frames, AudioFrame *frames) {
-	// Frames are just interleaved floats.
-	bool success = resonance_api->FillInterleavedOutputBuffer(/* num_channels= */ 2, num_frames, (float *)frames);
-	if (!success) {
-		// Zero out the array because Resonance Audio fills buffers with garbage on error under some circumstances.
-		memset(frames, 0, num_frames * sizeof(AudioFrame));
-	}
-	return success;
-}
-
-void ResonanceAudioWrapper::set_source_attenuation(AudioSourceId source, float attenuation_linear) {
-	resonance_api->SetSourceDistanceAttenuation(source.id, attenuation_linear);
-}
-
-AudioSourceId ResonanceAudioWrapper::ResonanceAudioWrapper::register_stero_audio_source() {
-	AudioSourceId new_source;
-	new_source.id = resonance_api->CreateStereoSource(2);
-	return new_source;
-}
-
-void ResonanceAudioWrapper::set_linear_source_volume(AudioSourceId audio_source, real_t volume) {
-	resonance_api->SetSourceVolume(audio_source.id, volume);
-}
-
-ResonanceAudioWrapper::ResonanceAudioWrapper() {
-	singleton = this;
-	resonance_api.reset(vraudio::CreateResonanceAudioApi(
-			/* num_channels= */ 2, AudioServer::get_singleton()->thread_get_mix_buffer_size(), AudioServer::get_singleton()->get_mix_rate()));
-}
+ResonanceAudioBus::ResonanceAudioBus() {
+	resonance_api =
+			vraudio::CreateResonanceAudioApi(
+					/* num_channels= */ 2, AudioServer::get_singleton()->thread_get_mix_buffer_size(), AudioServer::get_singleton()->get_mix_rate());
+};
