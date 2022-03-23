@@ -607,7 +607,7 @@ void AudioServer::_mix_step() {
 						for (int frame_idx = 0; frame_idx < spatial_pull_buffer.size(); frame_idx++) {
 							spatial_pull_buffer.write[frame_idx] = master_buf[frame_idx];
 						}
-						success = ResonanceAudioServer::get_singleton()->pull_listener_buffer(ResonanceAudioServer::get_singleton()->get_default_bus(), buffer_size, spatial_pull_buffer.ptrw());
+						success = ResonanceAudioServer::get_singleton()->pull_listener_buffer(ResonanceAudioServer::get_singleton()->get_master_bus(), buffer_size, spatial_pull_buffer.ptrw());
 					}
 					if (success) {
 						for (int frame_idx = 0; frame_idx < spatial_pull_buffer.size(); frame_idx++) {
