@@ -38,9 +38,9 @@
 #include "core/templates/safe_refcount.h"
 #include "core/variant/variant.h"
 
-#include "servers/resonanceaudio/resonance_audio_wrapper.h"
 #include "servers/audio/audio_effect.h"
 #include "servers/audio/audio_filter_sw.h"
+#include "servers/resonanceaudio/resonance_audio_wrapper.h"
 
 #include <atomic>
 

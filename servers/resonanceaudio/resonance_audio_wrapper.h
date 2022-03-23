@@ -164,8 +164,8 @@ public:
 		return ret;
 	}
 
-	AudioSourceId register_audio_source(RID id) {
-		ResonanceAudioBus *ptr = bus_owner.get_or_null(id);
+	AudioSourceId register_audio_source() {
+		ResonanceAudioBus *ptr = bus_owner.get_or_null(master_bus);
 		if (ptr) {
 			AudioSourceId source = ptr->register_audio_source();
 			return source;
@@ -180,7 +180,7 @@ public:
 		}
 		return;
 	}
-	AudioSourceId register_stero_audio_source(RID id) {
+	AudioSourceId register_stero_audio_source() {
 		ResonanceAudioBus *ptr = bus_owner.get_or_null(master_bus);
 		if (ptr) {
 			AudioSourceId source = ptr->register_stero_audio_source();
@@ -212,8 +212,8 @@ public:
 		}
 		return;
 	}
-	bool pull_listener_buffer(RID id, int num_frames, AudioFrame *frames) {
-		ResonanceAudioBus *ptr = bus_owner.get_or_null(id);
+	bool pull_listener_buffer(int num_frames, AudioFrame *frames) {
+		ResonanceAudioBus *ptr = bus_owner.get_or_null(master_bus);
 		if (ptr) {
 			return ptr->pull_listener_buffer(num_frames, frames);
 		}
@@ -237,11 +237,6 @@ public:
 		}
 		return;
 	}
-
-	RID get_master_bus() const {
-		return master_bus;
-	}
-
 	ResonanceAudioServer() {
 		singleton = this;
 		master_bus = create_bus();
