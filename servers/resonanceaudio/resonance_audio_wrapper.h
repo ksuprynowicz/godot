@@ -45,9 +45,19 @@
 
 #include "thirdparty/resonanceaudio/resonance_audio/api/resonance_audio_api.h"
 
-struct AudioSourceId {
+class AudioSourceId {
 	RID bus;
 	vraudio::ResonanceAudioApi::SourceId id = -1;
+
+public:
+	AudioSourceId(RID p_bus = RID(), vraudio::ResonanceAudioApi::SourceId p_id = -1) :
+			bus(p_bus), id(p_id) {}
+	RID get_bus() const {
+		return bus;
+	}
+	vraudio::ResonanceAudioApi::SourceId get_id() const {
+		return id;
+	}
 };
 class AudioServer;
 struct ResonanceAudioBus {
@@ -58,28 +68,28 @@ private:
 
 public:
 	AudioSourceId register_audio_source() {
-		AudioSourceId new_source = {};
 		resonance_api->CreateSoundObjectSource(vraudio::RenderingMode::kBinauralHighQuality);
+		vraudio::ResonanceAudioApi::SourceId new_id = -1;
 		resonance_api->SetSourceDistanceModel(
-				new_source.id,
+				new_id,
 				vraudio::DistanceRolloffModel::kNone,
 				/* min_distance= */ 0,
 				/* max_distance= */ 0);
-		new_source.bus = self;
+		AudioSourceId new_source = AudioSourceId(self, new_id);
 		return new_source;
 	}
 
 	void unregister_audio_source(AudioSourceId audio_source) {
-		if (audio_source.id == -1) {
+		if (audio_source.get_id() == -1) {
 			return;
 		}
-		resonance_api->DestroySource(audio_source.id);
+		resonance_api->DestroySource(audio_source.get_id());
 	}
 
 	void set_source_transform(AudioSourceId source, Transform3D source_transform) {
 		Quaternion source_rotation = Quaternion(source_transform.basis);
-		resonance_api->SetSourcePosition(source.id, source_transform.origin.x, source_transform.origin.y, source_transform.origin.z);
-		resonance_api->SetSourceRotation(source.id, source_rotation.x, source_rotation.y, source_rotation.z, source_rotation.w);
+		resonance_api->SetSourcePosition(source.get_id(), source_transform.origin.x, source_transform.origin.y, source_transform.origin.z);
+		resonance_api->SetSourceRotation(source.get_id(), source_rotation.x, source_rotation.y, source_rotation.z, source_rotation.w);
 	}
 
 	void set_head_transform(Transform3D head_transform) {
@@ -90,7 +100,7 @@ public:
 
 	void push_source_buffer(AudioSourceId source, int num_frames, AudioFrame *frames) {
 		// Frames are just interleaved floats.
-		resonance_api->SetInterleavedBuffer(source.id, (const float *)frames, /* num_channels= */ 2, num_frames);
+		resonance_api->SetInterleavedBuffer(source.get_id(), (const float *)frames, /* num_channels= */ 2, num_frames);
 	}
 
 	bool pull_listener_buffer(int num_frames, AudioFrame *frames) {
@@ -98,7 +108,7 @@ public:
 		bool success = resonance_api->FillInterleavedOutputBuffer(/* num_channels= */ 2, num_frames, (float *)frames);
 		if (!success) {
 			// Zero out the array because Resonance Audio fills buffers with garbage on error under some circumstances.
-			for(int32_t frame_i = 0; frame_i < num_frames; frame_i++){
+			for (int32_t frame_i = 0; frame_i < num_frames; frame_i++) {
 				frames[frame_i] = {};
 			}
 		}
@@ -106,18 +116,16 @@ public:
 	}
 
 	void set_source_attenuation(AudioSourceId source, float attenuation_linear) {
-		resonance_api->SetSourceDistanceAttenuation(source.id, attenuation_linear);
+		resonance_api->SetSourceDistanceAttenuation(source.get_id(), attenuation_linear);
 	}
 
 	AudioSourceId register_stero_audio_source() {
-		AudioSourceId new_source;
-		new_source.id = resonance_api->CreateStereoSource(2);
-		new_source.bus = self;
+		AudioSourceId new_source = AudioSourceId(self, resonance_api->CreateStereoSource(2));
 		return new_source;
 	}
 
 	void set_linear_source_volume(AudioSourceId audio_source, real_t volume) {
-		resonance_api->SetSourceVolume(audio_source.id, volume);
+		resonance_api->SetSourceVolume(audio_source.get_id(), volume);
 	}
 	_FORCE_INLINE_ void set_self(const RID &p_self) {
 		self = p_self;
@@ -204,10 +212,10 @@ public:
 			AudioSourceId source = ptr->register_audio_source();
 			return source;
 		}
-		return AudioSourceId();
+		return AudioSourceId(RID(), -1);
 	}
 	void unregister_audio_source(AudioSourceId audio_source) {
-		ResonanceAudioBus *ptr = bus_owner.get_or_null(audio_source.bus);
+		ResonanceAudioBus *ptr = bus_owner.get_or_null(audio_source.get_bus());
 		if (ptr) {
 			ptr->unregister_audio_source(audio_source);
 			return;
@@ -220,10 +228,10 @@ public:
 			AudioSourceId source = ptr->register_stero_audio_source();
 			return source;
 		}
-		return AudioSourceId();
+		return AudioSourceId(RID(), -1);
 	}
 	void set_source_transform(AudioSourceId audio_source, Transform3D source_transform) {
-		ResonanceAudioBus *ptr = bus_owner.get_or_null(audio_source.bus);
+		ResonanceAudioBus *ptr = bus_owner.get_or_null(audio_source.get_bus());
 		if (ptr) {
 			ptr->set_source_transform(audio_source, source_transform);
 			return;
@@ -239,7 +247,7 @@ public:
 		return;
 	}
 	void push_source_buffer(AudioSourceId source, int num_frames, AudioFrame *frames) {
-		ResonanceAudioBus *bus = bus_owner.get_or_null(source.bus);
+		ResonanceAudioBus *bus = bus_owner.get_or_null(source.get_bus());
 		if (bus) {
 			bus->push_source_buffer(source, num_frames, frames);
 			return;
@@ -255,7 +263,7 @@ public:
 	}
 
 	void set_source_attenuation(AudioSourceId source, float attenuation_linear) {
-		ResonanceAudioBus *ptr = bus_owner.get_or_null(source.bus);
+		ResonanceAudioBus *ptr = bus_owner.get_or_null(source.get_bus());
 		if (ptr) {
 			ptr->set_source_attenuation(source, attenuation_linear);
 			return;
@@ -264,7 +272,7 @@ public:
 	}
 
 	void set_linear_source_volume(AudioSourceId audio_source, real_t volume) {
-		ResonanceAudioBus *ptr = bus_owner.get_or_null(audio_source.bus);
+		ResonanceAudioBus *ptr = bus_owner.get_or_null(audio_source.get_bus());
 		if (ptr) {
 			ptr->set_linear_source_volume(audio_source, volume);
 			return;

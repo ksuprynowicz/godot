@@ -234,7 +234,7 @@ private:
 		bool bus_active[MAX_BUSES_PER_PLAYBACK] = { false, false, false, false, false, false };
 		StringName bus[MAX_BUSES_PER_PLAYBACK];
 		AudioFrame volume[MAX_BUSES_PER_PLAYBACK][MAX_CHANNELS_PER_BUS];
-		AudioSourceId audio_source_id;
+		AudioSourceId audio_source_id = AudioSourceId(RID(), -1);
 	};
 
 	struct AudioStreamPlaybackListNode {
@@ -250,7 +250,7 @@ private:
 		SafeNumeric<float> pitch_scale;
 		SafeNumeric<float> highshelf_gain;
 		SafeNumeric<float> attenuation_filter_cutoff_hz; // This isn't used unless highshelf_gain is nonzero.
-		std::atomic<AudioSourceId> source_id;
+		AudioSourceId source_id = AudioSourceId(RID(), -1);
 		AudioFilterSW::Processor filter_process[8];
 		// Updating this ref after the list node is created breaks consistency guarantees, don't do it!
 		Ref<AudioStreamPlayback> stream_playback;
@@ -376,18 +376,18 @@ public:
 	// Convenience method.
 	void start_playback_stream(Ref<AudioStreamPlayback> p_playback, StringName p_bus, Vector<AudioFrame> p_volume_db_vector, float p_start_time = 0, float p_pitch_scale = 1);
 	// Expose all parameters.
-	void start_playback_stream(Ref<AudioStreamPlayback> p_playback, Map<StringName, Vector<AudioFrame>> p_bus_volumes, float p_start_time = 0, float p_pitch_scale = 1, float p_highshelf_gain = 0, float p_attenuation_cutoff_hz = 0, AudioSourceId p_source_id = AudioSourceId());
+	void start_playback_stream(Ref<AudioStreamPlayback> p_playback, Map<StringName, Vector<AudioFrame>> p_bus_volumes, float p_start_time = 0, float p_pitch_scale = 1, float p_highshelf_gain = 0, float p_attenuation_cutoff_hz = 0, AudioSourceId p_source_id = AudioSourceId(RID(), -1));
 
 	void stop_playback_stream(Ref<AudioStreamPlayback> p_playback);
-	void set_playback_bus_exclusive(Ref<AudioStreamPlayback> p_playback, StringName p_bus, Vector<AudioFrame> p_volumes, AudioSourceId p_audio_source_id = AudioSourceId());
+	void set_playback_bus_exclusive(Ref<AudioStreamPlayback> p_playback, StringName p_bus, Vector<AudioFrame> p_volumes, AudioSourceId p_audio_source_id);
 
-	void set_playback_bus_volumes_linear(Ref<AudioStreamPlayback> p_playback, Map<StringName, Vector<AudioFrame>> p_bus_volumes, AudioSourceId p_audio_source_id = AudioSourceId());
-	void set_playback_all_bus_volumes_linear(Ref<AudioStreamPlayback> p_playback, Vector<AudioFrame> p_volumes, AudioSourceId p_audio_source_id = AudioSourceId());
+	void set_playback_bus_volumes_linear(Ref<AudioStreamPlayback> p_playback, Map<StringName, Vector<AudioFrame>> p_bus_volumes, AudioSourceId p_audio_source_id);
+	void set_playback_all_bus_volumes_linear(Ref<AudioStreamPlayback> p_playback, Vector<AudioFrame> p_volumes, AudioSourceId p_audio_source_id);
 
 	void set_playback_pitch_scale(Ref<AudioStreamPlayback> p_playback, float p_pitch_scale);
 	void set_playback_paused(Ref<AudioStreamPlayback> p_playback, bool p_paused);
 
-	void set_playback_highshelf_params(Ref<AudioStreamPlayback> p_playback, float p_gain, float p_attenuation_cutoff_hz, AudioSourceId p_source_id = AudioSourceId());
+	void set_playback_highshelf_params(Ref<AudioStreamPlayback> p_playback, float p_gain, float p_attenuation_cutoff_hz, AudioSourceId p_source_id);
 
 	bool is_playback_active(Ref<AudioStreamPlayback> p_playback);
 	float get_playback_position(Ref<AudioStreamPlayback> p_playback);

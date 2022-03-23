@@ -480,7 +480,7 @@ Vector<AudioFrame> AudioStreamPlayer3D::_update_panning() {
 				ResonanceAudioServer::get_singleton()->set_source_attenuation(audio_source_id, linear_attenuation);
 				AudioServer::get_singleton()->set_playback_highshelf_params(playback, linear_attenuation, attenuation_filter_cutoff_hz, audio_source_id);
 			} else {
-				AudioServer::get_singleton()->set_playback_highshelf_params(playback, linear_attenuation, attenuation_filter_cutoff_hz);
+				AudioServer::get_singleton()->set_playback_highshelf_params(playback, linear_attenuation, attenuation_filter_cutoff_hz, AudioSourceId(RID(), -1));
 			}
 		}
 		//TODO: The lower the second parameter (tightness) the more the sound will "enclose" the listener (more undirected / playing from
@@ -509,7 +509,7 @@ Vector<AudioFrame> AudioStreamPlayer3D::_update_panning() {
 		}
 
 		for (Ref<AudioStreamPlayback> &playback : stream_playbacks) {
-			AudioServer::get_singleton()->set_playback_bus_volumes_linear(playback, bus_volumes);
+			AudioServer::get_singleton()->set_playback_bus_volumes_linear(playback, bus_volumes, AudioSourceId(RID(), -1));
 		}
 
 		if (doppler_tracking != DOPPLER_TRACKING_DISABLED) {
