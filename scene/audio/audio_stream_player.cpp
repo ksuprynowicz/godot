@@ -98,7 +98,7 @@ void AudioStreamPlayer::set_volume_db(float p_volume) {
 
 	Vector<AudioFrame> volume_vector = _get_volume_vector();
 	for (Ref<AudioStreamPlayback> &playback : stream_playbacks) {
-		AudioServer::get_singleton()->set_playback_all_bus_volumes_linear(playback, volume_vector, AudioSourceId(RID(), -1));
+		AudioServer::get_singleton()->set_playback_all_bus_volumes_linear(playback, volume_vector, AudioSourceId(-1));
 	}
 }
 
@@ -186,7 +186,7 @@ float AudioStreamPlayer::get_playback_position() {
 void AudioStreamPlayer::set_bus(const StringName &p_bus) {
 	bus = p_bus;
 	for (const Ref<AudioStreamPlayback> &playback : stream_playbacks) {
-		AudioServer::get_singleton()->set_playback_bus_exclusive(playback, p_bus, _get_volume_vector(), AudioSourceId(RID(), -1));
+		AudioServer::get_singleton()->set_playback_bus_exclusive(playback, p_bus, _get_volume_vector(), AudioSourceId(-1));
 	}
 }
 

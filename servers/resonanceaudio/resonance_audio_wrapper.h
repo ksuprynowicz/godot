@@ -46,15 +46,11 @@
 #include "thirdparty/resonanceaudio/resonance_audio/api/resonance_audio_api.h"
 
 class AudioSourceId {
-	RID bus;
 	vraudio::ResonanceAudioApi::SourceId id = -1;
 
 public:
-	AudioSourceId(RID p_bus = RID(), vraudio::ResonanceAudioApi::SourceId p_id = -1) :
-			bus(p_bus), id(p_id) {}
-	RID get_bus() const {
-		return bus;
-	}
+	AudioSourceId(vraudio::ResonanceAudioApi::SourceId p_id = -1) :
+			id(p_id) {}
 	vraudio::ResonanceAudioApi::SourceId get_id() const {
 		return id;
 	}
@@ -75,7 +71,7 @@ public:
 				vraudio::DistanceRolloffModel::kNone,
 				/* min_distance= */ 0,
 				/* max_distance= */ 0);
-		AudioSourceId new_source = AudioSourceId(self, new_id);
+		AudioSourceId new_source = AudioSourceId(new_id);
 		return new_source;
 	}
 
@@ -120,7 +116,7 @@ public:
 	}
 
 	AudioSourceId register_stero_audio_source() {
-		AudioSourceId new_source = AudioSourceId(self, resonance_api->CreateStereoSource(2));
+		AudioSourceId new_source = AudioSourceId(resonance_api->CreateStereoSource(2));
 		return new_source;
 	}
 
@@ -136,17 +132,19 @@ public:
 	}
 
 	ResonanceAudioBus();
-	~ResonanceAudioBus() {};
+	~ResonanceAudioBus(){};
 };
 
 class ResonanceAudioServer : public Object {
 	GDCLASS(ResonanceAudioServer, Object);
 
 	static ResonanceAudioServer *singleton;
+
 public:
 	static ResonanceAudioServer *get_singleton() {
 		return singleton;
 	}
+
 protected:
 	static void _bind_methods() {
 	}
@@ -154,7 +152,6 @@ protected:
 private:
 	uint64_t counter = 0;
 	RID_Owner<ResonanceAudioBus, true> bus_owner;
-	Set<RID> buses;
 	RID default_bus;
 
 public:
@@ -163,7 +160,7 @@ public:
 		ResonanceAudioBus *ptr = bus_owner.get_or_null(ret);
 		ERR_FAIL_NULL_V(ptr, RID());
 		ptr->set_self(ret);
-		buses.insert(ret);
+		default_bus = ret;
 
 		return ret;
 	}
@@ -174,10 +171,10 @@ public:
 			AudioSourceId source = ptr->register_audio_source();
 			return source;
 		}
-		return AudioSourceId(RID(), -1);
+		return AudioSourceId(-1);
 	}
 	void unregister_audio_source(AudioSourceId audio_source) {
-		ResonanceAudioBus *ptr = bus_owner.get_or_null(audio_source.get_bus());
+		ResonanceAudioBus *ptr = bus_owner.get_or_null(default_bus);
 		if (ptr) {
 			ptr->unregister_audio_source(audio_source);
 			return;
@@ -185,23 +182,23 @@ public:
 		return;
 	}
 	AudioSourceId register_stero_audio_source(RID id) {
-		ResonanceAudioBus *ptr = bus_owner.get_or_null(id);
+		ResonanceAudioBus *ptr = bus_owner.get_or_null(default_bus);
 		if (ptr) {
 			AudioSourceId source = ptr->register_stero_audio_source();
 			return source;
 		}
-		return AudioSourceId(RID(), -1);
+		return AudioSourceId(-1);
 	}
 	void set_source_transform(AudioSourceId audio_source, Transform3D source_transform) {
-		ResonanceAudioBus *ptr = bus_owner.get_or_null(audio_source.get_bus());
+		ResonanceAudioBus *ptr = bus_owner.get_or_null(default_bus);
 		if (ptr) {
 			ptr->set_source_transform(audio_source, source_transform);
 			return;
 		}
 		return;
 	}
-	void set_head_transform(RID id, Transform3D head_transform) {
-		ResonanceAudioBus *ptr = bus_owner.get_or_null(id);
+	void set_head_transform(Transform3D head_transform) {
+		ResonanceAudioBus *ptr = bus_owner.get_or_null(default_bus);
 		if (ptr) {
 			ptr->set_head_transform(head_transform);
 			return;
@@ -209,7 +206,7 @@ public:
 		return;
 	}
 	void push_source_buffer(AudioSourceId source, int num_frames, AudioFrame *frames) {
-		ResonanceAudioBus *bus = bus_owner.get_or_null(source.get_bus());
+		ResonanceAudioBus *bus = bus_owner.get_or_null(default_bus);
 		if (bus) {
 			bus->push_source_buffer(source, num_frames, frames);
 			return;
@@ -225,7 +222,7 @@ public:
 	}
 
 	void set_source_attenuation(AudioSourceId source, float attenuation_linear) {
-		ResonanceAudioBus *ptr = bus_owner.get_or_null(source.get_bus());
+		ResonanceAudioBus *ptr = bus_owner.get_or_null(default_bus);
 		if (ptr) {
 			ptr->set_source_attenuation(source, attenuation_linear);
 			return;
@@ -234,7 +231,7 @@ public:
 	}
 
 	void set_linear_source_volume(AudioSourceId audio_source, real_t volume) {
-		ResonanceAudioBus *ptr = bus_owner.get_or_null(audio_source.get_bus());
+		ResonanceAudioBus *ptr = bus_owner.get_or_null(default_bus);
 		if (ptr) {
 			ptr->set_linear_source_volume(audio_source, volume);
 			return;
@@ -242,29 +239,10 @@ public:
 		return;
 	}
 
-	bool is_empty() {
-		return buses.size() <= 0;
-	}
-	bool delete_bus(RID id) {
-		if (bus_owner.owns(id)) {
-			ResonanceAudioBus *b = bus_owner.get_or_null(id);
-			ERR_FAIL_NULL_V(b, false);
-			bus_owner.free(id);
-			buses.erase(id);
-			memdelete(b);
-			return true;
-		}
-
-		return false;
-	}
-	void clear() {
-		for (Set<RID>::Element *e = buses.front(); e; e = e->next()) {
-			delete_bus(e->get());
-		}
-	}
 	RID get_default_bus() const {
 		return default_bus;
 	}
+
 	ResonanceAudioServer() {
 		singleton = this;
 		default_bus = create_bus();
