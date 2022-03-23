@@ -35,10 +35,8 @@
 ResonanceAudioWrapper *resonance_audio_wrapper;
 
 void register_resonanceaudio_types() {
-#ifdef RESONANCEAUDIO_ENABLED
 	GDREGISTER_CLASS(ResonanceAudioWrapper);
 	resonance_audio_wrapper = memnew(ResonanceAudioWrapper);
-#endif
 }
 
 void unregister_resonanceaudio_types() {

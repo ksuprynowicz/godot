@@ -35,6 +35,7 @@
 #include "core/object/class_db.h"
 #include "core/os/os.h"
 #include "core/templates/safe_list.h"
+#include "core/templates/safe_refcount.h"
 #include "core/variant/variant.h"
 
 #include "modules/resonanceaudio/resonance_audio_wrapper.h"
@@ -233,9 +234,7 @@ private:
 		bool bus_active[MAX_BUSES_PER_PLAYBACK] = { false, false, false, false, false, false };
 		StringName bus[MAX_BUSES_PER_PLAYBACK];
 		AudioFrame volume[MAX_BUSES_PER_PLAYBACK][MAX_CHANNELS_PER_BUS];
-#ifdef RESONANCEAUDIO_ENABLED
 		AudioSourceId audio_source_id;
-#endif
 	};
 
 	struct AudioStreamPlaybackListNode {
@@ -251,9 +250,7 @@ private:
 		SafeNumeric<float> pitch_scale;
 		SafeNumeric<float> highshelf_gain;
 		SafeNumeric<float> attenuation_filter_cutoff_hz; // This isn't used unless highshelf_gain is nonzero.
-#ifdef RESONANCEAUDIO_ENABLED
-		std::atomic<AudioSourceId> source_id;
-#endif
+		SafeNumeric<AudioSourceId> source_id;
 		AudioFilterSW::Processor filter_process[8];
 		// Updating this ref after the list node is created breaks consistency guarantees, don't do it!
 		Ref<AudioStreamPlayback> stream_playback;
@@ -286,11 +283,7 @@ private:
 	void init_channels_and_buffers();
 
 	void _mix_step();
-#ifdef RESONANCEAUDIO_ENABLED
 	void _mix_step_for_channel(AudioFrame *p_out_buf, AudioFrame *p_source_buf, AudioFrame p_vol_start, AudioFrame p_vol_final, float p_attenuation_filter_cutoff_hz, float p_highshelf_gain, AudioSourceId p_audio_source_id, AudioFilterSW::Processor *p_processor_l, AudioFilterSW::Processor *p_processor_r);
-#else
-	void _mix_step_for_channel(AudioFrame *p_out_buf, AudioFrame *p_source_buf, AudioFrame p_vol_start, AudioFrame p_vol_final, float p_attenuation_filter_cutoff_hz, float p_highshelf_gain, AudioFilterSW::Processor *p_processor_l, AudioFilterSW::Processor *p_processor_r);
-#endif
 
 	// Should only be called on the main thread.
 	AudioStreamPlaybackListNode *_find_playback_list_node(Ref<AudioStreamPlayback> p_playback);
@@ -383,33 +376,19 @@ public:
 	// Convenience method.
 	void start_playback_stream(Ref<AudioStreamPlayback> p_playback, StringName p_bus, Vector<AudioFrame> p_volume_db_vector, float p_start_time = 0, float p_pitch_scale = 1);
 	// Expose all parameters.
-#ifdef RESONANCEAUDIO_ENABLED
 	void start_playback_stream(Ref<AudioStreamPlayback> p_playback, Map<StringName, Vector<AudioFrame>> p_bus_volumes, float p_start_time = 0, float p_pitch_scale = 1, float p_highshelf_gain = 0, float p_attenuation_cutoff_hz = 0, AudioSourceId p_source_id = AudioSourceId());
-#else
-	void start_playback_stream(Ref<AudioStreamPlayback> p_playback, Map<StringName, Vector<AudioFrame>> p_bus_volumes, float p_start_time = 0, float p_pitch_scale = 1, float p_highshelf_gain = 0, float p_attenuation_cutoff_hz = 0);
-#endif
-	void stop_playback_stream(Ref<AudioStreamPlayback> p_playback);
-#ifdef RESONANCEAUDIO_ENABLED
-	void set_playback_bus_exclusive(Ref<AudioStreamPlayback> p_playback, StringName p_bus, Vector<AudioFrame> p_volumes, AudioSourceId p_audio_source_id = AudioSourceId());
-#else
-	void set_playback_bus_exclusive(Ref<AudioStreamPlayback> p_playback, StringName p_bus, Vector<AudioFrame> p_volumes);
-#endif
 
-#ifdef RESONANCEAUDIO_ENABLED
+	void stop_playback_stream(Ref<AudioStreamPlayback> p_playback);
+	void set_playback_bus_exclusive(Ref<AudioStreamPlayback> p_playback, StringName p_bus, Vector<AudioFrame> p_volumes, AudioSourceId p_audio_source_id = AudioSourceId());
+
 	void set_playback_bus_volumes_linear(Ref<AudioStreamPlayback> p_playback, Map<StringName, Vector<AudioFrame>> p_bus_volumes, AudioSourceId p_audio_source_id = AudioSourceId());
 	void set_playback_all_bus_volumes_linear(Ref<AudioStreamPlayback> p_playback, Vector<AudioFrame> p_volumes, AudioSourceId p_audio_source_id = AudioSourceId());
-#else
-	void set_playback_bus_volumes_linear(Ref<AudioStreamPlayback> p_playback, Map<StringName, Vector<AudioFrame>> p_bus_volumes);
-	void set_playback_all_bus_volumes_linear(Ref<AudioStreamPlayback> p_playback, Vector<AudioFrame> p_volumes);
-#endif
+
 	void set_playback_pitch_scale(Ref<AudioStreamPlayback> p_playback, float p_pitch_scale);
 	void set_playback_paused(Ref<AudioStreamPlayback> p_playback, bool p_paused);
 
-#ifdef RESONANCEAUDIO_ENABLED
 	void set_playback_highshelf_params(Ref<AudioStreamPlayback> p_playback, float p_gain, float p_attenuation_cutoff_hz, AudioSourceId p_source_id = AudioSourceId());
-#else
-	void set_playback_highshelf_params(Ref<AudioStreamPlayback> p_playback, float p_gain, float p_attenuation_cutoff_hz);
-#endif
+
 	bool is_playback_active(Ref<AudioStreamPlayback> p_playback);
 	float get_playback_position(Ref<AudioStreamPlayback> p_playback);
 	bool is_playback_paused(Ref<AudioStreamPlayback> p_playback);

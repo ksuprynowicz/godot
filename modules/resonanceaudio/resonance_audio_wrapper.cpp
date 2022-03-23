@@ -28,7 +28,6 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifdef RESONANCEAUDIO_ENABLED
 #include "resonance_audio_wrapper.h"
 #include "core/error/error_macros.h"
 #include "servers/audio_server.h"
@@ -105,5 +104,3 @@ ResonanceAudioWrapper::ResonanceAudioWrapper() {
 	resonance_api.reset(vraudio::CreateResonanceAudioApi(
 			/* num_channels= */ 2, AudioServer::get_singleton()->thread_get_mix_buffer_size(), AudioServer::get_singleton()->get_mix_rate()));
 }
-
-#endif

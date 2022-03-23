@@ -35,7 +35,6 @@
 #include "core/object/object.h"
 #include <memory>
 
-#ifdef RESONANCEAUDIO_ENABLED
 #include "thirdparty/resonanceaudio/resonance_audio/api/resonance_audio_api.h"
 
 struct AudioSourceId {
@@ -68,5 +67,4 @@ public:
 
 	void set_source_attenuation(AudioSourceId source, float attenuation_linear);
 };
-#endif
 #endif

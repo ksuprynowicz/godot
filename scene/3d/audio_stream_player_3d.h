@@ -117,9 +117,7 @@ private:
 
 	float _get_attenuation_db(float p_distance) const;
 
-#ifdef RESONANCEAUDIO_ENABLED
 	AudioSourceId audio_source_id;
-#endif
 protected:
 	void _validate_property(PropertyInfo &property) const override;
 	void _notification(int p_what);

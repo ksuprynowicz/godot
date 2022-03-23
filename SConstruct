@@ -358,9 +358,6 @@ if env_base["target"] == "release_debug" or env_base["target"] == "debug":
     # to give *users* extra debugging information for their game development.
     env_base.Append(CPPDEFINES=["DEBUG_ENABLED"])
 
-if env_base["use_resonance_audio"] and env_base["modules_enabled_by_default"]:
-    env_base.Append(CPPDEFINES=["RESONANCEAUDIO_ENABLED"])
-
 # ensure that anything depending on eigen will only be linked with permissively licensed code.
 env_base.Append(CPPDEFINES=["EIGEN_MPL2_ONLY"])
 

@@ -32,10 +32,8 @@
 
 #include "collision_object_3d.h"
 #include "core/math/camera_matrix.h"
-#ifdef RESONANCEAUDIO_ENABLED
 #include "core/config/project_settings.h"
 #include "modules/resonanceaudio/resonance_audio_wrapper.h"
-#endif
 #include "scene/main/viewport.h"
 #include "scene/resources/material.h"
 #include "scene/resources/surface_tool.h"
@@ -112,11 +110,9 @@ void Camera3D::_notification(int p_what) {
 		} break;
 
 		case NOTIFICATION_TRANSFORM_CHANGED: {
-#ifdef RESONANCEAUDIO_ENABLED
 			if (viewport->is_audio_listener_3d() && GLOBAL_GET("audio/enable_resonance_audio")) {
 				ResonanceAudioWrapper::get_singleton()->set_head_transform(get_global_transform());
 			}
-#endif
 
 			_request_camera_update();
 			if (doppler_tracking != DOPPLER_TRACKING_DISABLED) {

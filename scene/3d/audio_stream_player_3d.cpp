@@ -36,9 +36,7 @@
 #include "scene/3d/camera_3d.h"
 #include "scene/main/viewport.h"
 
-#ifdef RESONANCEAUDIO_ENABLED
 #include "core/config/project_settings.h"
-#endif
 
 // Based on "A Novel Multichannel Panning Method for Standard and Arbitrary Loudspeaker Configurations" by Ramy Sadek and Chris Kyriakakis (2004)
 // Speaker-Placement Correction Amplitude Panning (SPCAP)
@@ -253,18 +251,14 @@ void AudioStreamPlayer3D::_notification(int p_what) {
 			}
 		} break;
 		case NOTIFICATION_INSTANCED: {
-#ifdef RESONANCEAUDIO_ENABLED
 			if (GLOBAL_GET("audio/enable_resonance_audio")) {
 				audio_source_id = ResonanceAudioWrapper::get_singleton()->register_audio_source();
 			}
-#endif
 		} break;
 		case NOTIFICATION_PREDELETE: {
-#ifdef RESONANCEAUDIO_ENABLED
 			if (GLOBAL_GET("audio/enable_resonance_audio")) {
 				ResonanceAudioWrapper::get_singleton()->unregister_audio_source(audio_source_id);
 			}
-#endif
 		} break;
 		case NOTIFICATION_EXIT_TREE: {
 			stop();
@@ -289,11 +283,9 @@ void AudioStreamPlayer3D::_notification(int p_what) {
 		} break;
 
 			if (p_what == NOTIFICATION_INTERNAL_PHYSICS_PROCESS) {
-#ifdef RESONANCEAUDIO_ENABLED
 				if (GLOBAL_GET("audio/enable_resonance_audio")) {
 					ResonanceAudioWrapper::get_singleton()->set_source_transform(audio_source_id, get_global_transform());
 				}
-#endif
 				//update anything related to position first, if possible of course
 				Vector<AudioFrame> volume_vector;
 				if (setplay.get() > 0 || (active.is_set() && last_mix_count != AudioServer::get_singleton()->get_mix_count())) {
@@ -306,15 +298,11 @@ void AudioStreamPlayer3D::_notification(int p_what) {
 					ERR_FAIL_COND_MSG(new_playback.is_null(), "Failed to instantiate playback.");
 					Map<StringName, Vector<AudioFrame>> bus_map;
 					bus_map[_get_actual_bus()] = volume_vector;
-#ifdef RESONANCEAUDIO_ENABLED
 					if (GLOBAL_GET("audio/enable_resonance_audio")) {
 						AudioServer::get_singleton()->start_playback_stream(new_playback, bus_map, setplay.get(), actual_pitch_scale, linear_attenuation, attenuation_filter_cutoff_hz, audio_source_id);
 					} else {
 						AudioServer::get_singleton()->start_playback_stream(new_playback, bus_map, setplay.get(), actual_pitch_scale, linear_attenuation, attenuation_filter_cutoff_hz);
 					}
-#else
-					AudioServer::get_singleton()->start_playback_stream(new_playback, bus_map, setplay.get(), actual_pitch_scale, linear_attenuation, attenuation_filter_cutoff_hz);
-#endif
 					stream_playbacks.push_back(new_playback);
 					setplay.set(-1);
 				}
@@ -492,16 +480,12 @@ Vector<AudioFrame> AudioStreamPlayer3D::_update_panning() {
 
 		linear_attenuation = Math::db2linear(db_att);
 		for (Ref<AudioStreamPlayback> &playback : stream_playbacks) {
-#ifdef RESONANCEAUDIO_ENABLED
 			if (GLOBAL_GET("audio/enable_resonance_audio")) {
 				ResonanceAudioWrapper::get_singleton()->set_source_attenuation(audio_source_id, linear_attenuation);
 				AudioServer::get_singleton()->set_playback_highshelf_params(playback, linear_attenuation, attenuation_filter_cutoff_hz, audio_source_id);
 			} else {
 				AudioServer::get_singleton()->set_playback_highshelf_params(playback, linear_attenuation, attenuation_filter_cutoff_hz);
 			}
-#else
-			AudioServer::get_singleton()->set_playback_highshelf_params(playback, linear_attenuation, attenuation_filter_cutoff_hz);
-#endif
 		}
 		//TODO: The lower the second parameter (tightness) the more the sound will "enclose" the listener (more undirected / playing from
 		//      speakers not facing the source) - this could be made distance dependent.
