@@ -136,36 +136,17 @@ public:
 	}
 
 	ResonanceAudioBus();
-	~ResonanceAudioBus() {
-		delete resonance_api;
-	};
+	~ResonanceAudioBus() {};
 };
 
 class ResonanceAudioServer : public Object {
 	GDCLASS(ResonanceAudioServer, Object);
 
 	static ResonanceAudioServer *singleton;
-private:
-	bool thread_exited = false;
-	mutable bool exit_thread = false;
-	Thread thread;
-	Mutex mutex;
-
 public:
 	static ResonanceAudioServer *get_singleton() {
 		return singleton;
 	}
-	Error init() {
-		return OK;
-	}
-	void lock() {
-		mutex.unlock();
-	}
-
-	void unlock() {
-		mutex.lock();
-	}
-
 protected:
 	static void _bind_methods() {
 	}
@@ -178,13 +159,11 @@ private:
 
 public:
 	RID create_bus() {
-		lock();
 		RID ret = bus_owner.make_rid();
 		ResonanceAudioBus *ptr = bus_owner.get_or_null(ret);
 		ERR_FAIL_NULL_V(ptr, RID());
 		ptr->set_self(ret);
 		buses.insert(ret);
-		unlock();
 
 		return ret;
 	}
@@ -268,13 +247,11 @@ public:
 	}
 	bool delete_bus(RID id) {
 		if (bus_owner.owns(id)) {
-			lock();
 			ResonanceAudioBus *b = bus_owner.get_or_null(id);
 			ERR_FAIL_NULL_V(b, false);
 			bus_owner.free(id);
 			buses.erase(id);
 			memdelete(b);
-			unlock();
 			return true;
 		}
 
@@ -291,9 +268,6 @@ public:
 	ResonanceAudioServer() {
 		singleton = this;
 		default_bus = create_bus();
-	}
-	virtual ~ResonanceAudioServer() {
-		clear();
 	}
 };
 
