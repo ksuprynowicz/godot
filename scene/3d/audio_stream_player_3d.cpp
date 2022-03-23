@@ -244,25 +244,21 @@ float AudioStreamPlayer3D::_get_attenuation_db(float p_distance) const {
 void AudioStreamPlayer3D::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
+			if (GLOBAL_GET("audio/enable_resonance_audio")) {
+				audio_source_id = ResonanceAudioServer::get_singleton()->register_audio_source(ResonanceAudioServer::get_singleton()->get_default_bus());
+			}
 			velocity_tracker->reset(get_global_transform().origin);
 			AudioServer::get_singleton()->add_listener_changed_callback(_listener_changed_cb, this);
 			if (autoplay && !Engine::get_singleton()->is_editor_hint()) {
 				play();
 			}
 		} break;
-		case NOTIFICATION_INSTANCED: {
-			if (GLOBAL_GET("audio/enable_resonance_audio")) {
-				audio_source_id = ResonanceAudioServer::get_singleton()->register_audio_source(ResonanceAudioServer::get_singleton()->get_default_bus());
-			}
-		} break;
-		case NOTIFICATION_PREDELETE: {
-			if (GLOBAL_GET("audio/enable_resonance_audio")) {
-				ResonanceAudioServer::get_singleton()->unregister_audio_source(audio_source_id);
-			}
-		} break;
 		case NOTIFICATION_EXIT_TREE: {
 			stop();
 			AudioServer::get_singleton()->remove_listener_changed_callback(_listener_changed_cb, this);
+			if (GLOBAL_GET("audio/enable_resonance_audio")) {
+				ResonanceAudioServer::get_singleton()->unregister_audio_source(audio_source_id);
+			}
 		} break;
 
 		case NOTIFICATION_PAUSED: {

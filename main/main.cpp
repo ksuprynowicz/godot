@@ -2854,13 +2854,13 @@ void Main::cleanup(bool p_force) {
 		memdelete(xr_server);
 	}
 
-	if (audio_server) {
-		audio_server->finish();
+	if (resonance_audio_server) {
+		resonance_audio_server->finish();
 		memdelete(audio_server);
 	}
 
-	if (resonance_audio_server) {
-		resonance_audio_server->finish();
+	if (audio_server) {
+		audio_server->finish();
 		memdelete(audio_server);
 	}
 
