@@ -294,7 +294,7 @@ public:
 			delete_bus(e->get());
 		}
 	}
-	RID get_default_bus() const { 
+	RID get_default_bus() const {
 		return default_bus;
 	}
 	ResonanceAudioServer() {
