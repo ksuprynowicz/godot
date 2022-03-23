@@ -1703,7 +1703,6 @@ Error Main::setup2(Thread::ID p_main_tid_override) {
 	audio_server->init();
 
 	resonance_audio_server = memnew(ResonanceAudioServer);
-	resonance_audio_server->init();
 
 	// also init our xr_server from here
 	xr_server = memnew(XRServer);
@@ -2855,7 +2854,6 @@ void Main::cleanup(bool p_force) {
 	}
 
 	if (resonance_audio_server) {
-		resonance_audio_server->finish();
 		memdelete(audio_server);
 	}
 

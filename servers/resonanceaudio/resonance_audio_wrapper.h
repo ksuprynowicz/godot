@@ -145,15 +145,6 @@ class ResonanceAudioServer : public Object {
 	GDCLASS(ResonanceAudioServer, Object);
 
 	static ResonanceAudioServer *singleton;
-	static void thread_func(void *p_udata) {
-		ResonanceAudioServer *resonance_wrapper = (ResonanceAudioServer *)p_udata;
-		uint64_t msdelay = 1000;
-
-		while (!resonance_wrapper->exit_thread) {
-			OS::get_singleton()->delay_usec(msdelay * 1000);
-		}
-	}
-
 private:
 	bool thread_exited = false;
 	mutable bool exit_thread = false;
@@ -165,9 +156,6 @@ public:
 		return singleton;
 	}
 	Error init() {
-		thread_exited = false;
-		counter = 0;
-		thread.start(ResonanceAudioServer::thread_func, this);
 		return OK;
 	}
 	void lock() {
@@ -176,11 +164,6 @@ public:
 
 	void unlock() {
 		mutex.lock();
-	}
-
-	void finish() {
-		exit_thread = true;
-		thread.wait_to_finish();
 	}
 
 protected:
