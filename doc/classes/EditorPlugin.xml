@@ -348,6 +348,22 @@
 				When your plugin is deactivated, make sure to remove your custom control with [method remove_control_from_docks] and free it with [method Node.queue_free].
 			</description>
 		</method>
+		<method name="add_convert_to_menu_item">
+			<return type="void" />
+			<argument index="0" name="name" type="String" />
+			<argument index="1" name="callable" type="Callable" />
+			<description>
+				Adds a custom menu item to [b]Scene &gt; Convert To[/b] named [code]name[/code]. When clicked, the provided [code]callable[/code] will be called.
+			</description>
+		</method>
+		<method name="add_convert_to_submenu_item">
+			<return type="void" />
+			<argument index="0" name="name" type="String" />
+			<argument index="1" name="submenu" type="PopupMenu" />
+			<description>
+				Adds a custom [PopupMenu] submenu under [b]Scene &gt; Convert To &gt;[/b] [code]name[/code]. Use [code]remove_convert_to_menu_item(name)[/code] on plugin clean up to remove the menu.
+			</description>
+		</method>
 		<method name="add_custom_type">
 			<return type="void" />
 			<argument index="0" name="type" type="String" />
@@ -530,6 +546,13 @@
 			<argument index="0" name="control" type="Control" />
 			<description>
 				Removes the control from the dock. You have to manually [method Node.queue_free] the control.
+			</description>
+		</method>
+		<method name="remove_convert_to_menu_item">
+			<return type="void" />
+			<argument index="0" name="name" type="String" />
+			<description>
+				Removes a menu [code]name[/code] from [b]Scene &gt; Convert To[/b].
 			</description>
 		</method>
 		<method name="remove_custom_type">
