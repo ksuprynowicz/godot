@@ -44,6 +44,7 @@
 #include "gltf_state.h"
 #include "gltf_texture.h"
 
+#include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
 #include "core/error/error_macros.h"
 #include "core/io/dir_access.h"
@@ -59,6 +60,7 @@
 #include "core/version.h"
 #include "drivers/png/png_driver_common.h"
 #include "editor/import/resource_importer_scene.h"
+#include "editor/import/resource_importer_texture.h"
 #include "scene/2d/node_2d.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
@@ -69,6 +71,7 @@
 #include "scene/resources/mesh.h"
 #include "scene/resources/multimesh.h"
 #include "scene/resources/surface_tool.h"
+#include "scene/resources/texture.h"
 
 #include "modules/modules_enabled.gen.h" // For csg, gridmap.
 
@@ -3104,6 +3107,7 @@ Error GLTFDocument::_parse_images(Ref<GLTFState> state, const String &p_base_pat
 				Ref<Texture2D> texture = ResourceLoader::load(uri);
 				if (texture.is_valid()) {
 					state->images.push_back(texture);
+					state->source_images.push_back(texture->get_image());
 					continue;
 				} else if (mimetype == "image/png" || mimetype == "image/jpeg") {
 					// Fallback to loading as byte array.
@@ -3175,11 +3179,11 @@ Error GLTFDocument::_parse_images(Ref<GLTFState> state, const String &p_base_pat
 			state->images.push_back(Ref<Texture2D>());
 			continue;
 		}
-
-		Ref<ImageTexture> t;
+		Ref<PortableCompressedTexture2D> t;
 		t.instantiate();
-		t->create_from_image(img);
-
+		state->source_images.push_back(img->duplicate());
+		img->generate_mipmaps();
+		t->create_from_image(img, PortableCompressedTexture2D::COMPRESSION_MODE_VRAM);
 		state->images.push_back(t);
 	}
 
@@ -3239,13 +3243,20 @@ GLTFTextureIndex GLTFDocument::_set_texture(Ref<GLTFState> state, Ref<Texture2D>
 	return gltf_texture_i;
 }
 
-Ref<Texture2D> GLTFDocument::_get_texture(Ref<GLTFState> state, const GLTFTextureIndex p_texture) {
+Ref<Texture2D> GLTFDocument::_get_texture(Ref<GLTFState> state, const GLTFTextureIndex p_texture, bool p_is_normal) {
 	ERR_FAIL_INDEX_V(p_texture, state->textures.size(), Ref<Texture2D>());
 	const GLTFImageIndex image = state->textures[p_texture]->get_src_image();
 
 	ERR_FAIL_INDEX_V(image, state->images.size(), Ref<Texture2D>());
-
-	return state->images[image];
+	if (!p_is_normal) {
+		return state->images[image];
+	}
+	Ref<PortableCompressedTexture2D> portable_texture;
+	portable_texture.instantiate();
+	Ref<Image> new_img = state->source_images[image];
+	new_img->generate_mipmaps(true);
+	portable_texture->create_from_image(new_img, PortableCompressedTexture2D::COMPRESSION_MODE_VRAM, true);
+	return portable_texture;
 }
 
 Error GLTFDocument::_serialize_materials(Ref<GLTFState> state) {
@@ -3627,7 +3638,7 @@ Error GLTFDocument::_parse_materials(Ref<GLTFState> state) {
 		if (d.has("normalTexture")) {
 			const Dictionary &bct = d["normalTexture"];
 			if (bct.has("index")) {
-				material->set_texture(BaseMaterial3D::TEXTURE_NORMAL, _get_texture(state, bct["index"]));
+				material->set_texture(BaseMaterial3D::TEXTURE_NORMAL, _get_texture(state, bct["index"], true));
 				material->set_feature(BaseMaterial3D::FEATURE_NORMAL_MAPPING, true);
 			}
 			if (bct.has("scale")) {
