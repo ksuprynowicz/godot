@@ -30,6 +30,7 @@
 
 #include "gltf_document.h"
 
+#include "editor/import/resource_importer_texture.h"
 #include "gltf_accessor.h"
 #include "gltf_animation.h"
 #include "gltf_camera.h"
@@ -44,6 +45,7 @@
 #include "gltf_state.h"
 #include "gltf_texture.h"
 
+#include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
 #include "core/error/error_macros.h"
 #include "core/io/dir_access.h"
@@ -3178,35 +3180,38 @@ Error GLTFDocument::_parse_images(Ref<GLTFState> state, const String &p_base_pat
 		}
 		Ref<ImageTexture> t;
 		t.instantiate();
-		if (true) {
-			img->resize_to_po2();
-			img->generate_mipmaps();
-			Image::CompressSource csource = Image::COMPRESS_SOURCE_GENERIC;
-			Image::UsedChannels used_channels = img->detect_used_channels(csource);
-			Ref<StreamPeerBuffer> buffer;
-			buffer.instantiate();
-			// Note: Update when the CompressedTexture2D format changes.
-			buffer->put_32(CompressedTexture2D::DATA_FORMAT_BASIS_UNIVERSAL);
-			buffer->put_16(img->get_width());
-			buffer->put_16(img->get_height());
-			buffer->put_32(img->get_mipmap_count());
-			buffer->put_32(img->get_format());
-			for (int i = 0; i < img->get_mipmap_count() + 1; i++) {
-				Vector<uint8_t> data = Image::basis_universal_packer(img->get_image_from_mipmap(i), used_channels);
-				int data_len = data.size();
-				buffer->put_32(data_len);
-				const uint8_t *r = data.ptr();
-				buffer->put_data(r, data_len);
-			}
-			PackedByteArray array = buffer->get_data_array();
-			FileAccessMemory *f = memnew(FileAccessMemory);
-			f->open_custom(array.ptr(), array.size());
-			Ref<Image> placeholder = CompressedTexture2D::load_image_from_file(f, 0);
-			t->create_from_image(placeholder);
-			memdelete(f);
-		} else {
-			t->create_from_image(img);
+		img->generate_mipmaps();
+		Image::CompressMode mode = Image::COMPRESS_MAX;
+		if (ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_bptc")) {
+			mode = Image::COMPRESS_BPTC;
+		} else if (ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_s3tc")) {
+			mode = Image::COMPRESS_S3TC;
+		} else if (ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_etc2")) {
+			mode = Image::COMPRESS_ETC2;
+		} else if (ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_etc")) {
+			mode = Image::COMPRESS_ETC;
 		}
+		Image::CompressSource csource = Image::COMPRESS_SOURCE_GENERIC;
+		Image::UsedChannels used_channels = img->detect_used_channels(csource);
+		img->compress_from_channels(mode, used_channels, 0.7f);
+		Ref<StreamPeerBuffer> buffer;
+		buffer.instantiate();
+		// Note: Update when the CompressedTexture2D format changes.
+		buffer->put_32(CompressedTexture2D::DATA_FORMAT_IMAGE);
+		buffer->put_16(img->get_width());
+		buffer->put_16(img->get_height());
+		buffer->put_32(img->get_mipmap_count());
+		buffer->put_32(img->get_format());
+		Vector<uint8_t> img_data = img->get_data();
+		int dl = img_data.size();
+		const uint8_t *r = img_data.ptr();
+		buffer->put_data(r, dl);
+		PackedByteArray array = buffer->get_data_array();
+		FileAccessMemory *f = memnew(FileAccessMemory);
+		f->open_custom(array.ptr(), array.size());
+		Ref<Image> placeholder = CompressedTexture2D::load_image_from_file(f, 0);
+		t->create_from_image(placeholder);
+		memdelete(f);
 		state->images.push_back(t);
 	}
 
