@@ -77,9 +77,7 @@ static Vector<uint8_t> basis_universal_packer(const Ref<Image> &p_image, Image::
 
 		basisu::basis_compressor_params params;
 		params.m_uastc = true;
-#if defined(BASISU_SUPPORT_OPENCL)
 		params.m_use_opencl = true;
-#endif
 		params.m_max_endpoint_clusters = 512;
 		params.m_max_selector_clusters = 512;
 		params.m_multithreading = true;
