@@ -44,6 +44,7 @@
 #include "gltf_state.h"
 #include "gltf_texture.h"
 
+#include "core/config/project_settings.h"
 #include "core/crypto/crypto_core.h"
 #include "core/error/error_macros.h"
 #include "core/io/dir_access.h"
@@ -59,6 +60,7 @@
 #include "core/version.h"
 #include "drivers/png/png_driver_common.h"
 #include "editor/import/resource_importer_scene.h"
+#include "editor/import/resource_importer_texture.h"
 #include "scene/2d/node_2d.h"
 #include "scene/3d/camera_3d.h"
 #include "scene/3d/mesh_instance_3d.h"
@@ -69,6 +71,7 @@
 #include "scene/resources/mesh.h"
 #include "scene/resources/multimesh.h"
 #include "scene/resources/surface_tool.h"
+#include "scene/resources/texture.h"
 
 #include "modules/modules_enabled.gen.h" // For csg, gridmap.
 
@@ -3175,11 +3178,24 @@ Error GLTFDocument::_parse_images(Ref<GLTFState> state, const String &p_base_pat
 			state->images.push_back(Ref<Texture2D>());
 			continue;
 		}
-
 		Ref<ImageTexture> t;
 		t.instantiate();
+		img->generate_mipmaps();
+		Image::CompressMode mode = Image::COMPRESS_MAX;
+		// Manually guess the image compression mode.
+		if (ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_bptc")) {
+			mode = Image::COMPRESS_BPTC;
+		} else if (ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_s3tc")) {
+			mode = Image::COMPRESS_S3TC;
+		} else if (ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_etc2")) {
+			mode = Image::COMPRESS_ETC2;
+		} else if (ProjectSettings::get_singleton()->get("rendering/textures/vram_compression/import_etc")) {
+			mode = Image::COMPRESS_ETC;
+		}
+		Image::CompressSource csource = Image::COMPRESS_SOURCE_GENERIC;
+		Image::UsedChannels used_channels = img->detect_used_channels(csource);
+		img->compress_from_channels(mode, used_channels, 0.7f);
 		t->create_from_image(img);
-
 		state->images.push_back(t);
 	}
 
