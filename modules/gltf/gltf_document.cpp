@@ -71,6 +71,7 @@
 #include "scene/resources/surface_tool.h"
 
 #include "modules/modules_enabled.gen.h" // For csg, gridmap.
+#include "scene/resources/texture.h"
 
 #ifdef MODULE_CSG_ENABLED
 #include "modules/csg/csg_shape.h"
@@ -3175,11 +3176,37 @@ Error GLTFDocument::_parse_images(Ref<GLTFState> state, const String &p_base_pat
 			state->images.push_back(Ref<Texture2D>());
 			continue;
 		}
-
 		Ref<ImageTexture> t;
 		t.instantiate();
-		t->create_from_image(img);
-
+		if (true) {
+			img->resize_to_po2();
+			img->generate_mipmaps();
+			Image::CompressSource csource = Image::COMPRESS_SOURCE_GENERIC;
+			Image::UsedChannels used_channels = img->detect_used_channels(csource);
+			Ref<StreamPeerBuffer> buffer;
+			buffer.instantiate();
+			// Note: Update when the CompressedTexture2D format changes.
+			buffer->put_32(CompressedTexture2D::DATA_FORMAT_BASIS_UNIVERSAL);
+			buffer->put_16(img->get_width());
+			buffer->put_16(img->get_height());
+			buffer->put_32(img->get_mipmap_count());
+			buffer->put_32(img->get_format());
+			for (int i = 0; i < img->get_mipmap_count() + 1; i++) {
+				Vector<uint8_t> data = Image::basis_universal_packer(img->get_image_from_mipmap(i), used_channels);
+				int data_len = data.size();
+				buffer->put_32(data_len);
+				const uint8_t *r = data.ptr();
+				buffer->put_data(r, data_len);
+			}
+			PackedByteArray array = buffer->get_data_array();
+			FileAccessMemory *f = memnew(FileAccessMemory);
+			f->open_custom(array.ptr(), array.size());
+			Ref<Image> placeholder = CompressedTexture2D::load_image_from_file(f, 0);
+			t->create_from_image(placeholder);
+			memdelete(f);
+		} else {
+			t->create_from_image(img);
+		}
 		state->images.push_back(t);
 	}
 
