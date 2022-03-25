@@ -149,12 +149,11 @@ static Vector<uint8_t> basis_universal_packer(const Ref<Image> &p_image, Image::
 }
 #endif // TOOLS_ENABLED
 
-static Ref<Image> basis_universal_unpacker(const Vector<uint8_t> &p_buffer) {
+static Ref<Image> basis_universal_unpacker_ptr(const uint8_t *p_data, int p_size) {
 	Ref<Image> image;
 
-	const uint8_t *r = p_buffer.ptr();
-	const uint8_t *ptr = r;
-	int size = p_buffer.size();
+	const uint8_t *ptr = p_data;
+	int size = p_size;
 
 	basist::transcoder_texture_format format = basist::transcoder_texture_format::cTFTotalTextureFormats;
 	Image::Format imgfmt = Image::FORMAT_MAX;
@@ -265,12 +264,21 @@ static Ref<Image> basis_universal_unpacker(const Vector<uint8_t> &p_buffer) {
 	return image;
 }
 
+static Ref<Image> basis_universal_unpacker(const Vector<uint8_t> &p_buffer) {
+	Ref<Image> image;
+
+	const uint8_t *r = p_buffer.ptr();
+	int size = p_buffer.size();
+	return basis_universal_unpacker_ptr(r, size);
+}
+
 void register_basis_universal_types() {
 #ifdef TOOLS_ENABLED
 	sel_codebook = new basist::etc1_global_selector_codebook(basist::g_global_selector_cb_size, basist::g_global_selector_cb);
 	Image::basis_universal_packer = basis_universal_packer;
 #endif
 	Image::basis_universal_unpacker = basis_universal_unpacker;
+	Image::basis_universal_unpacker_ptr = basis_universal_unpacker_ptr;
 }
 
 void unregister_basis_universal_types() {
@@ -279,4 +287,5 @@ void unregister_basis_universal_types() {
 	Image::basis_universal_packer = nullptr;
 #endif
 	Image::basis_universal_unpacker = nullptr;
+	Image::basis_universal_unpacker_ptr = nullptr;
 }
