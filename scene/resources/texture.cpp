@@ -447,7 +447,7 @@ void PortableCompressedTexture2D::create_from_image(const Ref<Image> &p_image, C
 			}
 		} break;
 		case COMPRESSION_MODE_VRAM: {
-			Image::UsedChannels uc = p_image->detect_used_channels(p_normal_map ? Image::COMPRESS_SOURCE_GENERIC : Image::COMPRESS_SOURCE_NORMAL);
+			Image::UsedChannels uc = p_image->detect_used_channels(p_normal_map ? Image::COMPRESS_SOURCE_NORMAL : Image::COMPRESS_SOURCE_GENERIC);
 			Vector<uint8_t> budata = Image::basis_universal_packer(p_image, uc);
 			buffer.append_array(budata);
 		} break;
