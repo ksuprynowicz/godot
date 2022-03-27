@@ -160,6 +160,7 @@ private:
 		EDIT_RELOAD_SAVED_SCENE,
 		TOOLS_ORPHAN_RESOURCES,
 		TOOLS_CUSTOM,
+		CONVERT_TO_CUSTOM,
 		RESOURCE_SAVE,
 		RESOURCE_SAVE_AS,
 		RUN_PLAY,
@@ -279,6 +280,7 @@ private:
 	MenuButton *settings_menu;
 	MenuButton *help_menu;
 	PopupMenu *tool_menu;
+	PopupMenu *convert_to_menu;
 	Button *export_button;
 	Button *prev_scene;
 	Button *play_button;
@@ -474,6 +476,7 @@ private:
 	void _save_screenshot(NodePath p_path);
 
 	void _tool_menu_option(int p_idx);
+	void _convert_to_menu_option(int p_idx);
 	void _update_file_menu_opened();
 	void _update_file_menu_closed();
 
@@ -858,6 +861,10 @@ public:
 	void add_tool_menu_item(const String &p_name, const Callable &p_callback);
 	void add_tool_submenu_item(const String &p_name, PopupMenu *p_submenu);
 	void remove_tool_menu_item(const String &p_name);
+
+	void add_convert_to_menu_item(const String &p_name, const Callable &p_callback);
+	void add_convert_to_submenu_item(const String &p_name, PopupMenu *p_submenu);
+	void remove_convert_to_menu_item(const String &p_name);
 
 	void save_all_scenes();
 	void save_scene_list(Vector<String> p_scene_filenames);
