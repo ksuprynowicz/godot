@@ -30,6 +30,7 @@
 
 #include "register_types.h"
 
+#include "core/os/os.h"
 #include "image_loader_svg.h"
 
 #include <thorvg.h>
@@ -38,7 +39,8 @@ static ImageLoaderSVG *image_loader_svg = nullptr;
 
 void register_svg_types() {
 	tvg::CanvasEngine tvgEngine = tvg::CanvasEngine::Sw;
-	if (tvg::Initializer::init(tvgEngine, 0) != tvg::Result::Success) {
+	int32_t processor_count = OS::get_singleton()->get_processor_count();
+	if (tvg::Initializer::init(tvgEngine, MIN(1, processor_count - 1)) != tvg::Result::Success) {
 		return;
 	}
 	image_loader_svg = memnew(ImageLoaderSVG);
