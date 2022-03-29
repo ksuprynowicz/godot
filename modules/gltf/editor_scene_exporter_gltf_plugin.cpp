@@ -63,9 +63,9 @@ SceneExporterGLTFPlugin::SceneExporterGLTFPlugin() {
 	file_export_lib->clear_filters();
 	file_export_lib->add_filter("*.glb");
 	file_export_lib->add_filter("*.gltf");
-	file_export_lib->set_title(TTR("Export Mesh GLTF2"));
-	String gltf_scene_name = TTR("Export GLTF...");
-	add_tool_menu_item(gltf_scene_name, callable_mp(this, &SceneExporterGLTFPlugin::convert_scene_to_gltf2));
+	file_export_lib->set_title(TTR("Export Scene to glTF 2.0 File"));
+	String gltf_scene_name = TTR("glTF 2.0 Scene...");
+	add_convert_to_menu_item(gltf_scene_name, callable_mp(this, &SceneExporterGLTFPlugin::convert_scene_to_gltf2));
 }
 
 void SceneExporterGLTFPlugin::_gltf2_dialog_action(String p_file) {
