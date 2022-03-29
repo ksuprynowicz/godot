@@ -1,5 +1,5 @@
 def can_build(env, platform):
-    return False
+    return not env["disable_3d"] and env["tools"]
 
 
 def configure(env):
@@ -8,7 +8,7 @@ def configure(env):
 
 def get_doc_classes():
     return [
-        "EditorSceneImporterFBX",
+        "EditorSceneFormatImporterGltfFbx",
     ]
 
 
