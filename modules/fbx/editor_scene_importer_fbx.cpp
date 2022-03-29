@@ -62,7 +62,7 @@ void EditorSceneFormatImporterFBX::get_extensions(List<String> *r_extensions) co
 	const String fbx_str = "fbx";
 	Vector<String> exts;
 	exts.push_back(fbx_str);
-	_register_project_setting_import(fbx_str, import_setting_string, exts, r_extensions, true);
+	_register_project_setting_import(fbx_str, import_setting_string, exts, r_extensions, false);
 }
 
 void EditorSceneFormatImporterFBX::_register_project_setting_import(const String generic,
