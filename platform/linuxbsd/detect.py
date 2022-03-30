@@ -89,6 +89,7 @@ def get_flags():
 
 
 def configure(env):
+
     ## Build type
 
     if env["target"] == "release":
@@ -215,6 +216,10 @@ def configure(env):
 
     env.Append(CCFLAGS=["-pipe"])
     env.Append(LINKFLAGS=["-pipe"])
+
+    # -fpie and -no-pie is supported on GCC 6+ and Clang 4+, both below our
+    # minimal requirements.
+    env.Append(CCFLAGS=["-fpie"])
 
     ## Dependencies
 
@@ -416,3 +421,8 @@ def configure(env):
     else:
         if env["use_llvm"]:
             env.Append(LIBS=["atomic"])
+
+    ## Enable Shared library
+    if env["platform"] != "windows":
+        env.Append(CCFLAGS=["-fPIC"])
+        env.Append(LINKFLAGS=["-fPIC"])
