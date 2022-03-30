@@ -32,6 +32,8 @@
 
 #include "core/error/error_macros.h"
 
+#include "thirdparty/misc/IntpAkimaNonuniform1.h"
+
 RandomPCG Math::default_rand(RandomPCG::DEFAULT_SEED, RandomPCG::DEFAULT_INC);
 
 uint32_t Math::rand_from_seed(uint64_t *seed) {
@@ -178,4 +180,20 @@ float Math::random(float from, float to) {
 
 int Math::random(int from, int to) {
 	return default_rand.random(from, to);
+}
+
+double Math::cubic_interpolate(double p_from, double p_to, double p_pre, double p_post, double p_weight) {
+	constexpr int32_t quantity = 4;
+	double time[quantity] = { -1.0, 0.0, 1.0, 2.0 };
+	double f[quantity] = { p_pre, p_from, p_to, p_post };
+	IntpAkimaNonuniform1<double> makima(quantity, time, f);
+	return makima(p_weight);
+}
+
+float Math::cubic_interpolate(float p_from, float p_to, float p_pre, float p_post, float p_weight) {
+	constexpr int32_t quantity = 4;
+	float time[quantity] = { -1.0f, 0.0f, 1.0f, 2.0f };
+	float f[quantity] = { p_pre, p_from, p_to, p_post };
+	IntpAkimaNonuniform1<float> makima(quantity, time, f);
+	return makima(p_weight);
 }
