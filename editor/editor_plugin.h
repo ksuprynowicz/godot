@@ -220,6 +220,10 @@ public:
 	void add_tool_submenu_item(const String &p_name, PopupMenu *p_submenu);
 	void remove_tool_menu_item(const String &p_name);
 
+	void add_convert_to_menu_item(const String &p_name, const Callable &p_callable);
+	void add_convert_to_submenu_item(const String &p_name, PopupMenu *p_submenu);
+	void remove_convert_to_menu_item(const String &p_name);
+
 	void set_input_event_forwarding_always_enabled();
 	bool is_input_event_forwarding_always_enabled() { return input_event_forwarding_always_enabled; }
 
