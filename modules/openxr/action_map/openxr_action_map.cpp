@@ -31,10 +31,12 @@
 #include "openxr_action_map.h"
 
 void OpenXRActionMap::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_action_set_count"), &OpenXRActionMap::get_action_set_count);
 	ClassDB::bind_method(D_METHOD("set_action_sets", "action_sets"), &OpenXRActionMap::set_action_sets);
 	ClassDB::bind_method(D_METHOD("get_action_sets"), &OpenXRActionMap::get_action_sets);
 	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "action_sets", PROPERTY_HINT_RESOURCE_TYPE, "OpenXRActionSet", PROPERTY_USAGE_NO_EDITOR), "set_action_sets", "get_action_sets");
 
+	ClassDB::bind_method(D_METHOD("get_action_set", "name"), &OpenXRActionMap::get_action_set);
 	ClassDB::bind_method(D_METHOD("add_action_set", "action_set"), &OpenXRActionMap::add_action_set);
 	ClassDB::bind_method(D_METHOD("remove_action_set", "action_set"), &OpenXRActionMap::remove_action_set);
 
@@ -48,12 +50,27 @@ void OpenXRActionMap::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("create_default_action_sets"), &OpenXRActionMap::create_default_action_sets);
 }
 
+int OpenXRActionMap::get_action_set_count() const {
+	return action_sets.size();
+}
+
 void OpenXRActionMap::set_action_sets(Array p_action_sets) {
 	action_sets = p_action_sets;
 }
 
 Array OpenXRActionMap::get_action_sets() const {
 	return action_sets;
+}
+
+Ref<OpenXRActionSet> OpenXRActionMap::get_action_set(String p_name) const {
+	for (int i = 0; i < action_sets.size(); i++) {
+		Ref<OpenXRActionSet> action_set = action_sets[i];
+		if (action_set->get_name() == p_name) {
+			return action_set;
+		}
+	}
+
+	return Ref<OpenXRActionSet>();
 }
 
 void OpenXRActionMap::add_action_set(Ref<OpenXRActionSet> p_action_set) {
@@ -253,6 +270,51 @@ void OpenXRActionMap::create_default_action_sets() {
 
 void OpenXRActionMap::create_editor_action_sets() {
 	// TODO implement
+}
+
+Ref<OpenXRAction> OpenXRActionMap::get_action(const String p_path) const {
+	PackedStringArray paths = p_path.split("/", false);
+	ERR_FAIL_COND_V(paths.size() != 2, Ref<OpenXRAction>());
+
+	Ref<OpenXRActionSet> action_set = get_action_set(paths[0]);
+	if (action_set.is_valid()) {
+		return action_set->get_action(paths[1]);
+	}
+
+	return Ref<OpenXRAction>();
+}
+
+PackedStringArray OpenXRActionMap::get_top_level_paths(Ref<OpenXRAction> p_action) {
+	PackedStringArray arr;
+
+	for (int i = 0; i < interaction_profiles.size(); i++) {
+		Ref<OpenXRInteractionProfile> ip = interaction_profiles[i];
+		const OpenXRDefs::InteractionProfile *profile = OpenXRDefs::get_profile(ip->get_interaction_profile_path());
+
+		if (profile != nullptr) {
+			for (int j = 0; j < ip->get_binding_count(); j++) {
+				Ref<OpenXRIPBinding> binding = ip->get_binding(j);
+				if (binding->get_action() == p_action) {
+					PackedStringArray paths = binding->get_paths();
+
+					for (int k = 0; k < paths.size(); k++) {
+						const OpenXRDefs::IOPath *io_path = profile->get_io_path(paths[k]);
+						if (io_path != nullptr) {
+							String top_path = String(io_path->top_level_path->openxr_path);
+
+							if (!arr.has(top_path)) {
+								arr.push_back(top_path);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	print_line("Toplevel paths for", p_action->get_name_with_set(), "are", arr);
+
+	return arr;
 }
 
 OpenXRActionMap::~OpenXRActionMap() {
