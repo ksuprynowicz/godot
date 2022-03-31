@@ -98,7 +98,7 @@ Transform3D Transform3D::sphere_interpolate_with(const Transform3D &p_transform,
 	Basis interp_r = s.exp(p_c, theta);
 	Basis interp_t_t_times_v = s._compute_t_times_v(theta, p_c);
 	Transform3D interp_h;
-	interp_h.basis = basis * interp_r;
+	interp_h.basis = interp_r * basis;
 	interp_h.origin = interp_r.xform(origin) + interp_t_t_times_v.xform(u);
 	return interp_h;
 }

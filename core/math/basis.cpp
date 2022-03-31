@@ -1170,11 +1170,9 @@ Basis Basis::log() const {
 Basis Basis::exp(real_t p_t, real_t p_theta) const {
 	real_t angle = p_t * p_theta;
 	real_t theta_sqr = p_theta * p_theta;
-	real_t scale_0 = Math::sin(angle) / p_theta;
-	Basis scaled_basis_0 = *this * scale_0;
-	real_t scale_1 = ((1.0 - Math::cos(angle)) / theta_sqr);
-	Basis scaled_basis_1 = (*this * *this) * scale_1;
-	return Basis() + scaled_basis_0 + scaled_basis_1;
+	real_t new_angle = Math::sin(angle) / p_theta;
+	real_t new_angle_sqr = (1.0 - Math::cos(angle)) / theta_sqr;
+	return Basis() + this->scaled(Vector3(new_angle, new_angle, new_angle)) + (*this * *this).scaled(Vector3(new_angle_sqr, new_angle_sqr, new_angle_sqr));
 }
 
 Basis Basis::_compute_inverse_v_1(real_t p_theta) const {
@@ -1196,5 +1194,5 @@ Basis Basis::_compute_t_times_v(real_t p_theta, real_t p_c) const {
 	real_t theta_cub = p_theta * theta_sqr;
 	real_t c_0 = (1.0 - Math::cos(angle)) / theta_sqr;
 	real_t c_1 = (angle - Math::sin(angle)) / theta_cub;
-	return Basis().scaled(Vector3(p_c, p_c, p_c)) + this->scaled(Vector3(c_0, c_0, c_0)) + (*this * *this).scaled(Vector3(c_1, c_1,c_1));
+	return Basis().scaled(Vector3(p_c, p_c, p_c)) + this->scaled(Vector3(c_0, c_0, c_0)) + (*this * *this).scaled(Vector3(c_1, c_1, c_1));
 }
