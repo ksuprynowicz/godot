@@ -804,7 +804,13 @@ void ScriptEditor::_close_tab(int p_idx, bool p_save, bool p_history_back) {
 		current->clear_edit_menu();
 		_save_editor_state(current);
 	}
-	memdelete(tselected);
+
+	// Safely delete tab
+	if (tselected->is_inside_tree()) {
+		tselected->get_parent()->remove_child(tselected);
+	}
+	tselected->queue_delete();
+
 	if (idx >= tab_container->get_tab_count()) {
 		idx = tab_container->get_tab_count() - 1;
 	}
