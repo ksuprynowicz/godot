@@ -99,7 +99,7 @@ Transform3D Transform3D::sphere_interpolate_with(const Transform3D &p_transform,
 	Basis interp_t_t_times_v = s._compute_t_times_v(theta, p_c);
 	Transform3D interp_h;
 	interp_h.basis = basis * interp_r;
-	interp_h.origin = interp_r.xform(origin + interp_t_t_times_v.xform(u));
+	interp_h.origin = interp_r.xform(origin) + interp_t_t_times_v.xform(u);
 	return interp_h;
 }
 
@@ -222,8 +222,8 @@ Transform3D::Transform3D(real_t xx, real_t xy, real_t xz, real_t yx, real_t yy, 
 }
 
 Transform3D Transform3D::cubic_interpolate(const Transform3D &p_b, const Transform3D &p_pre_a, const Transform3D &p_post_b, const real_t &p_weight) const {
-	real_t t2 = (1.0f - p_weight) * p_weight * 2;
-	Transform3D sp = this->sphere_interpolate_with(p_b, p_weight);
-	Transform3D sq = p_pre_a.sphere_interpolate_with(p_post_b, p_weight);
+	real_t t2 = (1.0 - p_weight) * p_weight * 2;
+	Transform3D sp = p_pre_a.sphere_interpolate_with(p_post_b, p_weight);
+	Transform3D sq = this->sphere_interpolate_with(p_b, p_weight);
 	return sp.sphere_interpolate_with(sq, t2);
 }
