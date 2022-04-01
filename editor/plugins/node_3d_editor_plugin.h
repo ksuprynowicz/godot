@@ -226,6 +226,9 @@ private:
 	Label *locked_label = nullptr;
 	Label *zoom_limit_label = nullptr;
 
+	Label *preview_material_label = nullptr;
+	Label *preview_material_label_desc = nullptr;
+
 	VBoxContainer *top_right_vbox = nullptr;
 	ViewportRotationControl *rotation_control = nullptr;
 	Gradient *frame_time_gradient = nullptr;
@@ -400,7 +403,9 @@ private:
 
 	void _create_preview_node(const Vector<String> &files) const;
 	void _remove_preview_node();
-	void _remove_preview_material(bool p_reset_target_material);
+	bool _apply_preview_material(ObjectID p_target, const Point2 &p_point) const;
+	void _reset_preview_material() const;
+	void _remove_preview_material();
 	bool _cyclical_dependency_exists(const String &p_target_scene_path, Node *p_desired_node);
 	bool _create_instance(Node *parent, String &path, const Point2 &p_point);
 	void _perform_drop_data();
@@ -596,6 +601,7 @@ private:
 	Ref<Material> preview_material;
 	Ref<Material> preview_reset_material;
 	ObjectID preview_material_target;
+	int preview_material_surface;
 
 	struct Gizmo {
 		bool visible = false;
@@ -859,9 +865,11 @@ public:
 	void set_preview_material(Ref<Material> p_material) { preview_material = p_material; }
 	Ref<Material> get_preview_material() { return preview_material; }
 	void set_preview_reset_material(Ref<Material> p_material) { preview_reset_material = p_material; }
-	Ref<Material> get_preview_reset_material() { return preview_reset_material; }
+	Ref<Material> get_preview_reset_material() const { return preview_reset_material; }
 	void set_preview_material_target(ObjectID p_object_id) { preview_material_target = p_object_id; }
-	ObjectID get_preview_material_target() { return preview_material_target; }
+	ObjectID get_preview_material_target() const { return preview_material_target; }
+	void set_preview_material_surface(int p_surface) { preview_material_surface = p_surface; }
+	int get_preview_material_surface() const { return preview_material_surface; }
 
 	Node3DEditorViewport *get_editor_viewport(int p_idx) {
 		ERR_FAIL_INDEX_V(p_idx, static_cast<int>(VIEWPORTS_COUNT), nullptr);

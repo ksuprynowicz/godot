@@ -1254,7 +1254,8 @@ void Node3DEditorViewport::_surface_mouse_enter() {
 
 void Node3DEditorViewport::_surface_mouse_exit() {
 	_remove_preview_node();
-	_remove_preview_material(true);
+	_reset_preview_material();
+	_remove_preview_material();
 }
 
 void Node3DEditorViewport::_surface_focus_enter() {
@@ -1820,6 +1821,11 @@ void Node3DEditorViewport::_sinput(const Ref<InputEvent> &p_event) {
 
 			default: {
 			}
+		}
+
+		// Clear preview material when dropped outside applicable object
+		if (spatial_editor->get_preview_material().is_valid() && !is_drag_successful()) {
+			_remove_preview_material();
 		}
 	}
 
@@ -3805,24 +3811,102 @@ void Node3DEditorViewport::_remove_preview_node() {
 	}
 }
 
-void Node3DEditorViewport::_remove_preview_material(bool p_reset_target_material) {
-	Node3DEditor *editor = Node3DEditor::get_singleton();
+bool Node3DEditorViewport::_apply_preview_material(ObjectID p_target, const Point2 &p_point) const {
+	_reset_preview_material();
 
-	if (p_reset_target_material) {
-		// Reset the material on the target if nessecary
-		ObjectID target = editor->get_preview_material_target();
-		if (target.is_valid()) {
-			GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(target));
-			if (geometry_instance) {
-				Ref<Material> reset_material = editor->get_preview_reset_material();
-				geometry_instance->set_material_override(reset_material);
-			}
-		}
+	if (p_target.is_null()) {
+		return false;
 	}
 
-	editor->set_preview_material(Ref<Material>());
-	editor->set_preview_reset_material(Ref<Material>());
-	editor->set_preview_material_target(ObjectID());
+	spatial_editor->set_preview_material_target(p_target);
+
+	Object *target_inst = ObjectDB::get_instance(p_target);
+
+	bool is_ctrl = Input::get_singleton()->is_key_pressed(Key::CTRL);
+
+	MeshInstance3D *mesh_instance = Object::cast_to<MeshInstance3D>(target_inst);
+	if (is_ctrl && mesh_instance) {
+		Ref<Mesh> mesh = mesh_instance->get_mesh();
+		int surface_count = mesh->get_surface_count();
+
+		Vector3 ray = _get_ray(p_point);
+		Vector3 pos = _get_ray_pos(p_point);
+
+		int closest_surface = -1;
+		float closest_dist = 1e20;
+
+		for (int surface = 0; surface < surface_count; surface++) {
+			Vector<Face3> faces = mesh->get_surface_faces(surface);
+			for (int i = 0; i < faces.size(); i++) {
+				Vector3 v1 = mesh_instance->to_global(faces[i].vertex[0]);
+				Vector3 v2 = mesh_instance->to_global(faces[i].vertex[1]);
+				Vector3 v3 = mesh_instance->to_global(faces[i].vertex[2]);
+
+				Face3 face = Face3(v1, v2, v3);
+				Vector3 point;
+				if (face.intersects_ray(pos, ray, &point)) {
+					const real_t dist = pos.distance_to(point);
+
+					if (dist < 0) {
+						continue;
+					}
+
+					if (dist < closest_dist) {
+						closest_surface = surface;
+						break;
+					}
+				}
+			}
+		}
+
+		if (closest_surface == -1) {
+			return false;
+		}
+
+		if (spatial_editor->get_preview_material() != mesh_instance->get_surface_override_material(closest_surface)) {
+			spatial_editor->set_preview_material_surface(closest_surface);
+			spatial_editor->set_preview_reset_material(mesh_instance->get_surface_override_material(closest_surface));
+			mesh_instance->set_surface_override_material(closest_surface, spatial_editor->get_preview_material());
+		}
+
+		return true;
+	}
+
+	GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(target_inst);
+	if (geometry_instance && spatial_editor->get_preview_material() != geometry_instance->get_material_override()) {
+		spatial_editor->set_preview_reset_material(geometry_instance->get_material_override());
+		geometry_instance->set_material_override(spatial_editor->get_preview_material());
+		return true;
+	}
+
+	return false;
+}
+
+void Node3DEditorViewport::_reset_preview_material() const {
+	ObjectID last_target = spatial_editor->get_preview_material_target();
+	if (last_target.is_null()) {
+		return;
+	}
+	Object *last_target_inst = ObjectDB::get_instance(last_target);
+
+	MeshInstance3D *mesh_instance = Object::cast_to<MeshInstance3D>(last_target_inst);
+	GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(last_target_inst);
+	if (spatial_editor->get_preview_material_surface() != -1 && mesh_instance) {
+		mesh_instance->set_surface_override_material(spatial_editor->get_preview_material_surface(), spatial_editor->get_preview_reset_material());
+		spatial_editor->set_preview_material_surface(-1);
+	} else if (geometry_instance) {
+		geometry_instance->set_material_override(spatial_editor->get_preview_reset_material());
+	}
+}
+
+void Node3DEditorViewport::_remove_preview_material() {
+	preview_material_label->hide();
+	preview_material_label_desc->hide();
+
+	spatial_editor->set_preview_material(Ref<Material>());
+	spatial_editor->set_preview_reset_material(Ref<Material>());
+	spatial_editor->set_preview_material_target(ObjectID());
+	spatial_editor->set_preview_material_surface(-1);
 }
 
 bool Node3DEditorViewport::_cyclical_dependency_exists(const String &p_target_scene_path, Node *p_desired_node) {
@@ -3923,6 +4007,25 @@ bool Node3DEditorViewport::_create_instance(Node *parent, String &path, const Po
 }
 
 void Node3DEditorViewport::_perform_drop_data() {
+	if (spatial_editor->get_preview_material_target().is_valid()) {
+		GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(spatial_editor->get_preview_material_target()));
+		MeshInstance3D *mesh_instance = Object::cast_to<MeshInstance3D>(ObjectDB::get_instance(spatial_editor->get_preview_material_target()));
+		if (mesh_instance && spatial_editor->get_preview_material_surface() != -1) {
+			editor_data->get_undo_redo().create_action(vformat(TTR("Set surface %d override material"), spatial_editor->get_preview_material_surface()));
+			editor_data->get_undo_redo().add_do_method(geometry_instance, "set_surface_override_material", spatial_editor->get_preview_material_surface(), spatial_editor->get_preview_material());
+			editor_data->get_undo_redo().add_undo_method(geometry_instance, "set_surface_override_material", spatial_editor->get_preview_material_surface(), spatial_editor->get_preview_reset_material());
+			editor_data->get_undo_redo().commit_action();
+		} else if (geometry_instance) {
+			editor_data->get_undo_redo().create_action(TTR("Set material override"));
+			editor_data->get_undo_redo().add_do_method(geometry_instance, "set_material_override", spatial_editor->get_preview_material());
+			editor_data->get_undo_redo().add_undo_method(geometry_instance, "set_material_override", spatial_editor->get_preview_reset_material());
+			editor_data->get_undo_redo().commit_action();
+		}
+
+		_remove_preview_material();
+		return;
+	}
+
 	_remove_preview_node();
 
 	Vector<String> error_files;
@@ -3943,22 +4046,9 @@ void Node3DEditorViewport::_perform_drop_data() {
 				error_files.push_back(path);
 			}
 		}
-
-		Node3DEditor *editor = Node3DEditor::get_singleton();
-
-		if (editor->get_preview_material_target().is_valid()) {
-			GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(editor->get_preview_material_target()));
-			if (geometry_instance) {
-				geometry_instance->set_material_override(editor->get_preview_material());
-				editor_data->get_undo_redo().add_do_method(geometry_instance, "set_material_override", editor->get_preview_material());
-				editor_data->get_undo_redo().add_undo_method(geometry_instance, "set_material_override", editor->get_preview_reset_material());
-			}
-		}
 	}
 
 	editor_data->get_undo_redo().commit_action();
-
-	_remove_preview_material(false);
 
 	if (error_files.size() > 0) {
 		String files_str;
@@ -3974,9 +4064,7 @@ void Node3DEditorViewport::_perform_drop_data() {
 bool Node3DEditorViewport::can_drop_data_fw(const Point2 &p_point, const Variant &p_data, Control *p_from) const {
 	bool can_instantiate = false;
 
-	Node3DEditor *editor = Node3DEditor::get_singleton();
-
-	if (!preview_node->is_inside_tree() && editor->get_preview_material().is_null()) {
+	if (!preview_node->is_inside_tree() && spatial_editor->get_preview_material().is_null()) {
 		Dictionary d = p_data;
 		if (d.has("type") && (String(d["type"]) == "files")) {
 			Vector<String> files = d["files"];
@@ -4017,13 +4105,13 @@ bool Node3DEditorViewport::can_drop_data_fw(const Point2 &p_point, const Variant
 							break;
 						}
 
-						editor->set_preview_material(mat);
+						spatial_editor->set_preview_material(mat);
 						break;
 					} else if (tex.is_valid()) {
 						Ref<StandardMaterial3D> new_mat = memnew(StandardMaterial3D);
 						new_mat->set_texture(BaseMaterial3D::TEXTURE_ALBEDO, tex);
 
-						editor->set_preview_material(new_mat);
+						spatial_editor->set_preview_material(new_mat);
 						break;
 					} else {
 						continue;
@@ -4048,40 +4136,12 @@ bool Node3DEditorViewport::can_drop_data_fw(const Point2 &p_point, const Variant
 		return true;
 	}
 
-	if (editor->get_preview_material().is_valid()) {
-		ObjectID new_object_id = _select_ray(p_point);
+	if (spatial_editor->get_preview_material().is_valid()) {
+		preview_material_label->show();
+		preview_material_label_desc->show();
 
-		// Get the corresponding GeometryInstance for new_object_id, and if it is not valid, reset the new_object_id
-		if (new_object_id.is_valid()) {
-			GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(new_object_id));
-			if (!geometry_instance) {
-				new_object_id = ObjectID();
-			}
-		}
-
-		// Execute only if the new_object_id does not the preview_material_target
-		if (editor->get_preview_material_target() != new_object_id) {
-			// If we have an existing preview_material_target, reset its material
-			if (editor->get_preview_material_target().is_valid()) {
-				GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(editor->get_preview_material_target()));
-				if (geometry_instance) {
-					geometry_instance->set_material_override(editor->get_preview_reset_material());
-				}
-			}
-
-			// If new_object_id is valid, save the original material as the preview_reset_material and assign the new preview_material
-			if (new_object_id.is_valid()) {
-				GeometryInstance3D *geometry_instance = Object::cast_to<GeometryInstance3D>(ObjectDB::get_instance(new_object_id));
-				if (geometry_instance) {
-					editor->set_preview_reset_material(geometry_instance->get_material_override());
-					geometry_instance->set_material_override(editor->get_preview_material());
-				}
-			}
-
-			// Save the new preview_material_target
-			editor->set_preview_material_target(new_object_id);
-		}
-		return true;
+		ObjectID new_preview_material_target = _select_ray(p_point);
+		return _apply_preview_material(new_preview_material_target, p_point);
 	}
 
 	return false;
@@ -4123,7 +4183,6 @@ void Node3DEditorViewport::drop_data_fw(const Point2 &p_point, const Variant &p_
 		accept->set_text(TTR("Cannot drag and drop into multiple selected nodes."));
 		accept->popup_centered();
 		_remove_preview_node();
-		_remove_preview_material(true);
 		return;
 	}
 
@@ -4768,6 +4827,23 @@ Node3DEditorViewport::Node3DEditorViewport(Node3DEditor *p_spatial_editor, int p
 	zoom_limit_label->add_theme_color_override("font_color", Color(1, 1, 1, 1));
 	zoom_limit_label->hide();
 	surface->add_child(zoom_limit_label);
+
+	preview_material_label = memnew(Label);
+	preview_material_label->set_anchors_and_offsets_preset(LayoutPreset::PRESET_BOTTOM_LEFT);
+	preview_material_label->set_offset(Side::SIDE_TOP, -70 * EDSCALE);
+	preview_material_label->set_text(TTR("Overriding material..."));
+	preview_material_label->add_theme_color_override("font_color", Color(1, 1, 1, 1));
+	preview_material_label->hide();
+	surface->add_child(preview_material_label);
+
+	preview_material_label_desc = memnew(Label);
+	preview_material_label_desc->set_anchors_and_offsets_preset(LayoutPreset::PRESET_BOTTOM_LEFT);
+	preview_material_label_desc->set_offset(Side::SIDE_TOP, -50 * EDSCALE);
+	preview_material_label_desc->set_text(TTR("Drag and drop to override the material of any geometry node.\nHold Ctrl when dropping to override a specific surface."));
+	preview_material_label_desc->add_theme_color_override("font_color", Color(0.8, 0.8, 0.8, 1));
+	preview_material_label_desc->add_theme_constant_override("line_spacing", 0);
+	preview_material_label_desc->hide();
+	surface->add_child(preview_material_label_desc);
 
 	frame_time_gradient = memnew(Gradient);
 	// The color is set when the theme changes.
@@ -8205,7 +8281,6 @@ void fragment() {
 		_preview_settings_changed();
 	}
 }
-
 Node3DEditor::~Node3DEditor() {
 	memdelete(preview_node);
 }
