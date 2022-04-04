@@ -587,7 +587,7 @@ Color Color::operator-() const {
 
 Color Color::from_ok_hsl(float p_h, float p_s, float p_l, float p_alpha) {
 	Color c;
-	c.set_ok_hsl(p_h, p_s, p_v, p_alpha);
+	c.set_ok_hsl(p_h, p_s, p_l, p_alpha);
 	return c;
 }
 
