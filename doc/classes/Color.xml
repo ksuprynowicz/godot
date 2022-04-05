@@ -165,6 +165,15 @@
 				[/codeblocks]
 			</description>
 		</method>
+		<method name="from_ok_hsl" qualifiers="static">
+			<return type="Color" />
+			<argument index="0" name="h" type="float" />
+			<argument index="1" name="s" type="float" />
+			<argument index="2" name="l" type="float" />
+			<argument index="3" name="alpha" type="float" default="1.0" />
+			<description>
+			</description>
+		</method>
 		<method name="from_rgbe9995" qualifiers="static">
 			<return type="Color" />
 			<argument index="0" name="rgbe" type="int" />
