@@ -35,6 +35,8 @@
 #include "core/string/print_string.h"
 #include "core/templates/map.h"
 
+#include "thirdparty/misc/ok_color.h"
+
 uint32_t Color::to_argb32() const {
 	uint32_t c = (uint8_t)Math::round(a * 255);
 	c <<= 8;
@@ -238,6 +240,20 @@ void Color::set_hsv(float p_h, float p_s, float p_v, float p_alpha) {
 			b = q;
 			break;
 	}
+}
+
+void Color::set_ok_hsv(float p_h, float p_s, float p_v, float p_alpha) {
+	ok_color::HSV hsv;
+	hsv.h = p_h;
+	hsv.s = p_s;
+	hsv.v = p_v;
+	ok_color new_ok_color;
+	ok_color::RGB rgb = new_ok_color.okhsv_to_srgb(hsv);
+	Color c = Color(rgb.r, rgb.g, rgb.b, p_alpha);
+	r = CLAMP(c.r, 0.0f, 1.0f);
+	g = CLAMP(c.g, 0.0f, 1.0f);
+	b = CLAMP(c.b, 0.0f, 1.0f);
+	a = CLAMP(c.a, 0.0f, 1.0f);
 }
 
 bool Color::is_equal_approx(const Color &p_color) const {
@@ -567,4 +583,40 @@ Color Color::operator-() const {
 			1.0f - g,
 			1.0f - b,
 			1.0f - a);
+}
+
+Color Color::from_ok_hsv(float p_h, float p_s, float p_v, float p_alpha) {
+	Color c;
+	c.set_ok_hsv(p_h, p_s, p_v, p_alpha);
+	return c;
+}
+
+float Color::get_ok_hsv_h() const {
+	ok_color::RGB rgb;
+	rgb.r = r;
+	rgb.g = g;
+	rgb.b = b;
+	ok_color new_ok_color;
+	ok_color::HSL ok_hsv = new_ok_color.srgb_to_okhsl(rgb);
+	return CLAMP(ok_hsv.h, 0.0f, 1.0f);
+}
+
+float Color::get_ok_hsv_s() const {
+	ok_color::RGB rgb;
+	rgb.r = r;
+	rgb.g = g;
+	rgb.b = b;
+	ok_color new_ok_color;
+	ok_color::HSL ok_hsv = new_ok_color.srgb_to_okhsl(rgb);
+	return CLAMP(ok_hsv.s, 0.0f, 1.0f);
+}
+
+float Color::get_ok_hsv_v() const {
+	ok_color::RGB rgb;
+	rgb.r = r;
+	rgb.g = g;
+	rgb.b = b;
+	ok_color new_ok_color;
+	ok_color::HSL ok_hsv = new_ok_color.srgb_to_okhsl(rgb);
+	return CLAMP(ok_hsv.l, 0.0f, 1.0f);
 }
