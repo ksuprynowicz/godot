@@ -296,7 +296,7 @@ void ColorPicker::_set_pick_color(const Color &p_color, bool p_update_sliders) {
 	if (color != last_color && picker_type == SHAPE_OKHSV_CIRCLE) {
 		h = color.get_ok_hsv_h();
 		s = color.get_ok_hsv_s();
-		v = color.get_ok_hsv_l();
+		v = color.get_ok_hsv_v();
 	} else if (color != last_color) {
 		h = color.get_h();
 		s = color.get_s();
