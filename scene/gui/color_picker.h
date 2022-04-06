@@ -38,6 +38,7 @@
 #include "scene/gui/grid_container.h"
 #include "scene/gui/label.h"
 #include "scene/gui/line_edit.h"
+#include "scene/gui/menu_button.h"
 #include "scene/gui/popup.h"
 #include "scene/gui/separator.h"
 #include "scene/gui/slider.h"
@@ -68,13 +69,23 @@ public:
 		SHAPE_HSV_RECTANGLE,
 		SHAPE_HSV_WHEEL,
 		SHAPE_VHS_CIRCLE,
+		SHAPE_OKHSL_CIRCLE,
 
 		SHAPE_MAX
+	};
+	enum PickerMode {
+		MODE_RGB,
+		MODE_RAW,
+		MODE_HSV,
+		MODE_OK_HSL,
+
+		MODE_MAX
 	};
 
 private:
 	static Ref<Shader> wheel_shader;
 	static Ref<Shader> circle_shader;
+	static Ref<Shader> circle_ok_color_shader;
 	static List<Color> preset_cache;
 
 	Control *screen = nullptr;
@@ -91,8 +102,7 @@ private:
 	HSeparator *preset_separator = memnew(HSeparator);
 	Button *btn_add_preset = memnew(Button);
 	Button *btn_pick = memnew(Button);
-	CheckButton *btn_hsv = memnew(CheckButton);
-	CheckButton *btn_raw = memnew(CheckButton);
+	MenuButton *btn_mode = memnew(MenuButton);
 	HSlider *scroll[4];
 	SpinBox *values[4];
 	Label *labels[4];
@@ -112,8 +122,6 @@ private:
 	Color old_color;
 
 	bool display_old_color = false;
-	bool raw_mode_enabled = false;
-	bool hsv_mode_enabled = false;
 	bool deferred_mode_enabled = false;
 	bool updating = true;
 	bool changing_color = false;
@@ -126,10 +134,19 @@ private:
 	float v = 0.0;
 	Color last_hsv;
 
+	float ok_hsl_h = 0.0;
+	float ok_hsl_s = 0.0;
+	float ok_hsl_l = 0.0;
+	Color last_ok_hsl;
+
+	PickerMode mode = MODE_RGB;
+
+	void _menu_option(int p_option);
 	void _html_submitted(const String &p_html);
 	void _value_changed(double);
 	void _update_controls();
-	void _update_color(bool p_update_sliders = true);
+	void _update_color_with_sliders();
+	void _update_color();
 	void _update_text_value();
 	void _text_type_toggled();
 	void _sample_input(const Ref<InputEvent> &p_event);
@@ -161,7 +178,9 @@ public:
 	void set_edit_alpha(bool p_show);
 	bool is_editing_alpha() const;
 
-	void _set_pick_color(const Color &p_color, bool p_update_sliders);
+	int get_preset_size();
+
+	void _set_last_color(const Color &p_color, bool p_update_sliders);
 	void set_pick_color(const Color &p_color);
 	Color get_pick_color() const;
 	void set_old_color(const Color &p_color);
@@ -177,12 +196,6 @@ public:
 	PackedColorArray get_presets() const;
 	void _update_presets();
 
-	void set_hsv_mode(bool p_enabled);
-	bool is_hsv_mode() const;
-
-	void set_raw_mode(bool p_enabled);
-	bool is_raw_mode() const;
-
 	void set_deferred_mode(bool p_enabled);
 	bool is_deferred_mode() const;
 
@@ -193,6 +206,9 @@ public:
 	bool are_presets_visible() const;
 
 	void set_focus_on_line_edit();
+
+	PickerMode get_mode() const;
+	void set_mode(PickerMode p_mode);
 
 	ColorPicker();
 };
@@ -235,4 +251,5 @@ public:
 };
 
 VARIANT_ENUM_CAST(ColorPicker::PickerShapeType);
+VARIANT_ENUM_CAST(ColorPicker::PickerMode);
 #endif // COLOR_PICKER_H

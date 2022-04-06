@@ -827,9 +827,9 @@ bool CustomPropertyEditor::edit(Object *p_owner, const String &p_name, Variant::
 				// get default color picker mode from editor settings
 				int default_color_mode = EDITOR_GET("interface/inspector/default_color_picker_mode");
 				if (default_color_mode == 1) {
-					color_picker->set_hsv_mode(true);
+					color_picker->set_mode(ColorPicker::MODE_HSV);
 				} else if (default_color_mode == 2) {
-					color_picker->set_raw_mode(true);
+					color_picker->set_mode(ColorPicker::MODE_RAW);
 				}
 
 				int picker_shape = EDITOR_GET("interface/inspector/default_color_picker_shape");

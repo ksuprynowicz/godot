@@ -2739,9 +2739,9 @@ void EditorPropertyColor::_picker_created() {
 	// get default color picker mode from editor settings
 	int default_color_mode = EDITOR_GET("interface/inspector/default_color_picker_mode");
 	if (default_color_mode == 1) {
-		picker->get_picker()->set_hsv_mode(true);
+		picker->get_picker()->set_mode(ColorPicker::MODE_HSV);
 	} else if (default_color_mode == 2) {
-		picker->get_picker()->set_raw_mode(true);
+		picker->get_picker()->set_mode(ColorPicker::MODE_RAW);
 	}
 
 	int picker_shape = EDITOR_GET("interface/inspector/default_color_picker_shape");

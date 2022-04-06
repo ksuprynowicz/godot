@@ -31,6 +31,8 @@
 #include "color_picker.h"
 
 #include "core/input/input.h"
+#include "core/math/color.h"
+#include "core/object/object.h"
 #include "core/os/keyboard.h"
 #include "core/os/os.h"
 #include "scene/main/window.h"
@@ -39,12 +41,15 @@
 #include "editor/editor_settings.h"
 #endif
 
+#include "thirdparty/misc/ok_color.h"
+#include "thirdparty/misc/ok_color_shader.h"
+
 List<Color> ColorPicker::preset_cache;
 
 void ColorPicker::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_ENTER_TREE: {
-			_update_color();
+			_update_color_with_sliders();
 #ifdef TOOLS_ENABLED
 			if (Engine::get_singleton()->is_editor_hint()) {
 				if (preset_cache.is_empty()) {
@@ -102,6 +107,7 @@ void ColorPicker::_notification(int p_what) {
 
 Ref<Shader> ColorPicker::wheel_shader;
 Ref<Shader> ColorPicker::circle_shader;
+Ref<Shader> ColorPicker::circle_ok_color_shader;
 
 void ColorPicker::init_shaders() {
 	wheel_shader.instantiate();
@@ -152,11 +158,36 @@ void fragment() {
 
 	COLOR = vec4(mix(vec3(1.0), clamp(abs(fract(vec3((a - TAU) / TAU) + vec3(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - vec3(3.0)) - vec3(1.0), 0.0, 1.0), ((float(sqrt(x * x + y * y)) * 2.0)) / 1.0) * vec3(v), (b + b2 + b3 + b4) / 4.00);
 })");
+
+	circle_ok_color_shader.instantiate();
+	circle_ok_color_shader->set_code(OK_COLOR_SHADER + R"(
+// ColorPicker ok color hsv circle shader.
+
+uniform float l = 1.0;
+
+void fragment() {
+	float x = UV.x - 0.5;
+	float y = UV.y - 0.5;
+	x += 0.001;
+	y += 0.001;
+	float b = float(sqrt(x * x + y * y) < 0.5);
+	x -= 0.002;
+	float b2 = float(sqrt(x * x + y * y) < 0.5);
+	y -= 0.002;
+	float b3 = float(sqrt(x * x + y * y) < 0.5);
+	x += 0.002;
+	float b4 = float(sqrt(x * x + y * y) < 0.5);
+    float s = sqrt(x * x + y * y);
+    float h = atan(y, x) / (2.0*M_PI);
+    vec3 col = okhsl_to_srgb(vec3(h, s, l));
+	COLOR = vec4(col, (b + b2 + b3 + b4) / 4.00);
+})");
 }
 
 void ColorPicker::finish_shaders() {
 	wheel_shader.unref();
 	circle_shader.unref();
+	circle_ok_color_shader.unref();
 }
 
 void ColorPicker::set_focus_on_line_edit() {
@@ -166,29 +197,21 @@ void ColorPicker::set_focus_on_line_edit() {
 void ColorPicker::_update_controls() {
 	const char *rgb[3] = { "R", "G", "B" };
 	const char *hsv[3] = { "H", "S", "V" };
-
-	if (hsv_mode_enabled) {
+	const char *hsl[3] = { "H", "S", "L" };
+	if (mode == MODE_OK_HSL) {
+		for (int i = 0; i < 3; i++) {
+			labels[i]->set_text(hsl[i]);
+		}
+	} else if (mode == MODE_HSV) {
 		for (int i = 0; i < 3; i++) {
 			labels[i]->set_text(hsv[i]);
 		}
-	} else {
+	} else if (mode == MODE_RGB || mode == MODE_RAW) {
 		for (int i = 0; i < 3; i++) {
 			labels[i]->set_text(rgb[i]);
 		}
 	}
-
-	if (hsv_mode_enabled) {
-		set_raw_mode(false);
-		btn_raw->set_disabled(true);
-	} else if (raw_mode_enabled) {
-		set_hsv_mode(false);
-		btn_hsv->set_disabled(true);
-	} else {
-		btn_raw->set_disabled(false);
-		btn_hsv->set_disabled(false);
-	}
-
-	if (raw_mode_enabled) {
+	if (mode == MODE_RAW) {
 		for (int i = 0; i < 3; i++) {
 			scroll[i]->remove_theme_icon_override("grabber");
 			scroll[i]->remove_theme_icon_override("grabber_highlight");
@@ -236,32 +259,50 @@ void ColorPicker::_update_controls() {
 			wheel_edit->show();
 			w_edit->show();
 			uv_edit->hide();
-
 			wheel->set_material(circle_mat);
+			circle_mat->set_shader(circle_shader);
+			break;
+		case SHAPE_OKHSL_CIRCLE:
+			wheel_edit->show();
+			w_edit->show();
+			uv_edit->hide();
+			wheel->set_material(circle_mat);
+			circle_mat->set_shader(circle_ok_color_shader);
 			break;
 		default: {
 		}
 	}
 }
 
-void ColorPicker::_set_pick_color(const Color &p_color, bool p_update_sliders) {
+void ColorPicker::_set_last_color(const Color &p_color, bool p_update_sliders) {
 	color = p_color;
+	h = 0;
+	s = 0;
+	v = 0;
+	ok_hsl_h = 0;
+	ok_hsl_l = 0;
+	ok_hsl_s = 0;
 	if (color != last_hsv) {
+		ok_hsl_h = color.get_ok_hsl_h();
+		ok_hsl_s = color.get_ok_hsl_s();
+		ok_hsl_l = color.get_ok_hsl_l();
 		h = color.get_h();
 		s = color.get_s();
 		v = color.get_v();
 		last_hsv = color;
 	}
-
 	if (!is_inside_tree()) {
 		return;
 	}
-
-	_update_color(p_update_sliders);
+	if (p_update_sliders) {
+		_update_color_with_sliders();
+	} else {
+		_update_color();
+	}
 }
 
 void ColorPicker::set_pick_color(const Color &p_color) {
-	_set_pick_color(p_color, true); //because setters can't have more arguments
+	_set_last_color(p_color, true); //because setters can't have more arguments
 }
 
 void ColorPicker::set_old_color(const Color &p_color) {
@@ -284,7 +325,7 @@ void ColorPicker::set_edit_alpha(bool p_show) {
 		return;
 	}
 
-	_update_color();
+	_update_color_with_sliders();
 	sample->update();
 }
 
@@ -296,22 +337,30 @@ void ColorPicker::_value_changed(double) {
 	if (updating) {
 		return;
 	}
-
-	if (hsv_mode_enabled) {
+	if (mode == MODE_HSV) {
 		h = scroll[0]->get_value() / 360.0;
 		s = scroll[1]->get_value() / 100.0;
 		v = scroll[2]->get_value() / 100.0;
 		color.set_hsv(h, s, v, scroll[3]->get_value() / 255.0);
-
 		last_hsv = color;
-
-	} else {
+	} else if (mode == MODE_OK_HSL) {
+		ok_hsl_h = scroll[0]->get_value() / 360.0;
+		ok_hsl_s = scroll[1]->get_value() / 100.0;
+		ok_hsl_l = scroll[2]->get_value() / 100.0;
+		color.set_ok_hsl(ok_hsl_h, ok_hsl_s, ok_hsl_l, scroll[3]->get_value() / 255.0);
+		last_hsv = color;
+	} else if (mode == MODE_RAW) {
 		for (int i = 0; i < 4; i++) {
-			color.components[i] = scroll[i]->get_value() / (raw_mode_enabled ? 1.0 : 255.0);
+			color.components[i] = scroll[i]->get_value() / 1.0;
+		}
+	} else if (mode == MODE_RGB) {
+		for (int i = 0; i < 4; i++) {
+			color.components[i] = scroll[i]->get_value() / 255.0;
 		}
 	}
-
-	_set_pick_color(color, false);
+	if (color != last_hsv) {
+		_set_last_color(color, false);
+	}
 	emit_signal(SNAME("color_changed"), color);
 }
 
@@ -334,39 +383,47 @@ void ColorPicker::_html_submitted(const String &p_html) {
 	emit_signal(SNAME("color_changed"), color);
 }
 
-void ColorPicker::_update_color(bool p_update_sliders) {
+void ColorPicker::_update_color_with_sliders() {
 	updating = true;
-
-	if (p_update_sliders) {
-		if (hsv_mode_enabled) {
-			for (int i = 0; i < 4; i++) {
-				scroll[i]->set_step(1.0);
+	if (mode == MODE_OK_HSL) {
+		for (int i = 0; i < 4; i++) {
+			scroll[i]->set_step(1.0);
+		}
+		scroll[0]->set_max(359);
+		scroll[0]->set_value(Math::round(color.get_ok_hsl_h() * 360.0));
+		scroll[1]->set_max(100);
+		scroll[1]->set_value(Math::round(color.get_ok_hsl_s() * 100.0));
+		scroll[2]->set_max(100);
+		scroll[2]->set_value(Math::round(color.get_ok_hsl_l() * 100.0));
+		scroll[3]->set_max(255);
+		scroll[3]->set_value(Math::round(color.components[3] * 255.0));
+	} else if (mode == MODE_HSV) {
+		for (int i = 0; i < 4; i++) {
+			scroll[i]->set_step(1.0);
+		}
+		scroll[0]->set_max(359);
+		scroll[0]->set_value(Math::round(color.get_h() * 360.0));
+		scroll[1]->set_max(100);
+		scroll[1]->set_value(Math::round(color.get_s() * 100.0));
+		scroll[2]->set_max(100);
+		scroll[2]->set_value(Math::round(color.get_v() * 100.0));
+		scroll[3]->set_max(255);
+		scroll[3]->set_value(Math::round(color.components[3] * 255.0));
+	} else if (mode == MODE_RAW) {
+		for (int i = 0; i < 4; i++) {
+			scroll[i]->set_step(0.01);
+			scroll[i]->set_max(100);
+			if (i == 3) {
+				scroll[i]->set_max(1);
 			}
-
-			scroll[0]->set_max(359);
-			scroll[0]->set_value(h * 360.0);
-			scroll[1]->set_max(100);
-			scroll[1]->set_value(s * 100.0);
-			scroll[2]->set_max(100);
-			scroll[2]->set_value(v * 100.0);
-			scroll[3]->set_max(255);
-			scroll[3]->set_value(color.components[3] * 255.0);
-		} else {
-			for (int i = 0; i < 4; i++) {
-				if (raw_mode_enabled) {
-					scroll[i]->set_step(0.01);
-					scroll[i]->set_max(100);
-					if (i == 3) {
-						scroll[i]->set_max(1);
-					}
-					scroll[i]->set_value(color.components[i]);
-				} else {
-					scroll[i]->set_step(1);
-					const float byte_value = color.components[i] * 255.0;
-					scroll[i]->set_max(next_power_of_2(MAX(255, byte_value)) - 1);
-					scroll[i]->set_value(byte_value);
-				}
-			}
+			scroll[i]->set_value(color.components[i]);
+		}
+	} else if (mode == MODE_RGB) {
+		for (int i = 0; i < 4; i++) {
+			scroll[i]->set_step(1);
+			const float byte_value = Math::round(color.components[i] * 255.0);
+			scroll[i]->set_max(next_power_of_2(MAX(255, byte_value)) - 1);
+			scroll[i]->set_value(byte_value);
 		}
 	}
 
@@ -416,7 +473,7 @@ void ColorPicker::_text_type_toggled() {
 
 		c_text->set_editable(true);
 	}
-	_update_color();
+	_update_color_with_sliders();
 }
 
 Color ColorPicker::get_pick_color() const {
@@ -426,9 +483,8 @@ Color ColorPicker::get_pick_color() const {
 void ColorPicker::set_picker_shape(PickerShapeType p_picker_type) {
 	ERR_FAIL_INDEX(p_picker_type, SHAPE_MAX);
 	picker_type = p_picker_type;
-
 	_update_controls();
-	_update_color();
+	_update_color_with_sliders();
 }
 
 ColorPicker::PickerShapeType ColorPicker::get_picker_shape() const {
@@ -507,48 +563,6 @@ PackedColorArray ColorPicker::get_presets() const {
 	return arr;
 }
 
-void ColorPicker::set_hsv_mode(bool p_enabled) {
-	if (hsv_mode_enabled == p_enabled || raw_mode_enabled) {
-		return;
-	}
-	hsv_mode_enabled = p_enabled;
-	if (btn_hsv->is_pressed() != p_enabled) {
-		btn_hsv->set_pressed(p_enabled);
-	}
-
-	if (!is_inside_tree()) {
-		return;
-	}
-
-	_update_controls();
-	_update_color();
-}
-
-bool ColorPicker::is_hsv_mode() const {
-	return hsv_mode_enabled;
-}
-
-void ColorPicker::set_raw_mode(bool p_enabled) {
-	if (raw_mode_enabled == p_enabled || hsv_mode_enabled) {
-		return;
-	}
-	raw_mode_enabled = p_enabled;
-	if (btn_raw->is_pressed() != p_enabled) {
-		btn_raw->set_pressed(p_enabled);
-	}
-
-	if (!is_inside_tree()) {
-		return;
-	}
-
-	_update_controls();
-	_update_color();
-}
-
-bool ColorPicker::is_raw_mode() const {
-	return raw_mode_enabled;
-}
-
 void ColorPicker::set_deferred_mode(bool p_enabled) {
 	deferred_mode_enabled = p_enabled;
 }
@@ -586,7 +600,7 @@ void ColorPicker::_sample_input(const Ref<InputEvent> &p_event) {
 		if (rect_old.has_point(mb->get_position())) {
 			// Revert to the old color when left-clicking the old color sample.
 			color = old_color;
-			_update_color();
+			_update_color_with_sliders();
 			emit_signal(SNAME("color_changed"), color);
 		}
 	}
@@ -702,7 +716,7 @@ void ColorPicker::_hsv_draw(int p_which, Control *c) {
 		Ref<Texture2D> cursor = get_theme_icon(SNAME("picker_cursor"), SNAME("ColorPicker"));
 		int x;
 		int y;
-		if (picker_type == SHAPE_VHS_CIRCLE) {
+		if (picker_type == SHAPE_VHS_CIRCLE || picker_type == SHAPE_OKHSL_CIRCLE) {
 			x = center.x + (center.x * Math::cos(h * Math_TAU) * s) - (cursor->get_width() / 2);
 			y = center.y + (center.y * Math::sin(h * Math_TAU) * s) - (cursor->get_height() / 2);
 		} else {
@@ -735,6 +749,25 @@ void ColorPicker::_hsv_draw(int p_which, Control *c) {
 			Color col;
 			col.set_hsv(h, 1, 1);
 			c->draw_line(Point2(0, y), Point2(c->get_size().x, y), col.inverted());
+		} else if (picker_type == SHAPE_OKHSL_CIRCLE) {
+			Vector<Point2> points;
+			Vector<Color> colors;
+			Color col;
+			col.set_ok_hsl(ok_hsl_h, ok_hsl_s, 1);
+			points.resize(4);
+			colors.resize(4);
+			points.set(0, Vector2());
+			points.set(1, Vector2(c->get_size().x, 0));
+			points.set(2, c->get_size());
+			points.set(3, Vector2(0, c->get_size().y));
+			colors.set(0, col);
+			colors.set(1, col);
+			colors.set(2, Color(0, 0, 0));
+			colors.set(3, Color(0, 0, 0));
+			c->draw_polygon(points, colors);
+			int y = c->get_size().y - c->get_size().y * CLAMP(v, 0, 1);
+			col.set_ok_hsl(ok_hsl_h, 1, ok_hsl_l);
+			c->draw_line(Point2(0, y), Point2(c->get_size().x, y), col.inverted());
 		} else if (picker_type == SHAPE_VHS_CIRCLE) {
 			Vector<Point2> points;
 			Vector<Color> colors;
@@ -757,9 +790,11 @@ void ColorPicker::_hsv_draw(int p_which, Control *c) {
 		}
 	} else if (p_which == 2) {
 		c->draw_rect(Rect2(Point2(), c->get_size()), Color(1, 1, 1));
-		if (picker_type == SHAPE_VHS_CIRCLE) {
-			circle_mat->set_shader_param("v", v);
-		}
+	}
+	if (picker_type == SHAPE_VHS_CIRCLE) {
+		circle_mat->set_shader_param("v", v);
+	} else if (picker_type == SHAPE_OKHSL_CIRCLE) {
+		circle_mat->set_shader_param("l", ok_hsl_l);
 	}
 }
 
@@ -775,39 +810,62 @@ void ColorPicker::_slider_draw(int p_which) {
 
 	if (p_which == 3) {
 		scroll[p_which]->draw_texture_rect(get_theme_icon(SNAME("sample_bg"), SNAME("ColorPicker")), Rect2(Point2(0, margin), Size2(size.x, margin)), true);
-
 		left_color = color;
 		left_color.a = 0;
 		right_color = color;
 		right_color.a = 1;
-	} else {
-		if (raw_mode_enabled) {
+	}
+	if (mode == MODE_OK_HSL) {
+		if (p_which == 0) {
+			Ref<Texture2D> hue = get_theme_icon(SNAME("color_hue"), SNAME("ColorPicker"));
+			scroll[p_which]->draw_set_transform(Point2(), -Math_PI / 2, Size2(1.0, 1.0));
+			scroll[p_which]->draw_texture_rect(hue, Rect2(Vector2(margin * -2, 0), Vector2(scroll[p_which]->get_size().x, margin)), false, Color(1, 1, 1), true);
 			return;
 		}
-		if (hsv_mode_enabled) {
-			if (p_which == 0) {
-				Ref<Texture2D> hue = get_theme_icon(SNAME("color_hue"), SNAME("ColorPicker"));
-				scroll[p_which]->draw_set_transform(Point2(), -Math_PI / 2, Size2(1.0, 1.0));
-				scroll[p_which]->draw_texture_rect(hue, Rect2(Vector2(margin * -2, 0), Vector2(scroll[p_which]->get_size().x, margin)), false, Color(1, 1, 1), true);
-				return;
-			}
-			Color s_col;
-			Color v_col;
-			s_col.set_hsv(h, 0, v);
-			left_color = (p_which == 1) ? s_col : Color(0, 0, 0);
-			s_col.set_hsv(h, 1, v);
-			v_col.set_hsv(h, s, 1);
-			right_color = (p_which == 1) ? s_col : v_col;
+		Color s_col;
+		Color v_col;
+		if (p_which == 1) {
+			v_col.set_ok_hsl(ok_hsl_h, 0, ok_hsl_l);
+			left_color = v_col;
+			v_col.set_ok_hsl(ok_hsl_h, 1, ok_hsl_l);
+			right_color = v_col;
 		} else {
-			left_color = Color(
-					p_which == 0 ? 0 : color.r,
-					p_which == 1 ? 0 : color.g,
-					p_which == 2 ? 0 : color.b);
-			right_color = Color(
-					p_which == 0 ? 1 : color.r,
-					p_which == 1 ? 1 : color.g,
-					p_which == 2 ? 1 : color.b);
+			s_col.set_ok_hsl(ok_hsl_h, ok_hsl_s, 0);
+			left_color = s_col;
+			s_col.set_ok_hsl(ok_hsl_h, ok_hsl_s, 1);
+			right_color = s_col;
 		}
+	} else if (mode == MODE_HSV) {
+		if (p_which == 0) {
+			Ref<Texture2D> hue = get_theme_icon(SNAME("color_hue"), SNAME("ColorPicker"));
+			scroll[p_which]->draw_set_transform(Point2(), -Math_PI / 2, Size2(1.0, 1.0));
+			scroll[p_which]->draw_texture_rect(hue, Rect2(Vector2(margin * -2, 0), Vector2(scroll[p_which]->get_size().x, margin)), false, Color(1, 1, 1), true);
+			return;
+		}
+		Color s_col;
+		Color v_col;
+		if (p_which == 1) {
+			s_col.set_hsv(h, s, 0);
+			left_color = s_col;
+			s_col.set_hsv(h, s, 1);
+			right_color = s_col;
+		} else {
+			v_col.set_hsv(h, 0, v);
+			left_color = v_col;
+			v_col.set_hsv(h, 1, v);
+			right_color = v_col;
+		}
+	} else if (mode == MODE_RAW) {
+		return;
+	} else {
+		left_color = Color(
+				p_which == 0 ? 0 : color.r,
+				p_which == 1 ? 0 : color.g,
+				p_which == 2 ? 0 : color.b);
+		right_color = Color(
+				p_which == 0 ? 1 : color.r,
+				p_which == 1 ? 1 : color.g,
+				p_which == 2 ? 1 : color.b);
 	}
 
 	col.set(0, left_color);
@@ -828,9 +886,8 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 	if (bev.is_valid()) {
 		if (bev->is_pressed() && bev->get_button_index() == MouseButton::LEFT) {
 			Vector2 center = c->get_size() / 2.0;
-			if (picker_type == SHAPE_VHS_CIRCLE) {
+			if (picker_type == SHAPE_VHS_CIRCLE || picker_type == SHAPE_OKHSL_CIRCLE) {
 				real_t dist = center.distance_to(bev->get_position());
-
 				if (dist <= center.x) {
 					real_t rad = center.angle_to_point(bev->get_position());
 					h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
@@ -867,10 +924,15 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 				}
 			}
 			changing_color = true;
-			color.set_hsv(h, s, v, color.a);
-			last_hsv = color;
+			if (picker_type == SHAPE_OKHSL_CIRCLE) {
+				color.set_ok_hsl(ok_hsl_h, ok_hsl_s, ok_hsl_l, color.a);
+				last_hsv = color;
+			} else if (picker_type != SHAPE_OKHSL_CIRCLE) {
+				color.set_hsv(h, s, v, color.a);
+				last_hsv = color;
+			}
 			set_pick_color(color);
-			_update_color();
+			_update_color_with_sliders();
 			if (!deferred_mode_enabled) {
 				emit_signal(SNAME("color_changed"), color);
 			}
@@ -892,7 +954,7 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 		}
 
 		Vector2 center = c->get_size() / 2.0;
-		if (picker_type == SHAPE_VHS_CIRCLE) {
+		if (picker_type == SHAPE_VHS_CIRCLE || picker_type == SHAPE_OKHSL_CIRCLE) {
 			real_t dist = center.distance_to(mev->get_position());
 			real_t rad = center.angle_to_point(mev->get_position());
 			h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
@@ -913,11 +975,13 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 				v = 1.0 - (y - corner_y) / real_size.y;
 			}
 		}
-
-		color.set_hsv(h, s, v, color.a);
-		last_hsv = color;
+		if (picker_type != SHAPE_OKHSL_CIRCLE) {
+			color.set_hsv(h, s, v, color.a);
+		} else if (picker_type == SHAPE_OKHSL_CIRCLE) {
+			color.set_ok_hsl(ok_hsl_h, ok_hsl_s, ok_hsl_s, color.a);
+		}
 		set_pick_color(color);
-		_update_color();
+		_update_color_with_sliders();
 		if (!deferred_mode_enabled) {
 			emit_signal(SNAME("color_changed"), color);
 		}
@@ -931,18 +995,24 @@ void ColorPicker::_w_input(const Ref<InputEvent> &p_event) {
 		if (bev->is_pressed() && bev->get_button_index() == MouseButton::LEFT) {
 			changing_color = true;
 			float y = CLAMP((float)bev->get_position().y, 0, w_edit->get_size().height);
-			if (picker_type == SHAPE_VHS_CIRCLE) {
+			if (mode == MODE_HSV) {
 				v = 1.0 - (y / w_edit->get_size().height);
+			} else if (mode == MODE_OK_HSL) {
+				ok_hsl_h = y / w_edit->get_size().height;
+				ok_hsl_l = 1.0 - (y / w_edit->get_size().height);
 			} else {
 				h = y / w_edit->get_size().height;
 			}
 		} else {
 			changing_color = false;
 		}
-		color.set_hsv(h, s, v, color.a);
-		last_hsv = color;
+		if (mode == MODE_HSV) {
+			color.set_hsv(h, s, v, color.a);
+		} else if (mode == MODE_OK_HSL) {
+			color.set_ok_hsl(ok_hsl_h, ok_hsl_s, ok_hsl_l, color.a);
+		}
 		set_pick_color(color);
-		_update_color();
+		_update_color_with_sliders();
 		if (!deferred_mode_enabled) {
 			emit_signal(SNAME("color_changed"), color);
 		} else if (!bev->is_pressed() && bev->get_button_index() == MouseButton::LEFT) {
@@ -957,15 +1027,21 @@ void ColorPicker::_w_input(const Ref<InputEvent> &p_event) {
 			return;
 		}
 		float y = CLAMP((float)mev->get_position().y, 0, w_edit->get_size().height);
-		if (picker_type == SHAPE_VHS_CIRCLE) {
+		if (mode == MODE_HSV) {
 			v = 1.0 - (y / w_edit->get_size().height);
+		} else if (mode == MODE_OK_HSL) {
+			ok_hsl_l = 1.0 - (y / w_edit->get_size().height);
+			ok_hsl_h = y / w_edit->get_size().height;
 		} else {
 			h = y / w_edit->get_size().height;
 		}
-		color.set_hsv(h, s, v, color.a);
-		last_hsv = color;
+		if (mode == MODE_HSV) {
+			color.set_hsv(h, s, v, color.a);
+		} else if (mode == MODE_OK_HSL) {
+			color.set_ok_hsl(ok_hsl_h, ok_hsl_s, ok_hsl_l, color.a);
+		}
 		set_pick_color(color);
-		_update_color();
+		_update_color_with_sliders();
 		if (!deferred_mode_enabled) {
 			emit_signal(SNAME("color_changed"), color);
 		}
@@ -978,7 +1054,7 @@ void ColorPicker::_preset_input(const Ref<InputEvent> &p_event, const Color &p_c
 	if (bev.is_valid()) {
 		if (bev->is_pressed() && bev->get_button_index() == MouseButton::LEFT) {
 			set_pick_color(p_color);
-			_update_color();
+			_update_color_with_sliders();
 			emit_signal(SNAME("color_changed"), p_color);
 		} else if (bev->is_pressed() && bev->get_button_index() == MouseButton::RIGHT && presets_enabled) {
 			erase_preset(p_color);
@@ -1105,10 +1181,8 @@ bool ColorPicker::are_presets_visible() const {
 void ColorPicker::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_pick_color", "color"), &ColorPicker::set_pick_color);
 	ClassDB::bind_method(D_METHOD("get_pick_color"), &ColorPicker::get_pick_color);
-	ClassDB::bind_method(D_METHOD("set_hsv_mode", "enabled"), &ColorPicker::set_hsv_mode);
-	ClassDB::bind_method(D_METHOD("is_hsv_mode"), &ColorPicker::is_hsv_mode);
-	ClassDB::bind_method(D_METHOD("set_raw_mode", "enabled"), &ColorPicker::set_raw_mode);
-	ClassDB::bind_method(D_METHOD("is_raw_mode"), &ColorPicker::is_raw_mode);
+	ClassDB::bind_method(D_METHOD("set_mode", "mode"), &ColorPicker::set_mode);
+	ClassDB::bind_method(D_METHOD("get_mode"), &ColorPicker::get_mode);
 	ClassDB::bind_method(D_METHOD("set_deferred_mode", "mode"), &ColorPicker::set_deferred_mode);
 	ClassDB::bind_method(D_METHOD("is_deferred_mode"), &ColorPicker::is_deferred_mode);
 	ClassDB::bind_method(D_METHOD("set_edit_alpha", "show"), &ColorPicker::set_edit_alpha);
@@ -1125,10 +1199,9 @@ void ColorPicker::_bind_methods() {
 
 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_pick_color", "get_pick_color");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "edit_alpha"), "set_edit_alpha", "is_editing_alpha");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "hsv_mode"), "set_hsv_mode", "is_hsv_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "raw_mode"), "set_raw_mode", "is_raw_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "RGB,RAW,HSV,OK HSL"), "set_mode", "get_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "deferred_mode"), "set_deferred_mode", "is_deferred_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "picker_shape", PROPERTY_HINT_ENUM, "HSV Rectangle,HSV Rectangle Wheel,VHS Circle"), "set_picker_shape", "get_picker_shape");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "picker_shape", PROPERTY_HINT_ENUM, "HSV Rectangle,HSV Rectangle Wheel,VHS Circle,OKHSL Circle"), "set_picker_shape", "get_picker_shape");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "presets_enabled"), "set_presets_enabled", "are_presets_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "presets_visible"), "set_presets_visible", "are_presets_visible");
 
@@ -1139,6 +1212,7 @@ void ColorPicker::_bind_methods() {
 	BIND_ENUM_CONSTANT(SHAPE_HSV_RECTANGLE);
 	BIND_ENUM_CONSTANT(SHAPE_HSV_WHEEL);
 	BIND_ENUM_CONSTANT(SHAPE_VHS_CIRCLE);
+	BIND_ENUM_CONSTANT(SHAPE_OKHSL_CIRCLE);
 }
 
 ColorPicker::ColorPicker() :
@@ -1211,13 +1285,13 @@ ColorPicker::ColorPicker() :
 	HBoxContainer *hhb = memnew(HBoxContainer);
 	vbr->add_child(hhb);
 
-	hhb->add_child(btn_hsv);
-	btn_hsv->set_text(RTR("HSV"));
-	btn_hsv->connect("toggled", callable_mp(this, &ColorPicker::set_hsv_mode));
-
-	hhb->add_child(btn_raw);
-	btn_raw->set_text(RTR("Raw"));
-	btn_raw->connect("toggled", callable_mp(this, &ColorPicker::set_raw_mode));
+	hhb->add_child(btn_mode);
+	btn_mode->set_text(RTR("Mode"));
+	btn_mode->get_popup()->add_radio_check_item(RTR("RGB"), MODE_RGB);
+	btn_mode->get_popup()->add_radio_check_item(RTR("HSV"), MODE_HSV);
+	btn_mode->get_popup()->add_radio_check_item(RTR("OK HSL"), MODE_OK_HSL);
+	btn_mode->get_popup()->add_radio_check_item(RTR("RAW"), MODE_RAW);
+	btn_mode->get_popup()->connect("id_pressed", callable_mp(this, &ColorPicker::_menu_option));
 
 	hhb->add_child(text_type);
 	text_type->set_text("#");
@@ -1493,4 +1567,61 @@ ColorPresetButton::ColorPresetButton(Color p_color) {
 }
 
 ColorPresetButton::~ColorPresetButton() {
+}
+
+void ColorPicker::_update_color() {
+	updating = true;
+	if (mode == MODE_OK_HSL) {
+		ok_hsl_h = color.get_ok_hsl_h();
+		ok_hsl_s = color.get_ok_hsl_s();
+		ok_hsl_l = color.get_ok_hsl_l();
+	} else if (mode == MODE_HSV) {
+		h = color.get_h();
+		s = color.get_s();
+		v = color.get_v();
+	}
+	_update_text_value();
+	sample->update();
+	uv_edit->update();
+	w_edit->update();
+	for (int i = 0; i < 4; i++) {
+		scroll[i]->update();
+	}
+	wheel->update();
+	wheel_uv->update();
+	updating = false;
+}
+
+void ColorPicker::set_mode(PickerMode p_mode) {
+	mode = p_mode;
+	if (!is_inside_tree()) {
+		return;
+	}
+	_update_controls();
+	_update_color_with_sliders();
+}
+
+ColorPicker::PickerMode ColorPicker::get_mode() const {
+	return mode;
+}
+
+void ColorPicker::_menu_option(int p_option) {
+	switch (p_option) {
+		case MODE_RGB: {
+		} break;
+		case MODE_RAW: {
+		} break;
+		case MODE_HSV: {
+			h = color.get_h();
+			s = color.get_s();
+			v = color.get_s();
+			set_mode(PickerMode(p_option));
+		} break;
+		case MODE_OK_HSL: {
+			ok_hsl_h = color.get_ok_hsl_h();
+			ok_hsl_s = color.get_ok_hsl_l();
+			ok_hsl_l = color.get_ok_hsl_s();
+			set_mode(PickerMode(p_option));
+		} break;
+	}
 }
