@@ -135,7 +135,7 @@ void fragment() {
 
 	circle_shader.instantiate();
 	circle_shader->set_code(R"(
-// ColorPicker circle shader.
+// ColorPicker hsv circle shader.
 
 shader_type canvas_item;
 
@@ -160,6 +160,8 @@ void fragment() {
 
 	circle_ok_color_shader.instantiate();
 	circle_ok_color_shader->set_code(OK_COLOR_SHADER + R"(
+// ColorPicker ok color hsv circle shader.
+
 uniform float v = 1.0;
 void fragment() {
 	vec2 uv = UV;
@@ -178,6 +180,7 @@ void fragment() {
 	x += 0.002;
 	float b4 = float(sqrt(x * x + y * y) < 0.5);
     vec3 col = okhsv_to_srgb(vec3(h, s, v));
+	col = vec3(CLAMP(col.r, 0.0, 1.0), CLAMP(col.g, 0.0, 1.0), CLAMP(col.b, 0.0, 1.0));
     COLOR = vec4(col, (b + b2 + b3 + b4) / 4.00);
 })");
 }
