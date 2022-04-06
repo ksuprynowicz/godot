@@ -242,13 +242,13 @@ void Color::set_hsv(float p_h, float p_s, float p_v, float p_alpha) {
 	}
 }
 
-void Color::set_ok_hsl(float p_h, float p_s, float p_l, float p_alpha) {
-	ok_color::HSL hsl;
-	hsl.h = p_h;
-	hsl.s = p_s;
-	hsl.l = p_l;
+void Color::set_ok_hsv(float p_h, float p_s, float p_v, float p_alpha) {
+	ok_color::HSV hsv;
+	hsv.h = p_h;
+	hsv.s = p_s;
+	hsv.v = p_v;
 	ok_color new_ok_color;
-	ok_color::RGB rgb = new_ok_color.okhsl_to_srgb(hsl);
+	ok_color::RGB rgb = new_ok_color.okhsv_to_srgb(hsv);
 	Color c = Color(rgb.r, rgb.g, rgb.b, p_alpha);
 	r = c.r;
 	g = c.g;
@@ -585,47 +585,47 @@ Color Color::operator-() const {
 			1.0f - a);
 }
 
-Color Color::from_ok_hsl(float p_h, float p_s, float p_l, float p_alpha) {
+Color Color::from_ok_hsv(float p_h, float p_s, float p_v, float p_alpha) {
 	Color c;
-	c.set_ok_hsl(p_h, p_s, p_l, p_alpha);
+	c.set_ok_hsv(p_h, p_s, p_v, p_alpha);
 	return c;
 }
 
-float Color::get_ok_hsl_h() const {
+float Color::get_ok_hsv_h() const {
 	ok_color::RGB rgb;
 	rgb.r = r;
 	rgb.g = g;
 	rgb.b = b;
 	ok_color new_ok_color;
-	ok_color::HSL ok_hsl = new_ok_color.srgb_to_okhsl(rgb);
-	if (Math::is_nan(ok_hsl.h)) {
+	ok_color::HSL ok_hsv = new_ok_color.srgb_to_okhsl(rgb);
+	if (Math::is_nan(ok_hsv.h)) {
 		return 0.0f;
 	}
-	return ok_hsl.h;
+	return ok_hsv.h;
 }
 
-float Color::get_ok_hsl_s() const {
+float Color::get_ok_hsv_s() const {
 	ok_color::RGB rgb;
 	rgb.r = r;
 	rgb.g = g;
 	rgb.b = b;
 	ok_color new_ok_color;
-	ok_color::HSL ok_hsl = new_ok_color.srgb_to_okhsl(rgb);
-	if (Math::is_nan(ok_hsl.s)) {
+	ok_color::HSL ok_hsv = new_ok_color.srgb_to_okhsl(rgb);
+	if (Math::is_nan(ok_hsv.s)) {
 		return 0.0f;
 	}
-	return ok_hsl.s;
+	return ok_hsv.s;
 }
 
-float Color::get_ok_hsl_l() const {
+float Color::get_ok_hsv_v() const {
 	ok_color::RGB rgb;
 	rgb.r = r;
 	rgb.g = g;
 	rgb.b = b;
 	ok_color new_ok_color;
-	ok_color::HSL ok_hsl = new_ok_color.srgb_to_okhsl(rgb);
-	if (Math::is_nan(ok_hsl.l)) {
+	ok_color::HSL ok_hsv = new_ok_color.srgb_to_okhsl(rgb);
+	if (Math::is_nan(ok_hsv.l)) {
 		return 0.0f;
 	}
-	return ok_hsl.l;
+	return ok_hsv.l;
 }
