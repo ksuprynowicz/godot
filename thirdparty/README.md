@@ -486,6 +486,26 @@ Files extracted from the upstream source:
 - `LICENSE.txt` and `CHANGELOG.md`
 
 
+## OK Lab color space
+
+- Upstream: https://github.com/bottosson/bottosson.github.io/blob/master/misc/ok_color.h
+- Version: Master (d69831edb90ffdcd08b7e64da3c5405acd48ad2c, 2022)
+- License: MIT
+
+The license is merged with the header.
+
+Header includes are added.
+
+
+## OK Lab color space glsl
+
+- Upstream: https://www.shadertoy.com/view/7sK3D1
+- Version: 2021-09-13
+- License: MIT
+
+Long lines are separated.
+
+
 ## oidn
 
 - Upstream: https://github.com/OpenImageDenoise/oidn
