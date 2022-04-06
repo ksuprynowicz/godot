@@ -250,10 +250,10 @@ void Color::set_ok_hsv(float p_h, float p_s, float p_v, float p_alpha) {
 	ok_color new_ok_color;
 	ok_color::RGB rgb = new_ok_color.okhsv_to_srgb(hsv);
 	Color c = Color(rgb.r, rgb.g, rgb.b, p_alpha);
-	r = c.r;
-	g = c.g;
-	b = c.b;
-	a = c.a;
+	r = CLAMP(c.r, 0.0f, 1.0f);
+	g = CLAMP(c.g, 0.0f, 1.0f);
+	b = CLAMP(c.b, 0.0f, 1.0f);
+	a = CLAMP(c.a, 0.0f, 1.0f);
 }
 
 bool Color::is_equal_approx(const Color &p_color) const {
@@ -598,10 +598,7 @@ float Color::get_ok_hsv_h() const {
 	rgb.b = b;
 	ok_color new_ok_color;
 	ok_color::HSL ok_hsv = new_ok_color.srgb_to_okhsl(rgb);
-	if (Math::is_nan(ok_hsv.h)) {
-		return 0.0f;
-	}
-	return ok_hsv.h;
+	return CLAMP(ok_hsv.h, 0.0f, 1.0f);
 }
 
 float Color::get_ok_hsv_s() const {
@@ -611,10 +608,7 @@ float Color::get_ok_hsv_s() const {
 	rgb.b = b;
 	ok_color new_ok_color;
 	ok_color::HSL ok_hsv = new_ok_color.srgb_to_okhsl(rgb);
-	if (Math::is_nan(ok_hsv.s)) {
-		return 0.0f;
-	}
-	return ok_hsv.s;
+	return CLAMP(ok_hsv.s, 0.0f, 1.0f);
 }
 
 float Color::get_ok_hsv_v() const {
@@ -624,8 +618,5 @@ float Color::get_ok_hsv_v() const {
 	rgb.b = b;
 	ok_color new_ok_color;
 	ok_color::HSL ok_hsv = new_ok_color.srgb_to_okhsl(rgb);
-	if (Math::is_nan(ok_hsv.l)) {
-		return 0.0f;
-	}
-	return ok_hsv.l;
+	return CLAMP(ok_hsv.l, 0.0f, 1.0f);
 }
