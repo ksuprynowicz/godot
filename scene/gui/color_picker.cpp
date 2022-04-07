@@ -262,8 +262,11 @@ void ColorPicker::_update_controls() {
 			wheel->set_material(circle_mat);
 			if (mode == MODE_HSV) {
 				circle_mat->set_shader(circle_shader);
-			} else {
+			} else if (mode == MODE_OK_HSL) {
 				circle_mat->set_shader(circle_ok_color_shader);
+			} else {
+				set_mode(MODE_OK_HSL);
+				set_picker_shape(SHAPE_CIRCLE);
 			}
 			break;
 		default: {
@@ -273,12 +276,6 @@ void ColorPicker::_update_controls() {
 
 void ColorPicker::_set_last_color(const Color &p_color, bool p_update_sliders) {
 	color = p_color;
-	h = 0;
-	s = 0;
-	v = 0;
-	ok_hsl_h = 0;
-	ok_hsl_l = 0;
-	ok_hsl_s = 0;
 	if (color != last_hsv) {
 		ok_hsl_h = color.get_ok_hsl_h();
 		ok_hsl_s = color.get_ok_hsl_s();
@@ -1616,22 +1613,11 @@ ColorPicker::PickerMode ColorPicker::get_mode() const {
 }
 
 void ColorPicker::_menu_option(int p_option) {
-	switch (p_option) {
-		case MODE_RGB: {
-		} break;
-		case MODE_RAW: {
-		} break;
-		case MODE_HSV: {
-			h = color.get_h();
-			s = color.get_s();
-			v = color.get_s();
-			set_mode(PickerMode(p_option));
-		} break;
-		case MODE_OK_HSL: {
-			ok_hsl_h = color.get_ok_hsl_h();
-			ok_hsl_s = color.get_ok_hsl_l();
-			ok_hsl_l = color.get_ok_hsl_s();
-			set_mode(PickerMode(p_option));
-		} break;
-	}
+	h = color.get_h();
+	s = color.get_s();
+	v = color.get_s();
+	ok_hsl_h = color.get_ok_hsl_h();
+	ok_hsl_s = color.get_ok_hsl_l();
+	ok_hsl_l = color.get_ok_hsl_s();
+	set_mode(PickerMode(p_option));
 }
