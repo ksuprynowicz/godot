@@ -264,9 +264,6 @@ void ColorPicker::_update_controls() {
 				circle_mat->set_shader(circle_shader);
 			} else if (mode == MODE_OK_HSL) {
 				circle_mat->set_shader(circle_ok_color_shader);
-			} else {
-				set_mode(MODE_OK_HSL);
-				set_picker_shape(SHAPE_CIRCLE);
 			}
 			break;
 		default: {
@@ -751,7 +748,11 @@ void ColorPicker::_hsv_draw(int p_which, Control *c) {
 			points.set(3, Point2(center.x + (center.x * Math::cos(h2 * Math_TAU) * 0.84), center.y + (center.y * Math::sin(h2 * Math_TAU) * 0.84)));
 			c->draw_multiline(points, col.inverted());
 		}
-
+		if (mode == MODE_HSV) {
+			circle_mat->set_shader_param("v", v);
+		} else if (mode == MODE_OK_HSL) {
+			circle_mat->set_shader_param("l", ok_hsl_l);
+		}
 	} else if (p_which == 1) {
 		if (picker_type == SHAPE_RECTANGLE) {
 			Ref<Texture2D> hue = get_theme_icon(SNAME("color_hue"), SNAME("ColorPicker"));
@@ -792,13 +793,18 @@ void ColorPicker::_hsv_draw(int p_which, Control *c) {
 			}
 			c->draw_line(Point2(0, y), Point2(c->get_size().x, y), col.inverted());
 		}
+		if (mode == MODE_HSV) {
+			circle_mat->set_shader_param("v", v);
+		} else if (mode == MODE_OK_HSL) {
+			circle_mat->set_shader_param("l", ok_hsl_l);
+		}
 	} else if (p_which == 2) {
 		c->draw_rect(Rect2(Point2(), c->get_size()), Color(1, 1, 1));
-	}
-	if (mode == MODE_HSV) {
-		circle_mat->set_shader_param("v", v);
-	} else if (mode == MODE_OK_HSL) {
-		circle_mat->set_shader_param("l", ok_hsl_l);
+		if (mode == MODE_HSV) {
+			circle_mat->set_shader_param("v", v);
+		} else if (mode == MODE_OK_HSL) {
+			circle_mat->set_shader_param("l", ok_hsl_l);
+		}
 	}
 }
 
@@ -894,10 +900,13 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 				real_t dist = center.distance_to(bev->get_position());
 				if (dist <= center.x) {
 					real_t rad = center.angle_to_point(bev->get_position());
-					h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
-					s = CLAMP(dist / center.x, 0, 1);
-					ok_hsl_h = h;
-					ok_hsl_s = s;
+					if (mode == MODE_HSV) {
+						h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
+						s = CLAMP(dist / center.x, 0, 1);
+					} else {
+						ok_hsl_h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
+						ok_hsl_s = CLAMP(dist / center.x, 0, 1);
+					}
 				} else {
 					return;
 				}
@@ -966,8 +975,13 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 		if (picker_type == SHAPE_CIRCLE) {
 			real_t dist = center.distance_to(mev->get_position());
 			real_t rad = center.angle_to_point(mev->get_position());
-			h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
-			s = CLAMP(dist / center.x, 0, 1);
+			if (mode == MODE_HSV) {
+				h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
+				s = CLAMP(dist / center.x, 0, 1);
+			} else if (mode == MODE_OK_HSL) {
+				ok_hsl_h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
+				ok_hsl_s = CLAMP(dist / center.x, 0, 1);
+			}
 		} else {
 			if (spinning) {
 				real_t rad = center.angle_to_point(mev->get_position());
