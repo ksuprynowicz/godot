@@ -66,10 +66,9 @@ class ColorPicker : public BoxContainer {
 
 public:
 	enum PickerShapeType {
-		SHAPE_HSV_RECTANGLE,
-		SHAPE_HSV_WHEEL,
-		SHAPE_VHS_CIRCLE,
-		SHAPE_OKHSL_CIRCLE,
+		SHAPE_RECTANGLE,
+		SHAPE_WHEEL,
+		SHAPE_CIRCLE,
 
 		SHAPE_MAX
 	};
@@ -112,7 +111,7 @@ private:
 	bool edit_alpha = true;
 	Size2i ms;
 	bool text_is_constructor = false;
-	PickerShapeType picker_type = SHAPE_HSV_WHEEL;
+	PickerShapeType picker_type = SHAPE_WHEEL;
 
 	const int preset_column_count = 9;
 	int prev_preset_size = 0;

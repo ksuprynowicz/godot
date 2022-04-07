@@ -243,31 +243,28 @@ void ColorPicker::_update_controls() {
 	}
 
 	switch (picker_type) {
-		case SHAPE_HSV_RECTANGLE:
+		case SHAPE_RECTANGLE:
 			wheel_edit->hide();
 			w_edit->show();
 			uv_edit->show();
 			break;
-		case SHAPE_HSV_WHEEL:
+		case SHAPE_WHEEL:
 			wheel_edit->show();
 			w_edit->hide();
 			uv_edit->hide();
 
 			wheel->set_material(wheel_mat);
 			break;
-		case SHAPE_VHS_CIRCLE:
+		case SHAPE_CIRCLE:
 			wheel_edit->show();
 			w_edit->show();
 			uv_edit->hide();
 			wheel->set_material(circle_mat);
-			circle_mat->set_shader(circle_shader);
-			break;
-		case SHAPE_OKHSL_CIRCLE:
-			wheel_edit->show();
-			w_edit->show();
-			uv_edit->hide();
-			wheel->set_material(circle_mat);
-			circle_mat->set_shader(circle_ok_color_shader);
+			if (mode == MODE_HSV) {
+				circle_mat->set_shader(circle_shader);
+			} else {
+				circle_mat->set_shader(circle_ok_color_shader);
+			}
 			break;
 		default: {
 		}
@@ -655,7 +652,7 @@ void ColorPicker::_hsv_draw(int p_which, Control *c) {
 		Vector2 center = c->get_size() / 2.0;
 
 		switch (picker_type) {
-			case SHAPE_HSV_WHEEL: {
+			case SHAPE_WHEEL: {
 				points.resize(4);
 				colors.resize(4);
 				colors2.resize(4);
@@ -671,20 +668,27 @@ void ColorPicker::_hsv_draw(int p_which, Control *c) {
 				colors.set(2, Color(0, 0, 0, 1));
 				colors.set(3, Color(0, 0, 0, 1));
 				c->draw_polygon(points, colors);
-
-				col.set_hsv(h, 1, 1);
+				if (mode == MODE_HSV) {
+					col.set_hsv(h, 1, 1);
+				} else if (mode == MODE_OK_HSL) {
+					col.set_ok_hsl(ok_hsl_h, 1, 1);
+				}
 				col.a = 0;
 				colors2.set(0, col);
 				col.a = 1;
 				colors2.set(1, col);
-				col.set_hsv(h, 1, 0);
+				if (mode == MODE_HSV) {
+					col.set_hsv(h, 1, 0);
+				} else if (mode == MODE_OK_HSL) {
+					col.set_ok_hsl(ok_hsl_h, 1, 1);
+				}
 				colors2.set(2, col);
 				col.a = 0;
 				colors2.set(3, col);
 				c->draw_polygon(points, colors2);
 				break;
 			}
-			case SHAPE_HSV_RECTANGLE: {
+			case SHAPE_RECTANGLE: {
 				points.resize(4);
 				colors.resize(4);
 				colors2.resize(4);
@@ -716,7 +720,7 @@ void ColorPicker::_hsv_draw(int p_which, Control *c) {
 		Ref<Texture2D> cursor = get_theme_icon(SNAME("picker_cursor"), SNAME("ColorPicker"));
 		int x;
 		int y;
-		if (picker_type == SHAPE_VHS_CIRCLE || picker_type == SHAPE_OKHSL_CIRCLE) {
+		if (picker_type == SHAPE_CIRCLE) {
 			x = center.x + (center.x * Math::cos(h * Math_TAU) * s) - (cursor->get_width() / 2);
 			y = center.y + (center.y * Math::sin(h * Math_TAU) * s) - (cursor->get_height() / 2);
 		} else {
@@ -729,8 +733,8 @@ void ColorPicker::_hsv_draw(int p_which, Control *c) {
 		}
 		c->draw_texture(cursor, Point2(x, y));
 
-		col.set_hsv(h, 1, 1);
-		if (picker_type == SHAPE_HSV_WHEEL) {
+		if (mode == MODE_HSV) {
+			col.set_hsv(h, 1, 1);
 			points.resize(4);
 			double h1 = h - (0.5 / 360);
 			double h2 = h + (0.5 / 360);
@@ -739,21 +743,39 @@ void ColorPicker::_hsv_draw(int p_which, Control *c) {
 			points.set(2, Point2(center.x + (center.x * Math::cos(h2 * Math_TAU)), center.y + (center.y * Math::sin(h2 * Math_TAU))));
 			points.set(3, Point2(center.x + (center.x * Math::cos(h2 * Math_TAU) * 0.84), center.y + (center.y * Math::sin(h2 * Math_TAU) * 0.84)));
 			c->draw_multiline(points, col.inverted());
+		} else if (mode == MODE_OK_HSL) {
+			col.set_ok_hsl(ok_hsl_h, 1, 1);
+			points.resize(4);
+			double h1 = ok_hsl_h - (0.5 / 360);
+			double h2 = ok_hsl_h + (0.5 / 360);
+			points.set(0, Point2(center.x + (center.x * Math::cos(h1 * Math_TAU)), center.y + (center.y * Math::sin(h1 * Math_TAU))));
+			points.set(1, Point2(center.x + (center.x * Math::cos(h1 * Math_TAU) * 0.84), center.y + (center.y * Math::sin(h1 * Math_TAU) * 0.84)));
+			points.set(2, Point2(center.x + (center.x * Math::cos(h2 * Math_TAU)), center.y + (center.y * Math::sin(h2 * Math_TAU))));
+			points.set(3, Point2(center.x + (center.x * Math::cos(h2 * Math_TAU) * 0.84), center.y + (center.y * Math::sin(h2 * Math_TAU) * 0.84)));
+			c->draw_multiline(points, col.inverted());
 		}
 
 	} else if (p_which == 1) {
-		if (picker_type == SHAPE_HSV_RECTANGLE) {
+		if (picker_type == SHAPE_RECTANGLE) {
 			Ref<Texture2D> hue = get_theme_icon(SNAME("color_hue"), SNAME("ColorPicker"));
 			c->draw_texture_rect(hue, Rect2(Point2(), c->get_size()));
 			int y = c->get_size().y - c->get_size().y * (1.0 - h);
 			Color col;
-			col.set_hsv(h, 1, 1);
+			if (mode == MODE_HSV) {
+				col.set_hsv(h, 1, 1);
+			} else if (mode == MODE_OK_HSL) {
+				col.set_ok_hsl(ok_hsl_h, 1, 1);
+			}
 			c->draw_line(Point2(0, y), Point2(c->get_size().x, y), col.inverted());
-		} else if (picker_type == SHAPE_OKHSL_CIRCLE) {
+		} else if (picker_type == SHAPE_CIRCLE) {
 			Vector<Point2> points;
 			Vector<Color> colors;
 			Color col;
-			col.set_ok_hsl(ok_hsl_h, ok_hsl_s, 1);
+			if (mode == MODE_HSV) {
+				col.set_ok_hsl(h, s, 1);
+			} else if (mode == MODE_OK_HSL) {
+				col.set_ok_hsl(ok_hsl_h, ok_hsl_s, 1);
+			}
 			points.resize(4);
 			colors.resize(4);
 			points.set(0, Vector2());
@@ -766,34 +788,19 @@ void ColorPicker::_hsv_draw(int p_which, Control *c) {
 			colors.set(3, Color(0, 0, 0));
 			c->draw_polygon(points, colors);
 			int y = c->get_size().y - c->get_size().y * CLAMP(v, 0, 1);
-			col.set_ok_hsl(ok_hsl_h, 1, ok_hsl_l);
-			c->draw_line(Point2(0, y), Point2(c->get_size().x, y), col.inverted());
-		} else if (picker_type == SHAPE_VHS_CIRCLE) {
-			Vector<Point2> points;
-			Vector<Color> colors;
-			Color col;
-			col.set_hsv(h, s, 1);
-			points.resize(4);
-			colors.resize(4);
-			points.set(0, Vector2());
-			points.set(1, Vector2(c->get_size().x, 0));
-			points.set(2, c->get_size());
-			points.set(3, Vector2(0, c->get_size().y));
-			colors.set(0, col);
-			colors.set(1, col);
-			colors.set(2, Color(0, 0, 0));
-			colors.set(3, Color(0, 0, 0));
-			c->draw_polygon(points, colors);
-			int y = c->get_size().y - c->get_size().y * CLAMP(v, 0, 1);
-			col.set_hsv(h, 1, v);
+			if (mode == MODE_HSV) {
+				col.set_ok_hsl(h, 1, v);
+			} else if (mode == MODE_OK_HSL) {
+				col.set_ok_hsl(ok_hsl_h, 1, ok_hsl_l);
+			}
 			c->draw_line(Point2(0, y), Point2(c->get_size().x, y), col.inverted());
 		}
 	} else if (p_which == 2) {
 		c->draw_rect(Rect2(Point2(), c->get_size()), Color(1, 1, 1));
 	}
-	if (picker_type == SHAPE_VHS_CIRCLE) {
+	if (mode == MODE_HSV) {
 		circle_mat->set_shader_param("v", v);
-	} else if (picker_type == SHAPE_OKHSL_CIRCLE) {
+	} else if (mode == MODE_OK_HSL) {
 		circle_mat->set_shader_param("l", ok_hsl_l);
 	}
 }
@@ -886,12 +893,14 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 	if (bev.is_valid()) {
 		if (bev->is_pressed() && bev->get_button_index() == MouseButton::LEFT) {
 			Vector2 center = c->get_size() / 2.0;
-			if (picker_type == SHAPE_VHS_CIRCLE || picker_type == SHAPE_OKHSL_CIRCLE) {
+			if (picker_type == SHAPE_CIRCLE) {
 				real_t dist = center.distance_to(bev->get_position());
 				if (dist <= center.x) {
 					real_t rad = center.angle_to_point(bev->get_position());
 					h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
 					s = CLAMP(dist / center.x, 0, 1);
+					ok_hsl_h = h;
+					ok_hsl_s = s;
 				} else {
 					return;
 				}
@@ -908,6 +917,7 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 						if (dist >= center.x * 0.84 && dist <= center.x) {
 							real_t rad = center.angle_to_point(bev->get_position());
 							h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
+							ok_hsl_l = h;
 							spinning = true;
 						} else {
 							return;
@@ -920,14 +930,16 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 					real_t y = CLAMP(bev->get_position().y, corner_x, c->get_size().y - corner_y);
 
 					s = (x - c->get_position().x - corner_x) / real_size.x;
+					ok_hsl_s = s;
 					v = 1.0 - (y - c->get_position().y - corner_y) / real_size.y;
+					ok_hsl_l = v;
 				}
 			}
 			changing_color = true;
-			if (picker_type == SHAPE_OKHSL_CIRCLE) {
+			if (mode == MODE_OK_HSL) {
 				color.set_ok_hsl(ok_hsl_h, ok_hsl_s, ok_hsl_l, color.a);
 				last_hsv = color;
-			} else if (picker_type != SHAPE_OKHSL_CIRCLE) {
+			} else if (mode == MODE_HSV) {
 				color.set_hsv(h, s, v, color.a);
 				last_hsv = color;
 			}
@@ -954,7 +966,7 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 		}
 
 		Vector2 center = c->get_size() / 2.0;
-		if (picker_type == SHAPE_VHS_CIRCLE || picker_type == SHAPE_OKHSL_CIRCLE) {
+		if (picker_type == SHAPE_CIRCLE) {
 			real_t dist = center.distance_to(mev->get_position());
 			real_t rad = center.angle_to_point(mev->get_position());
 			h = ((rad >= 0) ? rad : (Math_TAU + rad)) / Math_TAU;
@@ -975,10 +987,12 @@ void ColorPicker::_uv_input(const Ref<InputEvent> &p_event, Control *c) {
 				v = 1.0 - (y - corner_y) / real_size.y;
 			}
 		}
-		if (picker_type != SHAPE_OKHSL_CIRCLE) {
-			color.set_hsv(h, s, v, color.a);
-		} else if (picker_type == SHAPE_OKHSL_CIRCLE) {
-			color.set_ok_hsl(ok_hsl_h, ok_hsl_s, ok_hsl_s, color.a);
+		if (picker_type == SHAPE_CIRCLE) {
+			if (mode == MODE_HSV) {
+				color.set_hsv(h, s, v, color.a);
+			} else if (mode == MODE_OK_HSL) {
+				color.set_ok_hsl(ok_hsl_h, ok_hsl_s, ok_hsl_s, color.a);
+			}
 		}
 		set_pick_color(color);
 		_update_color_with_sliders();
@@ -997,19 +1011,20 @@ void ColorPicker::_w_input(const Ref<InputEvent> &p_event) {
 			float y = CLAMP((float)bev->get_position().y, 0, w_edit->get_size().height);
 			if (mode == MODE_HSV) {
 				v = 1.0 - (y / w_edit->get_size().height);
-			} else if (mode == MODE_OK_HSL) {
-				ok_hsl_h = y / w_edit->get_size().height;
-				ok_hsl_l = 1.0 - (y / w_edit->get_size().height);
-			} else {
 				h = y / w_edit->get_size().height;
+				color.set_hsv(h, s, v, color.a);
+			} else if (mode == MODE_OK_HSL) {
+				ok_hsl_h = 1.0 - (y / w_edit->get_size().height);
+				ok_hsl_l = y / w_edit->get_size().height;
+				color.set_ok_hsl(ok_hsl_h, ok_hsl_s, ok_hsl_l, color.a);
+			} else if (mode == MODE_RGB || mode == MODE_RAW) {
+				ok_hsl_h = 1.0 - (y / w_edit->get_size().height);
+				ok_hsl_s = color.get_ok_hsl_s();
+				ok_hsl_l = y / w_edit->get_size().height;
+				color.set_ok_hsl(ok_hsl_h, ok_hsl_s, ok_hsl_l, color.a);
 			}
 		} else {
 			changing_color = false;
-		}
-		if (mode == MODE_HSV) {
-			color.set_hsv(h, s, v, color.a);
-		} else if (mode == MODE_OK_HSL) {
-			color.set_ok_hsl(ok_hsl_h, ok_hsl_s, ok_hsl_l, color.a);
 		}
 		set_pick_color(color);
 		_update_color_with_sliders();
@@ -1027,14 +1042,10 @@ void ColorPicker::_w_input(const Ref<InputEvent> &p_event) {
 			return;
 		}
 		float y = CLAMP((float)mev->get_position().y, 0, w_edit->get_size().height);
-		if (mode == MODE_HSV) {
-			v = 1.0 - (y / w_edit->get_size().height);
-		} else if (mode == MODE_OK_HSL) {
-			ok_hsl_l = 1.0 - (y / w_edit->get_size().height);
-			ok_hsl_h = y / w_edit->get_size().height;
-		} else {
-			h = y / w_edit->get_size().height;
-		}
+		v = 1.0 - (y / w_edit->get_size().height);
+		h = y / w_edit->get_size().height;
+		ok_hsl_l = 1.0 - (y / w_edit->get_size().height);
+		ok_hsl_h = y / w_edit->get_size().height;
 		if (mode == MODE_HSV) {
 			color.set_hsv(h, s, v, color.a);
 		} else if (mode == MODE_OK_HSL) {
@@ -1201,7 +1212,7 @@ void ColorPicker::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "edit_alpha"), "set_edit_alpha", "is_editing_alpha");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "RGB,RAW,HSV,OK HSL"), "set_mode", "get_mode");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "deferred_mode"), "set_deferred_mode", "is_deferred_mode");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "picker_shape", PROPERTY_HINT_ENUM, "HSV Rectangle,HSV Rectangle Wheel,VHS Circle,OKHSL Circle"), "set_picker_shape", "get_picker_shape");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "picker_shape", PROPERTY_HINT_ENUM, "Rectangle,Rectangle Wheel,Circle"), "set_picker_shape", "get_picker_shape");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "presets_enabled"), "set_presets_enabled", "are_presets_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "presets_visible"), "set_presets_visible", "are_presets_visible");
 
@@ -1209,10 +1220,9 @@ void ColorPicker::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("preset_added", PropertyInfo(Variant::COLOR, "color")));
 	ADD_SIGNAL(MethodInfo("preset_removed", PropertyInfo(Variant::COLOR, "color")));
 
-	BIND_ENUM_CONSTANT(SHAPE_HSV_RECTANGLE);
-	BIND_ENUM_CONSTANT(SHAPE_HSV_WHEEL);
-	BIND_ENUM_CONSTANT(SHAPE_VHS_CIRCLE);
-	BIND_ENUM_CONSTANT(SHAPE_OKHSL_CIRCLE);
+	BIND_ENUM_CONSTANT(SHAPE_RECTANGLE);
+	BIND_ENUM_CONSTANT(SHAPE_WHEEL);
+	BIND_ENUM_CONSTANT(SHAPE_CIRCLE);
 }
 
 ColorPicker::ColorPicker() :
@@ -1335,7 +1345,7 @@ ColorPicker::ColorPicker() :
 	w_edit->connect("gui_input", callable_mp(this, &ColorPicker::_w_input));
 	w_edit->connect("draw", callable_mp(this, &ColorPicker::_hsv_draw), make_binds(1, w_edit));
 
-	picker_type = SHAPE_HSV_RECTANGLE;
+	picker_type = SHAPE_RECTANGLE;
 	_update_controls();
 	updating = false;
 

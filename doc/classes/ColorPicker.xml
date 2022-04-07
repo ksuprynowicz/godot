@@ -76,17 +76,14 @@
 		</signal>
 	</signals>
 	<constants>
-		<constant name="SHAPE_HSV_RECTANGLE" value="0" enum="PickerShapeType">
-			HSV Color Model rectangle color space.
+		<constant name="SHAPE_RECTANGLE" value="0" enum="PickerShapeType">
+			Rectangle color space.
 		</constant>
-		<constant name="SHAPE_HSV_WHEEL" value="1" enum="PickerShapeType">
-			HSV Color Model rectangle color space with a wheel.
+		<constant name="SHAPE_WHEEL" value="1" enum="PickerShapeType">
+			Rectangle color space with a wheel.
 		</constant>
-		<constant name="SHAPE_VHS_CIRCLE" value="2" enum="PickerShapeType">
-			HSV Color Model circle color space. Use Saturation as a radius.
-		</constant>
-		<constant name="SHAPE_OKHSL_CIRCLE" value="3" enum="PickerShapeType">
-			HSL OK Color Model circle color space.
+		<constant name="SHAPE_CIRCLE" value="2" enum="PickerShapeType">
+			Circle color space. Use Saturation as a radius.
 		</constant>
 	</constants>
 	<theme_items>
