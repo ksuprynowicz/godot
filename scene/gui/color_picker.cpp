@@ -241,34 +241,6 @@ void ColorPicker::_update_controls() {
 		scroll[3]->hide();
 		labels[3]->hide();
 	}
-
-	switch (picker_type) {
-		case SHAPE_RECTANGLE:
-			wheel_edit->hide();
-			w_edit->show();
-			uv_edit->show();
-			break;
-		case SHAPE_WHEEL:
-			wheel_edit->show();
-			w_edit->hide();
-			uv_edit->hide();
-
-			wheel->set_material(wheel_mat);
-			break;
-		case SHAPE_CIRCLE:
-			wheel_edit->show();
-			w_edit->show();
-			uv_edit->hide();
-			wheel->set_material(circle_mat);
-			if (mode == MODE_HSV) {
-				circle_mat->set_shader(circle_shader);
-			} else if (mode == MODE_OK_HSL) {
-				circle_mat->set_shader(circle_ok_color_shader);
-			}
-			break;
-		default: {
-		}
-	}
 }
 
 void ColorPicker::_set_last_color(const Color &p_color, bool p_update_sliders) {
@@ -474,6 +446,37 @@ Color ColorPicker::get_pick_color() const {
 void ColorPicker::set_picker_shape(PickerShapeType p_picker_type) {
 	ERR_FAIL_INDEX(p_picker_type, SHAPE_MAX);
 	picker_type = p_picker_type;
+	switch (p_picker_type) {
+		case SHAPE_RECTANGLE:
+			wheel_edit->hide();
+			w_edit->show();
+			uv_edit->show();
+			break;
+		case SHAPE_WHEEL:
+			wheel_edit->show();
+			w_edit->hide();
+			uv_edit->hide();
+
+			wheel->set_material(wheel_mat);
+			break;
+		case SHAPE_CIRCLE:
+			wheel_edit->show();
+			w_edit->show();
+			uv_edit->hide();
+			if (mode == MODE_HSV) {
+				wheel->set_material(circle_mat);
+				circle_mat->set_shader(circle_shader);
+			} else if (mode == MODE_OK_HSL) {
+				wheel->set_material(circle_hsl_mat);
+				circle_mat->set_shader(circle_ok_color_shader);
+			} else {
+				set_mode(MODE_OK_HSL);
+				set_picker_shape(p_picker_type);
+			}
+			break;
+		default: {
+		}
+	}
 	_update_controls();
 	_update_color_with_sliders();
 }
@@ -751,7 +754,7 @@ void ColorPicker::_hsv_draw(int p_which, Control *c) {
 		if (mode == MODE_HSV) {
 			circle_mat->set_shader_param("v", v);
 		} else if (mode == MODE_OK_HSL) {
-			circle_mat->set_shader_param("l", ok_hsl_l);
+			circle_hsl_mat->set_shader_param("l", ok_hsl_l);
 		}
 	} else if (p_which == 1) {
 		if (picker_type == SHAPE_RECTANGLE) {
@@ -1338,6 +1341,8 @@ ColorPicker::ColorPicker() :
 	wheel_mat->set_shader(wheel_shader);
 	circle_mat.instantiate();
 	circle_mat->set_shader(circle_shader);
+	circle_hsl_mat.instantiate();
+	circle_hsl_mat->set_shader(circle_shader);
 
 	wheel_margin->add_theme_constant_override("margin_bottom", 8);
 	wheel_edit->add_child(wheel_margin);

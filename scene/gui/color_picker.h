@@ -94,6 +94,7 @@ private:
 	MarginContainer *wheel_margin = memnew(MarginContainer);
 	Ref<ShaderMaterial> wheel_mat;
 	Ref<ShaderMaterial> circle_mat;
+	Ref<ShaderMaterial> circle_hsl_mat;
 	Control *wheel = memnew(Control);
 	Control *wheel_uv = memnew(Control);
 	TextureRect *sample = memnew(TextureRect);
@@ -111,7 +112,8 @@ private:
 	bool edit_alpha = true;
 	Size2i ms;
 	bool text_is_constructor = false;
-	PickerShapeType picker_type = SHAPE_WHEEL;
+	PickerShapeType picker_type = SHAPE_CIRCLE;
+	PickerMode mode = MODE_RGB;
 
 	const int preset_column_count = 9;
 	int prev_preset_size = 0;
@@ -137,8 +139,6 @@ private:
 	float ok_hsl_s = 0.0;
 	float ok_hsl_l = 0.0;
 	Color last_ok_hsl;
-
-	PickerMode mode = MODE_RGB;
 
 	void _menu_option(int p_option);
 	void _html_submitted(const String &p_html);
