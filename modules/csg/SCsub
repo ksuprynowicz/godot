@@ -6,6 +6,47 @@ Import("env_modules")
 # Godot's own source files
 env_csg = env_modules.Clone()
 
+import SCons.Tool
+static_obj, shared_obj = SCons.Tool.createObjBuilders(env_csg)
+
+static_obj.add_action('.cu', SCons.Defaults.CXXAction)
+
+# Thirdparty source files
+
+thirdparty_obj = []
+
+thirdparty_dir = "#thirdparty/manifold/"
+thirdparty_sources = [
+    "manifold/src/edge_op.cu",
+    "manifold/src/face_op.cu",
+    "manifold/src/impl.cu",
+    "manifold/src/manifold.cu",
+    "manifold/src/properties.cu",
+    "manifold/src/smoothing.cu",
+    "manifold/src/sort.cu",
+    "polygon/src/polygon.cpp",
+    "collider/src/collider.cu",
+]
+
+env_csg.Append(CPPDEFINES=["THRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CPP"])
+
+thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
+
+env_thirdparty = env_csg.Clone()
+env_thirdparty.disable_warnings()
+env_thirdparty.Prepend(
+    CPPPATH=[
+        thirdparty_dir + "manifold/include",
+        thirdparty_dir + "polygon/include",
+        thirdparty_dir + "utilities/include",
+        thirdparty_dir + "collider/include",
+        thirdparty_dir + "thirdparty",
+        thirdparty_dir + "thirdparty/graphlite-master/src/graph_lite",        
+    ]
+)
+env_thirdparty.add_source_files(thirdparty_obj, thirdparty_sources)
+env.modules_sources += thirdparty_obj
+
 # Godot's own source files
 env_csg.add_source_files(env.modules_sources, "*.cpp")
 if env["tools"]:
