@@ -429,7 +429,6 @@ void _rescale_importer_mesh(float p_scale, Ref<ImporterMesh> p_mesh, bool is_sha
 				i += 1;
 			}
 			current_bsarr[ArrayMesh::ARRAY_VERTEX] = current_bs_vertex_array;
-			current_bsarr.resize(3);
 
 			blendshapes.push_back(current_bsarr);
 		}
