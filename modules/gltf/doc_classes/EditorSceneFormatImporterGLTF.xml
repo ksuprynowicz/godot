@@ -6,4 +6,8 @@
 	</description>
 	<tutorials>
 	</tutorials>
+	<members>
+		<member name="gltf_extensions" type="GLTFDocumentExtension[]" setter="set_gltf_extensions" getter="get_gltf_extensions" default="[]">
+		</member>
+	</members>
 </class>
