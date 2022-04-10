@@ -36,7 +36,6 @@
 #include "core/error/error_list.h"
 #include "core/variant/dictionary.h"
 #include "core/variant/variant.h"
-#include "gltf_document_extension_convert_importer_mesh.h"
 #include "scene/3d/bone_attachment_3d.h"
 #include "scene/3d/importer_mesh_instance_3d.h"
 #include "scene/3d/light_3d.h"
