@@ -30,8 +30,10 @@
 
 #include "transform_3d.h"
 
+#include "core/math/basis.h"
 #include "core/math/math_funcs.h"
 #include "core/string/print_string.h"
+#include "core/templates/local_vector.h"
 
 void Transform3D::affine_invert() {
 	basis.invert();
@@ -83,7 +85,6 @@ void Transform3D::set_look_at(const Vector3 &p_eye, const Vector3 &p_target, con
 Transform3D Transform3D::sphere_interpolate_with(const Transform3D &p_transform, real_t p_c) const {
 	// If you plan on calling sphere_interpolate_with with the same two transform but for different values of p_c.
 	// The following terms can be cached for use by the last block of code.
-
 	Transform3D inverse = this->affine_inverse();
 	Transform3D h = p_transform * inverse;
 	Basis s = h.basis.log();
@@ -93,7 +94,7 @@ Transform3D Transform3D::sphere_interpolate_with(const Transform3D &p_transform,
 	real_t theta = Math::sqrt(s_0 * s_0 + s_1 * s_1 + s_2 * s_2);
 	Basis inv_v_1 = s._compute_inverse_v_1(theta);
 	Vector3 u = inv_v_1.xform(h.origin);
-	// End section that can be cached.
+	// End section on caching u.
 
 	Basis interp_r = s.exp(p_c, theta);
 	Basis interp_t_t_times_v = s._compute_t_times_v(theta, p_c);
@@ -222,8 +223,34 @@ Transform3D::Transform3D(real_t xx, real_t xy, real_t xz, real_t yx, real_t yy, 
 }
 
 Transform3D Transform3D::cubic_interpolate(const Transform3D &p_b, const Transform3D &p_pre_a, const Transform3D &p_post_b, const real_t &p_weight) const {
-	real_t t2 = (1.0 - p_weight) * p_weight * 2;
-	Transform3D sp = p_pre_a.sphere_interpolate_with(p_post_b, p_weight);
-	Transform3D sq = this->sphere_interpolate_with(p_b, p_weight);
-	return sp.sphere_interpolate_with(sq, t2);
+	LocalVector<Basis> basises;
+	basises.resize(4);
+	basises[0] = this->basis;
+	basises[1] = p_b.basis;
+	basises[2] = p_pre_a.basis;
+	basises[3] = p_post_b.basis;
+	for (int32_t basis_i = 0; basis_i < 4; basis_i++) {
+		Basis inverse = this->basis.inverse();
+		Basis h = basises[basis_i] * inverse;
+		Basis s = h.log();
+		basises[basis_i] = s;
+	}
+	Vector3 origin = this->origin.cubic_interpolate(p_b.origin, p_pre_a.origin, p_post_b.origin, p_weight);
+	Vector3 basis_x = basises[0].get_axis(0).cubic_interpolate(basises[1].get_axis(0), basises[2].get_axis(0), basises[3].get_axis(0), p_weight);
+	Vector3 basis_y = basises[0].get_axis(1).cubic_interpolate(basises[1].get_axis(1), basises[2].get_axis(1), basises[3].get_axis(1), p_weight);
+	Vector3 basis_z = basises[0].get_axis(2).cubic_interpolate(basises[1].get_axis(2), basises[2].get_axis(2), basises[3].get_axis(2), p_weight);
+	Basis s;
+	s.set(basis_x, basis_y, basis_z);
+	real_t s_0 = s.elements[2][1];
+	real_t s_1 = s.elements[0][2];
+	real_t s_2 = s.elements[1][0];
+	real_t theta = Math::sqrt(s_0 * s_0 + s_1 * s_1 + s_2 * s_2);
+	Basis inv_v_1 = s._compute_inverse_v_1(theta);
+	Vector3 u = inv_v_1.xform(origin);
+	Basis interp_r = s.exp(p_weight, theta);
+	Basis interp_t_t_times_v = s._compute_t_times_v(theta, p_weight);
+	Transform3D interp_h;
+	interp_h.basis = interp_r * basis;
+	interp_h.origin = interp_r.xform(origin) + interp_t_t_times_v.xform(u);
+	return interp_h;
 }
