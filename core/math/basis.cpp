@@ -1180,9 +1180,9 @@ Basis Basis::_compute_inverse_v_1(real_t p_theta) const {
 	if (p_theta <= 0.0) {
 		return Basis();
 	}
-	real_t theta_sqr = p_theta;
+	real_t theta_sqr = p_theta * p_theta;
 	real_t c = (1.0 - (p_theta * Math::sin(p_theta)) / (2.0 * (1.0 - Math::cos(p_theta)))) / theta_sqr;
-	return Basis() - 0.5 * s + c * s * s;
+	return Basis() - s.scaled(Vector3(0.5, 0.5, 0.5))  + (s * s).scaled(Vector3(c, c, c));
 }
 
 Basis Basis::_compute_t_times_v(real_t p_theta, real_t p_c) const {
