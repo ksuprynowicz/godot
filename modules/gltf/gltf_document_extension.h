@@ -35,29 +35,47 @@
 #include "core/variant/dictionary.h"
 #include "core/variant/typed_array.h"
 #include "core/variant/variant.h"
-class GLTFDocument;
+#include "scene/main/node.h"
+
+#include "gltf_accessor.h"
+#include "gltf_document.h"
+#include "gltf_node.h"
+#include "gltf_state.h"
+
+#include "core/object/gdvirtual.gen.inc"
+#include "core/object/script_language.h"
+#include "core/variant/native_ptr.h"
+
 class GLTFDocumentExtension : public Resource {
 	GDCLASS(GLTFDocumentExtension, Resource);
 
-	Dictionary import_settings;
-	Dictionary export_settings;
+	Dictionary import_options;
+	Dictionary export_options;
 
 protected:
 	static void _bind_methods();
 
 public:
-	virtual Array get_import_setting_keys() const;
-	virtual Variant get_import_setting(const StringName &p_key) const;
-	virtual void set_import_setting(const StringName &p_key, Variant p_var);
-	virtual Error import_preflight(Ref<GLTFDocument> p_document) { return OK; }
-	virtual Error import_post(Ref<GLTFDocument> p_document, Node *p_node) { return OK; }
-
-public:
-	virtual Array get_export_setting_keys() const;
-	virtual Variant get_export_setting(const StringName &p_key) const;
-	virtual void set_export_setting(const StringName &p_key, Variant p_var);
-	virtual Error export_preflight(Ref<GLTFDocument> p_document, Node *p_node) { return OK; }
-	virtual Error export_post(Ref<GLTFDocument> p_document) { return OK; }
+	virtual Dictionary get_import_options() const;
+	virtual void set_import_options(Dictionary p_options);
+	virtual Dictionary get_export_options() const;
+	virtual void set_export_options(Dictionary p_options);
+	virtual Error import_preflight(Dictionary p_options, Ref<GLTFState> p_state);
+	virtual Error import_post_parse(Dictionary p_options, Ref<GLTFState> p_state);
+	virtual Error export_post(Dictionary p_options, Ref<GLTFState> p_state);
+	// These stages should not be able to modify the original node when checking conditions.
+	virtual Error import_post(Dictionary p_options, Ref<GLTFState> p_state, Node *p_node);
+	virtual Error export_preflight(Dictionary p_options, Node *p_state);
+	// End condition checking stages.
+	Error import_node(Dictionary p_options, Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Dictionary &r_json, Node *p_node);
+	Error export_node(Dictionary p_options, Ref<GLTFState> p_state, Ref<GLTFNode> p_gltf_node, Dictionary &r_json, Node *p_node);
+	GDVIRTUAL2R(int, _import_preflight, Dictionary, Ref<GLTFState>);
+	GDVIRTUAL2R(int, _import_post_parse, Dictionary, Ref<GLTFState>);
+	GDVIRTUAL5R(int, _import_node, Dictionary, Ref<GLTFState>, Ref<GLTFNode>, Dictionary, Node *);
+	GDVIRTUAL3R(int, _import_post, Dictionary, Ref<GLTFState>, Node *);
+	GDVIRTUAL2R(int, _export_preflight, Dictionary, Node *);
+	GDVIRTUAL5R(int, _export_node, Dictionary, Ref<GLTFState>, Ref<GLTFNode>, Dictionary, Node *);
+	GDVIRTUAL2R(int, _export_post, Dictionary, Ref<GLTFState>);
 };
 
 #endif // GLTF_DOCUMENT_EXTENSION_H
