@@ -226,6 +226,13 @@ void SceneTreeDock::_perform_instantiate_scenes(const Vector<String> &p_files, N
 		}
 		editor_data->get_undo_redo().add_do_method(instantiated_scene, "set_owner", edited_scene);
 		editor_data->get_undo_redo().add_do_method(editor_selection, "clear");
+		DefaultInstanceEditableChildrenState state = _get_default_instance_editable_children_state();
+		if (state != DefaultInstanceEditableChildrenState::EDITABLE_DISABLED) {
+			editor_data->get_undo_redo().add_do_method(EditorNode::get_singleton()->get_edited_scene(), "set_editable_instance", instantiated_scene, true);
+			if (state == DefaultInstanceEditableChildrenState::EDITABLE_ENABLED_FOLDED) {
+				editor_data->get_undo_redo().add_do_method(instantiated_scene, "set_display_folded", true);
+			}
+		}
 		editor_data->get_undo_redo().add_do_method(editor_selection, "add_node", instantiated_scene);
 		editor_data->get_undo_redo().add_do_reference(instantiated_scene);
 		editor_data->get_undo_redo().add_undo_method(parent, "remove_child", instantiated_scene);
@@ -1265,6 +1272,10 @@ void SceneTreeDock::_notification(int p_what) {
 		case NOTIFICATION_ENTER_TREE: {
 			clear_inherit_confirm->connect("confirmed", callable_mp(this, &SceneTreeDock::_tool_selected), make_binds(TOOL_SCENE_CLEAR_INHERITANCE_CONFIRM, false));
 			scene_tree->set_auto_expand_selected(EditorSettings::get_singleton()->get("docks/scene_tree/auto_expand_to_selected"), false);
+			scene_tree->set_default_instance_editable_children_state((DefaultInstanceEditableChildrenState)EditorSettings::get_singleton()->get(
+																																				  "docks/scene_tree/default_instance_editable_children_state")
+																			 .
+																			 operator int());
 		} break;
 
 		case NOTIFICATION_EXIT_TREE: {
@@ -1273,6 +1284,10 @@ void SceneTreeDock::_notification(int p_what) {
 
 		case EditorSettings::NOTIFICATION_EDITOR_SETTINGS_CHANGED: {
 			scene_tree->set_auto_expand_selected(EditorSettings::get_singleton()->get("docks/scene_tree/auto_expand_to_selected"), false);
+			scene_tree->set_default_instance_editable_children_state((DefaultInstanceEditableChildrenState)EditorSettings::get_singleton()->get(
+																																				  "docks/scene_tree/default_instance_editable_children_state")
+																			 .
+																			 operator int());
 			button_add->set_icon(get_theme_icon(SNAME("Add"), SNAME("EditorIcons")));
 			button_instance->set_icon(get_theme_icon(SNAME("Instance"), SNAME("EditorIcons")));
 			button_create_script->set_icon(get_theme_icon(SNAME("ScriptCreate"), SNAME("EditorIcons")));
@@ -1952,6 +1967,15 @@ void SceneTreeDock::_shader_creation_closed() {
 	shader_create_dialog->disconnect("shader_created", callable_mp(this, &SceneTreeDock::_shader_created));
 	shader_create_dialog->disconnect("confirmed", callable_mp(this, &SceneTreeDock::_shader_creation_closed));
 	shader_create_dialog->disconnect("cancelled", callable_mp(this, &SceneTreeDock::_shader_creation_closed));
+}
+
+void SceneTreeDock::_set_default_instance_editable_children_state(DefaultInstanceEditableChildrenState p_default_instance_editable_children_state) {
+	ERR_FAIL_INDEX(p_default_instance_editable_children_state, EDITABLE_MAX);
+	default_instance_editable_children_state = p_default_instance_editable_children_state;
+}
+
+SceneTreeDock::DefaultInstanceEditableChildrenState SceneTreeDock::_get_default_instance_editable_children_state() {
+	return default_instance_editable_children_state;
 }
 
 void SceneTreeDock::_toggle_editable_children_from_selection() {
