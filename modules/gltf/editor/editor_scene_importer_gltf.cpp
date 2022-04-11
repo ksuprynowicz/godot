@@ -28,14 +28,14 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifdef TOOLS_ENABLED
-
+#if TOOLS_ENABLED
 #include "editor_scene_importer_gltf.h"
 
-#include "../gltf_document.h"
-#include "../gltf_state.h"
+#include "modules/gltf/gltf_document.h"
+#include "modules/gltf/gltf_state.h"
 
-#include "scene/main/node.h"
+#include "scene/3d/node_3d.h"
+#include "scene/animation/animation_player.h"
 #include "scene/resources/animation.h"
 
 uint32_t EditorSceneFormatImporterGLTF::get_import_flags() const {
@@ -50,8 +50,9 @@ void EditorSceneFormatImporterGLTF::get_extensions(List<String> *r_extensions) c
 Node *EditorSceneFormatImporterGLTF::import_scene(const String &p_path, uint32_t p_flags,
 		const Map<StringName, Variant> &p_options, int p_bake_fps,
 		List<String> *r_missing_deps, Error *r_err) {
-	Ref<GLTFDocument> doc;
-	doc.instantiate();
+	if (doc.is_null()) {
+		doc.instantiate();
+	}
 	Ref<GLTFState> state;
 	state.instantiate();
 	Error err = doc->append_from_file(p_path, state, p_flags, p_bake_fps);
@@ -67,6 +68,25 @@ Node *EditorSceneFormatImporterGLTF::import_scene(const String &p_path, uint32_t
 Ref<Animation> EditorSceneFormatImporterGLTF::import_animation(const String &p_path,
 		uint32_t p_flags, const Map<StringName, Variant> &p_options, int p_bake_fps) {
 	return Ref<Animation>();
+}
+
+void EditorSceneFormatImporterGLTF::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_gltf_extensions", "extensions"), &EditorSceneFormatImporterGLTF::set_gltf_extensions);
+	ClassDB::bind_method(D_METHOD("get_gltf_extensions"), &EditorSceneFormatImporterGLTF::get_gltf_extensions);
+	ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "gltf_extensions", PROPERTY_HINT_ARRAY_TYPE,
+						 vformat("%s/%s:%s", Variant::OBJECT, PROPERTY_HINT_RESOURCE_TYPE, "GLTFDocumentExtension"),
+						 PROPERTY_USAGE_DEFAULT),
+			"set_gltf_extensions", "get_gltf_extensions");
+}
+
+void EditorSceneFormatImporterGLTF::set_gltf_extensions(TypedArray<GLTFDocumentExtension> p_extensions) {
+	ERR_FAIL_NULL(doc);
+	doc->set_extensions(p_extensions);
+}
+
+TypedArray<GLTFDocumentExtension> EditorSceneFormatImporterGLTF::get_gltf_extensions() {
+	ERR_FAIL_NULL_V(doc, Array());
+	return doc->get_extensions();
 }
 
 #endif // TOOLS_ENABLED
