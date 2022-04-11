@@ -30,6 +30,8 @@
 
 #include "gltf_accessor.h"
 
+#include "core/io/resource.h"
+
 #include "gltf_document_extension.h"
 
 void GLTFAccessor::_bind_methods() {
