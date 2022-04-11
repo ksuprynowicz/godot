@@ -211,6 +211,18 @@ class SceneTreeDock : public VBoxContainer {
 
 	void _delete_confirm(bool p_cut = false);
 
+	enum DefaultInstanceEditableChildrenState {
+		EDITABLE_DISABLED,
+		EDITABLE_ENABLED_FOLDED,
+		EDITABLE_ENABLED_UNFOLDED,
+		EDITABLE_MAX
+	};
+
+	DefaultInstanceEditableChildrenState default_instance_editable_children_state = EDITABLE_ENABLED_FOLDED;
+
+	void _set_default_instance_editable_children_state(DefaultInstanceEditableChildrenState p_default_instance_editable_children_state);
+	DefaultInstanceEditableChildrenState _get_default_instance_editable_children_state();
+
 	void _toggle_editable_children_from_selection();
 	void _toggle_editable_children(Node *p_node);
 
