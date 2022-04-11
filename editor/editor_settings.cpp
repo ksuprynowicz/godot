@@ -486,6 +486,7 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	// SceneTree
 	_initial_set("docks/scene_tree/start_create_dialog_fully_expanded", false);
 	_initial_set("docks/scene_tree/auto_expand_to_selected", true);
+	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_ENUM, "docks/scene_tree/default_instance_editable_children_state", 1, "Disabled,Enabled(Folded),Enabled(Unfolded)")
 
 	// FileSystem
 	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_RANGE, "docks/filesystem/thumbnail_size", 64, "32,128,16")
