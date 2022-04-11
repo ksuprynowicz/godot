@@ -31,6 +31,7 @@
 #include "basis.h"
 
 #include "core/math/math_funcs.h"
+#include "core/math/vector3.h"
 #include "core/string/print_string.h"
 
 #define cofac(row1, col1, row2, col2) \
@@ -1125,7 +1126,8 @@ Basis Basis::log() const {
 			skew_symmetric = (r - r.transposed()).scaled(Vector3(c, c, c));
 		} else { // arg = 1, angle = 0.
 			// R is the identity matrix.
-			skew_symmetric.set_zero();
+			// S is the zero matrix.
+			skew_symmetric = Basis(Vector3(), Vector3(), Vector3());
 		}
 	} else { // arg = -1, angle = PI.
 		// Knowing R + 1 is symmetrical and wanting to avoid bias, we use
@@ -1161,7 +1163,8 @@ Basis Basis::log() const {
 		skew_symmetric.elements[1][0] = +s[2];
 		skew_symmetric.elements[1][1] = 0.0;
 		skew_symmetric.elements[1][2] = -s[0];
-		skew_symmetric.elements[2][0] = skew_symmetric.elements[2][1] = +s[0];
+		skew_symmetric.elements[2][0] = -s[1];
+		skew_symmetric.elements[2][1] = +s[0];
 		skew_symmetric.elements[2][2] = 0.0;
 	}
 	return skew_symmetric;
@@ -1172,7 +1175,11 @@ Basis Basis::exp(real_t p_t, real_t p_theta) const {
 	real_t theta_sqr = p_theta * p_theta;
 	real_t new_angle = Math::sin(angle) / p_theta;
 	real_t new_angle_sqr = (1.0 - Math::cos(angle)) / theta_sqr;
-	return Basis() + this->scaled(Vector3(new_angle, new_angle, new_angle)) + (*this * *this).scaled(Vector3(new_angle_sqr, new_angle_sqr, new_angle_sqr));
+	Basis ret = Basis() + this->scaled(Vector3(new_angle, new_angle, new_angle)) + (*this * *this).scaled(Vector3(new_angle_sqr, new_angle_sqr, new_angle_sqr));
+	if (!ret.is_rotation()) {
+		return Basis();
+	}
+	return ret;
 }
 
 Basis Basis::_compute_inverse_v_1(real_t p_theta) const {
@@ -1182,7 +1189,7 @@ Basis Basis::_compute_inverse_v_1(real_t p_theta) const {
 	}
 	real_t theta_sqr = p_theta * p_theta;
 	real_t c = (1.0 - (p_theta * Math::sin(p_theta)) / (2.0 * (1.0 - Math::cos(p_theta)))) / theta_sqr;
-	return Basis() - s.scaled(Vector3(0.5, 0.5, 0.5))  + (s * s).scaled(Vector3(c, c, c));
+	return Basis() - s.scaled(Vector3(0.5, 0.5, 0.5)) + (s * s).scaled(Vector3(c, c, c));
 }
 
 Basis Basis::_compute_t_times_v(real_t p_theta, real_t p_c) const {
