@@ -535,8 +535,12 @@ void SceneImportSettings::open_settings(const String &p_path, bool p_for_animati
 	editing_animation = p_for_animation;
 	scene_import_settings_data->settings = nullptr;
 	scene_import_settings_data->path = p_path;
+	uint32_t flags = 0;
+	if (p_for_animation) {
+		flags = flags & EditorSceneFormatImporter::IMPORT_DISCARD_MESHES_AND_MATERIALS;
+	}
 
-	scene = ResourceImporterScene::get_scene_singleton()->pre_import(p_path); // Use the scene singleton here because we want to see the full thing.
+	scene = ResourceImporterScene::get_scene_singleton()->pre_import(p_path, flags); // Use the scene singleton here because we want to see the full thing.
 	if (scene == nullptr) {
 		EditorNode::get_singleton()->show_warning(TTR("Error opening scene"));
 		return;
