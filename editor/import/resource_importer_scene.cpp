@@ -1900,7 +1900,7 @@ void ResourceImporterScene::_optimize_track_usage(AnimationPlayer *p_player, Ani
 	}
 }
 
-Node *ResourceImporterScene::pre_import(const String &p_source_file, const uint32_t p_flags) {
+Node *ResourceImporterScene::pre_import(const String &p_source_file) {
 	Ref<EditorSceneFormatImporter> importer;
 	String ext = p_source_file.get_extension().to_lower();
 
@@ -1926,9 +1926,7 @@ Node *ResourceImporterScene::pre_import(const String &p_source_file, const uint3
 	ERR_FAIL_COND_V(!importer.is_valid(), nullptr);
 
 	Error err = OK;
-	uint32_t flags = p_flags & (EditorSceneFormatImporter::IMPORT_ANIMATION | EditorSceneFormatImporter::IMPORT_GENERATE_TANGENT_ARRAYS);
-
-	Node *scene = importer->import_scene(p_source_file, flags, Map<StringName, Variant>(), 30, nullptr, &err);
+	Node *scene = importer->import_scene(p_source_file, EditorSceneFormatImporter::IMPORT_ANIMATION | EditorSceneFormatImporter::IMPORT_GENERATE_TANGENT_ARRAYS, Map<StringName, Variant>(), 15, nullptr, &err);
 	if (!scene || err != OK) {
 		return nullptr;
 	}
