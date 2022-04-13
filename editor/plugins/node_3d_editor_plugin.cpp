@@ -7345,7 +7345,9 @@ void Node3DEditor::_request_gizmo(Object *p_obj) {
 				}
 			}
 		}
-		sp->update_gizmos();
+		if (!sp->get_gizmos().is_empty()) {
+			sp->update_gizmos();
+		}
 	}
 }
 
