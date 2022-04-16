@@ -35,6 +35,7 @@
 #include "editor/plugins/animation_tree_editor_plugin.h"
 #include "editor/property_editor.h"
 #include "scene/animation/animation_blend_tree.h"
+#include "scene/animation/animation_tree.h"
 #include "scene/gui/button.h"
 #include "scene/gui/graph_edit.h"
 #include "scene/gui/popup.h"
@@ -141,6 +142,9 @@ public:
 
 	void add_custom_type(const String &p_name, const Ref<Script> &p_script);
 	void remove_custom_type(const Ref<Script> &p_script);
+
+	void add_custom_extension_type(const StringName &p_name, const String p_type);
+	void remove_custom_extension_type(const StringName p_name);
 
 	virtual Size2 get_minimum_size() const override;
 

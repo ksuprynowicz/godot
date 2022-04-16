@@ -1020,3 +1020,27 @@ AnimationNodeBlendTreeEditor::AnimationNodeBlendTreeEditor() {
 	open_file->connect("file_selected", callable_mp(this, &AnimationNodeBlendTreeEditor::_file_opened));
 	undo_redo = EditorNode::get_undo_redo();
 }
+
+void AnimationNodeBlendTreeEditor::remove_custom_extension_type(const StringName p_name) {
+	for (int i = 0; i < add_options.size(); i++) {
+		if (add_options[i].name == p_name) {
+			add_options.remove_at(i);
+			return;
+		}
+	}
+
+	_update_options_menu();
+}
+
+void AnimationNodeBlendTreeEditor::add_custom_extension_type(const StringName &p_name, const String p_type) {
+	for (int i = 0; i < add_options.size(); i++) {
+		ERR_FAIL_COND(add_options[i].name == p_name);
+	}
+
+	AddOption ao;
+	ao.name = p_name;
+	ao.type = p_type;
+	add_options.push_back(ao);
+
+	_update_options_menu();
+}

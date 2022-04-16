@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AnimationNodeRetarget" inherits="AnimationNodeAnimation" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="option" type="RetargetBoneOption" setter="set_option" getter="get_option">
+		</member>
+		<member name="profile" type="RetargetProfile" setter="set_profile" getter="get_profile">
+		</member>
+		<member name="source_map" type="RetargetBoneMap" setter="set_source_map" getter="get_source_map">
+		</member>
+		<member name="source_skeleton" type="NodePath" setter="set_source_skeleton" getter="get_source_skeleton" default="NodePath(&quot;&quot;)">
+		</member>
+		<member name="target_map" type="RetargetBoneMap" setter="set_target_map" getter="get_target_map">
+		</member>
+		<member name="target_skeleton" type="NodePath" setter="set_target_skeleton" getter="get_target_skeleton" default="NodePath(&quot;&quot;)">
+		</member>
+		<member name="time" type="float" setter="set_time" getter="get_time" default="0.0">
+		</member>
+	</members>
+</class>
