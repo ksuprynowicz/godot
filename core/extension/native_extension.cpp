@@ -31,6 +31,7 @@
 #include "native_extension.h"
 #include "core/config/project_settings.h"
 #include "core/io/config_file.h"
+#include "core/io/file_access.h"
 #include "core/object/class_db.h"
 #include "core/object/method_bind.h"
 #include "core/os/os.h"
@@ -260,30 +261,40 @@ void NativeExtension::_unregister_extension_class(const GDNativeExtensionClassLi
 }
 
 Error NativeExtension::open_library(const String &p_path, const String &p_entry_symbol) {
-	Error err = OS::get_singleton()->open_dynamic_library(p_path, library, true);
+	// TODO: Windows only
+	String path = p_path.replace("/", "\\");
+	if (!FileAccess::exists(path)) {
+		//this code exists so gdnative can load .dll files from within the executable path
+		path = OS::get_singleton()->get_executable_path().get_base_dir().plus_file(p_path.get_file());
+	}
+	Error err;
+	Ref<FileAccess> file = FileAccess::open(path, FileAccess::READ, &err);
+	if (file.is_null()) {
+		return FAILED;
+	}
 	if (err != OK) {
 		return err;
 	}
-
+	binary.resize(file->get_length());
+	file->get_buffer(binary.data(), binary.size());
 	void *entry_funcptr = nullptr;
-
-	err = OS::get_singleton()->get_dynamic_library_symbol_handle(library, p_entry_symbol, entry_funcptr, false);
-
-	if (err != OK) {
-		OS::get_singleton()->close_dynamic_library(library);
-		return err;
-	}
-
-	GDNativeInitializationFunction initialization_function = (GDNativeInitializationFunction)entry_funcptr;
-
-	initialization_function(&gdnative_interface, this, &initialization);
+	// avoid endless loops, code that takes too long and excessive memory usage
+	static const size_t MAX_INSTRUCTIONS = 80 * 1000000;
+	static const size_t MAX_MEMORY = 1024 * 1024 * 32;
+	riscv::MachineOptions<riscv::RISCV64> options;
+	options.memory_max = MAX_MEMORY;
+	options.allow_write_exec_segment = true;
+	machine = new riscv::Machine<riscv::RISCV64>{ binary, options };
+	unsigned long long address = machine->address_of(p_entry_symbol.utf8().get_data());
+	ERR_FAIL_COND_V_MSG(UNLIKELY(address == 0), FAILED, vformat("Could not find: '%s'\n", p_entry_symbol));
+	machine->vmcall<MAX_INSTRUCTIONS>(p_entry_symbol.utf8().get_data(), &gdnative_interface, this, &initialization);
 	level_initialized = -1;
 	return OK;
 }
 
 void NativeExtension::close_library() {
 	ERR_FAIL_COND(library == nullptr);
-	OS::get_singleton()->close_dynamic_library(library);
+	memdelete(machine);
 
 	library = nullptr;
 }

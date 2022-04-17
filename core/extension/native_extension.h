@@ -34,11 +34,31 @@
 #include "core/extension/gdnative_interface.h"
 #include "core/io/resource_loader.h"
 #include "core/object/ref_counted.h"
+#include "thirdparty/libriscv/lib/libriscv/machine.hpp"
+#include <vector>
 
 class NativeExtension : public Resource {
 	GDCLASS(NativeExtension, Resource)
 
 	void *library = nullptr; // pointer if valid,
+
+
+	template <int W>
+	struct MachineData {
+		MachineData(std::vector<uint8_t> b, const std::string &fn, const std::string &syms) :
+				binary{ std::move(b) }, machine{ binary }, filename{ fn }, sympath{ syms } {}
+
+		MachineData(std::vector<uint8_t> b, const std::string &fn, bool, std::string_view syms) :
+				binary{ std::move(b) }, machine{ binary }, filename{ fn }, sympath{}, symbols(syms) {}
+
+		const std::vector<uint8_t> binary;
+		const riscv::Machine<W> machine;
+		const std::string filename;
+		const std::string sympath;
+		const std::string_view symbols;
+	};
+	std::vector<uint8_t> binary;
+	riscv::Machine<riscv::RISCV64> *machine;
 
 	struct Extension {
 		ObjectNativeExtension native_extension;
