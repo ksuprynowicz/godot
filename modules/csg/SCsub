@@ -6,30 +6,33 @@ Import("env_modules")
 # Godot's own source files
 env_csg = env_modules.Clone()
 
-import SCons.Tool
-static_obj, shared_obj = SCons.Tool.createObjBuilders(env_csg)
-
-static_obj.add_action('.cu', SCons.Defaults.CXXAction)  
-shared_obj.add_action('.cu', SCons.Defaults.ShCXXAction)
-static_obj.add_emitter('.cu', SCons.Defaults.StaticObjectEmitter)
-shared_obj.add_emitter('.cu', SCons.Defaults.SharedObjectEmitter)
-
 # Thirdparty source files
 
 thirdparty_obj = []
 
 thirdparty_dir = "#thirdparty/manifold/"
 thirdparty_sources = [
-    "manifold/src/edge_op.cu",
-    "manifold/src/face_op.cu",
-    "manifold/src/impl.cu",
-    "manifold/src/manifold.cu",
-    "manifold/src/properties.cu",
-    "manifold/src/smoothing.cu",
-    "manifold/src/sort.cu",
     "polygon/src/polygon.cpp",
-    "collider/src/collider.cu",
+    "manifold/src/edge_op.cu.gen.cpp",
+    "manifold/src/face_op.cu.gen.cpp",
+    "manifold/src/impl.cu.gen.cpp",
+    "manifold/src/manifold.cu.gen.cpp",
+    "manifold/src/properties.cu.gen.cpp",
+    "manifold/src/smoothing.cu.gen.cpp",
+    "manifold/src/sort.cu.gen.cpp",
+    "collider/src/collider.cu.gen.cpp",
+    "polygon/src/polygon.cpp",
 ]
+
+import shutil
+import os
+import glob
+
+cu_files = [str(f) for f in Glob("#thirdparty/manifold/manifold/src/*.cu")]
+
+for file_name in cu_files:
+    if os.path.isfile(file_name):
+        shutil.copy(file_name, file_name + ".gen.cpp")
 
 env_csg.Append(CPPDEFINES=["THRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CPP"])
 
