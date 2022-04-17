@@ -41,7 +41,7 @@ env_thirdparty.Prepend(
         thirdparty_dir + "utilities/include",
         thirdparty_dir + "collider/include",
         thirdparty_dir + "thirdparty",
-        thirdparty_dir + "thirdparty/graphlite-master/src/graph_lite",        
+        thirdparty_dir + "thirdparty/graph_lite",        
     ]
 )
 env_thirdparty.add_source_files(thirdparty_obj, thirdparty_sources)
