@@ -9,7 +9,10 @@ env_csg = env_modules.Clone()
 import SCons.Tool
 static_obj, shared_obj = SCons.Tool.createObjBuilders(env_csg)
 
-static_obj.add_action('.cu', SCons.Defaults.CXXAction)
+static_obj.add_action('.cu', SCons.Defaults.CXXAction)  
+shared_obj.add_action('.cu', SCons.Defaults.ShCXXAction)
+static_obj.add_emitter('.cu', SCons.Defaults.StaticObjectEmitter)
+shared_obj.add_emitter('.cu', SCons.Defaults.SharedObjectEmitter)
 
 # Thirdparty source files
 
