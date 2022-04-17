@@ -7,7 +7,49 @@ from platform_methods import run_in_subprocess
 
 env.CommandNoCache(["ext_wrappers.gen.inc"], "make_wrappers.py", run_in_subprocess(make_wrappers.run))
 
+# Thirdparty source files
+
+thirdparty_obj = []
+
+thirdparty_dir = "#thirdparty/libriscv/"
+thirdparty_sources = [
+	"lib/libriscv/cpu.cpp",
+	"lib/libriscv/machine.cpp",
+	"lib/libriscv/memory.cpp",
+	"lib/libriscv/memory_rw.cpp",
+	"lib/libriscv/multiprocessing.cpp",
+	"lib/libriscv/native_libc.cpp",
+	"lib/libriscv/native_threads.cpp",
+	"lib/libriscv/posix_signals.cpp",
+	"lib/libriscv/posix_threads.cpp",
+	"lib/libriscv/socket_calls.cpp",
+	"lib/libriscv/rv32i.cpp",
+	"lib/libriscv/rv64i.cpp",
+	"lib/libriscv/rv128i.cpp",
+	"lib/libriscv/serialize.cpp",
+	"lib/libriscv/util/crc32c.cpp",
+	"lib/libriscv/win32/system_calls.cpp", # win32
+    "lib/libriscv/decoder_cache.cpp",
+    # TODO: Binary translation
+    # "lib/libriscv/tr_api.cpp",
+	# "lib/libriscv/tr_compiler.cpp",
+	# "lib/libriscv/tr_emit.cpp",
+	# "lib/libriscv/tr_translate.cpp"
+]
+thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
 
 env_extension = env.Clone()
+env_extension.Prepend(CPPPATH=[thirdparty_dir + "lib"])
+env_extension.disable_warnings()
+env_extension.add_source_files(thirdparty_obj, thirdparty_sources)
+env.core_sources += thirdparty_obj
+
+# Godot source files
+
+module_obj = []
 
 env_extension.add_source_files(env.core_sources, "*.cpp")
+env.core_sources += module_obj
+
+# Needed to force rebuilding the module files when the thirdparty library is updated.
+env.Depends(module_obj, thirdparty_obj)
