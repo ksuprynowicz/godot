@@ -28,7 +28,7 @@ import shutil
 import os
 import glob
 
-cu_files = [str(f) for f in Glob("#thirdparty/manifold/manifold/src/*.cu")]
+cu_files = [str(f) for f in Glob("#thirdparty/manifold/manifold/src/*.cu")] + [str(f) for f in Glob("#thirdparty/manifold/collider/src/*.cu")]
 
 for file_name in cu_files:
     if os.path.isfile(file_name):
