@@ -1,0 +1,3 @@
+[submodule "thirdparty/libriscv"]
+	path = thirdparty/libriscv
+	url = https://github.com/fwsGonzo/libriscv.git
